@@ -7,7 +7,10 @@
 
 #include "targetver.h"
 
+#include <cstring>
+
 #include <stdio.h>
+#include <string.h>
 #include <tchar.h>
 
 #define WIN32_LEAN_AND_MEAN
@@ -18,10 +21,13 @@
 #include <d3dx10math.h>
 #include <d3dx11async.h>
 
+#include <xnamath.h>
 
 #include "d3dclass.h"
 #include "textureclass.h"
 #include "WICTextureLoader.h"
+#include "vertex.h"
+
 
 #include <iostream>
 #include <string>
@@ -31,5 +37,6 @@
 #include <memory>
 #include <vector>
 #include <fstream>
+#include <map>
 
 // TODO: reference additional headers your program requires here
