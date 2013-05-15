@@ -12,7 +12,8 @@
 #include <iostream>
 
 #include "d3dclass.h"
-
+#include "textureshaderclass.h"
+#include "textureclass.h"
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "d3dx11.lib")
@@ -100,6 +101,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	d3d.Initialize(width, height, true, window, false, 32, 1.0f);
 
+	TextureShaderClass shaders0;
+	shaders0.InitializeShader(d3d.GetDevice(), window, L"ColorVertexShader.vs", "ColorVertexShader",  L"ColorPixelShader.ps", "ColorPixelShader");
+
 	MSG msg;
 	ZeroMemory(&msg, sizeof(MSG)); // clear message structure
 	
@@ -121,6 +125,8 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		Sleep(10); // don't cook the CPU yet
 	}
+
+	shaders0.Shutdown();
 
 	d3d.Shutdown();
 

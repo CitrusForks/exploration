@@ -13,17 +13,23 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-#include<dxgi.h>
-#include<d3d11.h>
+#include <dxgi.h>
+#include <d3d11.h>
+#include <d3dx10math.h>
+#include <d3dx11async.h>
+
 
 #include "d3dclass.h"
+#include "textureclass.h"
+#include "WICTextureLoader.h"
 
 #include <iostream>
 #include <string>
 #include <locale>
 #include <codecvt>
 #include <iomanip>
-
+#include <memory>
 #include <vector>
+#include <fstream>
 
 // TODO: reference additional headers your program requires here
