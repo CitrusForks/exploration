@@ -15,10 +15,12 @@ bool SimpleMesh::load(wchar_t *objFileName, ID3D11Device* device, XMFLOAT2 textu
 	loadOBJ(objFileName, temp_verts); 
         printf("From %d verts loaded, ", temp_verts.size());
 
-        std::vector<unsigned short> indices; // indexes end up here
+        std::vector<unsigned int> indices; // indexes end up here
         std::vector<Vertex> vertices;        // unique vertices end up here
         indexVBO(temp_verts, indices, vertices);
 	printf("%d indices, %d vertices\n", indices.size(), vertices.size());
+
+        m_indexCount = indices.size();
 
         if (texture_scaler.x != 1.0f && texture_scaler.y != 1.0f)
 	{
@@ -36,7 +38,7 @@ bool SimpleMesh::load(wchar_t *objFileName, ID3D11Device* device, XMFLOAT2 textu
         D3D11_SUBRESOURCE_DATA vertexData, indexData;
 	HRESULT result;
 
-        vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+        vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
         vertexBufferDesc.ByteWidth = sizeof(Vertex) * vertices.size();
         vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
         vertexBufferDesc.CPUAccessFlags = 0;
@@ -56,7 +58,7 @@ bool SimpleMesh::load(wchar_t *objFileName, ID3D11Device* device, XMFLOAT2 textu
 	}
 
 	// Set up the description of the static index buffer.
-        indexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+        indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
         indexBufferDesc.ByteWidth = sizeof(unsigned long) * indices.size();
         indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
         indexBufferDesc.CPUAccessFlags = 0;
@@ -81,74 +83,39 @@ bool SimpleMesh::load(wchar_t *objFileName, ID3D11Device* device, XMFLOAT2 textu
 
 }
 
-SimpleMesh::SimpleMesh() : loaded(false)
+SimpleMesh::SimpleMesh() : loaded(false), m_indexCount(0)
 {
 }
 
-SimpleMesh::SimpleMesh(wchar_t *objFN)
+SimpleMesh::SimpleMesh(wchar_t *objFN, ID3D11Device *device, TextureClass *t, TextureShaderClass *ts) : m_Texture(t), m_Shaders(ts)
 {
-	load(objFN);
+	load(objFN, device);
 }
 
 SimpleMesh::~SimpleMesh(void)
 {
 }
 
-void SimpleMesh::render(CXMMATRIX model_to_world_space)
+void SimpleMesh::setBuffers(ID3D11DeviceContext *deviceContext)
 {
-	glEnable(GL_TEXTURE_2D);
+    // this is basically copied from the rastertek tutorial too
+    unsigned int stride;
+    unsigned int offset;
 
-	if (tex)
-	{
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, tex);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);		
-	}
 
-	glm::dmat4 model = model_to_world_space;
+    // Set vertex buffer stride and offset.
+    stride = sizeof(Vertex); 
+    offset = 0;
 
-	glm::mat4 MVP;
-	MVP << (perspective * view * model);
+    // Set the vertex buffer to active in the input assembler so it can be rendered.
+    deviceContext->IASetVertexBuffers(0, 1, &m_vertexBuffer, &stride, &offset);
 
-	glm::mat4 MV;
-	MV << (view * model);
+    // Set the index buffer to active in the input assembler so it can be rendered.
+    deviceContext->IASetIndexBuffer(m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
-	glm::mat4 M;
-	M << model;
+    // Set the type of primitive that should be rendered from this vertex buffer, in this case triangles.
+    deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	glm::mat4 V;
-	V << view;
-
-	glm::mat3 N(V * M); // normal matrix	
-	// N = glm::transpose(glm::inverse(N)); // ref: http://www.arcsynthesis.org/gltut/Illumination/Tut09%20Normal%20Transformation.html	
-
-	//NaNtest(perspective);
-	//NaNtest(view);
-	//NaNtest(model);
-	//NaNtest(MVP);
-
-	glm::vec4 test(0.0, 0.0, 0.0, 1.0);
-	test = MVP * test;
-	//printf("%lf, %lf, %lf, %lf\n", test[0], test[1], test[2], test[3]);
-
-	glErrorCheck();
-
-	glUseProgram(idProgram); glErrorCheck();
-
-	glUniformMatrix4fv(idMVP, 1, 0, &MVP[0][0]); glErrorCheck();
-	glUniformMatrix4fv(idMV, 1, 0, &MV[0][0]); glErrorCheck();
-	glUniformMatrix3fv(idN, 1, 0, &N[0][0]); glErrorCheck();
-	glUniform1i(idTex, 0); glErrorCheck();	
-
-	glUniformMatrix4fv(glGetUniformLocation(idProgram, "M"), 1, 0, &M[0][0]); glErrorCheck();
-	glUniformMatrix4fv(glGetUniformLocation(idProgram, "V"), 1, 0, &V[0][0]); glErrorCheck();
-
-	glUniform3fv(idEye, 1, &eye[0]); glErrorCheck();
-
-	glBindVertexArray(VAO_id); glErrorCheck();
-
-	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_SHORT, (void*)0);
-	glUseProgram(0); glErrorCheck();
+    return;
 }
 

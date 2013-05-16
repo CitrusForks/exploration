@@ -7,7 +7,7 @@
 void indexVBO(
 	std::vector<Vertex> & in_vertices,
 
-	std::vector<unsigned short> & out_indices,
+	std::vector<unsigned int> & out_indices,
 	std::vector<Vertex> & out_vertices);
 
 #if 0

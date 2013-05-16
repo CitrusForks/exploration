@@ -78,9 +78,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="ColorPixelShader.ps" />
-    <None Include="ColorVertexShader.vs" />
+    <None Include="light.ps" />
+    <None Include="light.vs" />
     <None Include="ReadMe.txt" />
+    <None Include="texture.ps" />
+    <None Include="texture.vs" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="d3dclass.h" />

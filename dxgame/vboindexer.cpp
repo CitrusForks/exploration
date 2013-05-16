@@ -78,8 +78,8 @@ void indexVBO_slow(
 
 bool getSimilarVertexIndex_fast( 
     Vertex & packed, 
-    std::map<Vertex,unsigned short> & VertexToOutIndex,
-    unsigned short & result
+    std::map<Vertex,unsigned int> & VertexToOutIndex,
+    unsigned int & result
 ){
     auto it = VertexToOutIndex.find(packed);
     if ( it == VertexToOutIndex.end() ){
@@ -92,10 +92,10 @@ bool getSimilarVertexIndex_fast(
 
 void indexVBO(
     std::vector<Vertex> & in_vertices,
-    std::vector<unsigned short> & out_indices,
+    std::vector<unsigned int> & out_indices,
     std::vector<Vertex> & out_vertices)
 {
-    std::map<Vertex,unsigned short> VertexToOutIndex;
+    std::map<Vertex,unsigned int> VertexToOutIndex;
 
     out_indices.clear();
     out_vertices.clear();
@@ -103,14 +103,14 @@ void indexVBO(
     // For each input vertex
     for ( unsigned int i=0; i<in_vertices.size(); i++ ){
         // Try to find a similar vertex in out_XXXX
-        unsigned short index;
+        unsigned int index;
         bool found = getSimilarVertexIndex_fast( in_vertices[i] , VertexToOutIndex, index);
 
         if ( found ){ // A similar vertex is already in the VBO, use it instead !
             out_indices.push_back( index );
         }else{ // If not, it needs to be added in the output data.
             out_vertices.push_back( in_vertices[i]);
-            unsigned short newindex = (unsigned short)out_vertices.size() - 1;
+            unsigned int newindex = (unsigned int)out_vertices.size() - 1;
             out_indices .push_back( newindex );
             VertexToOutIndex[ in_vertices[i] ] = newindex;
         }

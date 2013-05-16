@@ -11,24 +11,23 @@
 class SimpleMesh
 {
 private:
-	bool loaded;
-        ID3D11Buffer *m_vertexBuffer, *m_indexBuffer;
-	TextureClass *m_Texture;
-        TextureShaderClass *m_Shaders;
+    bool loaded;
+    ID3D11Buffer *m_vertexBuffer, *m_indexBuffer;
+    TextureClass *m_Texture;
+    TextureShaderClass *m_Shaders;
+    unsigned int m_indexCount;
 
 
 public:
-	void render(CXMMATRIX model_to_world_space);
-        bool load(wchar_t *objFileName, ID3D11Device* device, XMFLOAT2 texture_scaler = XMFLOAT2(1.0f, 1.0f));
+    void setBuffers(ID3D11DeviceContext *deviceContext);
+    bool load(wchar_t *objFileName, ID3D11Device* device, XMFLOAT2 texture_scaler = XMFLOAT2(1.0f, 1.0f));
+
+    unsigned int getIndexCount() { return m_indexCount; }
 
 
-	SimpleMesh();
-	SimpleMesh(wchar_t *objFileName);
-        SimpleMesh(wchar_t *objFileName, TextureClass *t, TextureShaderClass *ts) : m_Texture(t), m_Shaders(ts)
-        {
-            SimpleMesh(objFileName);
-        }
-	~SimpleMesh(void);
+    SimpleMesh();
+    SimpleMesh(wchar_t *objFileName, ID3D11Device* device, TextureClass *t = nullptr, TextureShaderClass *ts = nullptr);
+    ~SimpleMesh(void);
 };
 
 #endif

@@ -26,10 +26,14 @@ struct PixelInputType
 float4 TexturePixelShader(PixelInputType input) : SV_TARGET
 {
 	float4 textureColor;
-
+	float4 grey;
+	grey.r = 127.0;
+	grey.g = 127.0;
+	grey.b = 127.0;
+	//return grey;
 
     // Sample the pixel color from the texture using the sampler at this texture coordinate location.
     textureColor = shaderTexture.Sample(SampleType, input.tex);
-
+	
     return textureColor;
 }

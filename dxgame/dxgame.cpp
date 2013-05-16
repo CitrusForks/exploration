@@ -4,6 +4,7 @@
 #include "stdafx.h"
 
 #define WIN32_LEAN_AND_MEAN
+#define _USE_MATH_DEFINES
 #include <windows.h>
 
 #include <dxgi.h>
@@ -11,9 +12,12 @@
 
 #include <iostream>
 
+#include <math.h>
+
 #include "d3dclass.h"
 #include "textureshaderclass.h"
 #include "textureclass.h"
+#include "SimpleMesh.h"
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "d3dx11.lib")
@@ -102,11 +106,34 @@ int _tmain(int argc, _TCHAR* argv[])
 	d3d.Initialize(width, height, true, window, false, 32, 1.0f);
 
 	TextureShaderClass shaders0;
-	shaders0.InitializeShader(d3d.GetDevice(), window, L"ColorVertexShader.vs", "ColorVertexShader",  L"ColorPixelShader.ps", "ColorPixelShader");
+	shaders0.InitializeShader(d3d.GetDevice(), window, L"texture.vs", "TextureVertexShader",  L"texture.ps", "TexturePixelShader");
+
+        SimpleMesh mesh;
+        mesh.load(L"cube.obj", d3d.GetDevice());
+
+        TextureClass texture;
+        texture.Initialize(d3d.GetDevice(), d3d.GetDeviceContext(), L"texture.jpg");
+        
+
+        XMVECTOR cameraPos = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+        XMVECTOR cameraLook = XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
+        XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+        
+        XMMATRIX view = XMMatrixLookAtLH(cameraPos, cameraLook, up);
+
+        XMMATRIX world = XMMatrixTranslation(0.0f, 0.0f, 10.0f);
+
+        XMMATRIX projection = XMMatrixPerspectiveFovLH((float)((70.0/360.0) * M_PI), (float)width / (float)height, 1.0f, 1000.0f);
+
+
+        
 
 	MSG msg;
 	ZeroMemory(&msg, sizeof(MSG)); // clear message structure
 	
+        XMVECTOR axis = XMVectorSet(0.7071067811865475f, 0.7071067811865475f, 0.0f, 0.0f);
+
+        float angle = 0.0f;
 	bool done = false;
 	while (!done)
 	{
@@ -123,7 +150,22 @@ int _tmain(int argc, _TCHAR* argv[])
 			done = true;
 		}
 
+                d3d.BeginScene(0.0f, sinf(angle), sinf(angle+3.141592653589f), 0.0f);
+                mesh.setBuffers(d3d.GetDeviceContext());
+
+                
+                XMMATRIX worldFinal = XMMatrixRotationAxis(axis, angle) * world;
+
+                if (!shaders0.Render(d3d.GetDeviceContext(), mesh.getIndexCount(), worldFinal, view, projection, texture.GetTexture()))
+                {
+                    std::cout << "Render error!";
+                    break;
+                }
+                d3d.EndScene();
+
+
 		Sleep(10); // don't cook the CPU yet
+                angle += (float)(M_PI/50);
 	}
 
 	shaders0.Shutdown();

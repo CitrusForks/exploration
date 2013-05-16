@@ -19,10 +19,16 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
-    <None Include="ColorVertexShader.vs">
+    <None Include="light.ps">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="ColorPixelShader.ps">
+    <None Include="light.vs">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="texture.ps">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="texture.vs">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
