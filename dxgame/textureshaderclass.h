@@ -21,12 +21,28 @@ using namespace std;
 class TextureShaderClass
 {
 private:
-	struct MatrixBufferType
-	{
-		XMFLOAT4X4 world;
-		XMFLOAT4X4 view;
-		XMFLOAT4X4 projection;
-	};
+    struct MatrixBufferType
+    {
+	    XMFLOAT4X4 world;
+	    XMFLOAT4X4 view;
+	    XMFLOAT4X4 projection;
+    };
+
+    struct CameraBufferType
+    {
+        XMFLOAT4 cameraPosition;
+        //float padding;
+    };
+
+    struct LightBufferType
+    {
+        XMFLOAT4 ambientColor;
+        XMFLOAT4 diffuseColor;
+        XMFLOAT3 lightDirection;
+        float specularPower;
+        XMFLOAT4 specularColor;
+    };
+
 
 public:
 	TextureShaderClass();
@@ -34,21 +50,22 @@ public:
 	~TextureShaderClass();
 
 	void Shutdown();
-	bool Render(ID3D11DeviceContext*, int indexCount, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix, ID3D11ShaderResourceView*);
+	bool Render(ID3D11DeviceContext*, int indexCount, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix, ID3D11ShaderResourceView *texture, CXMVECTOR cameraPos);
 	bool InitializeShader(ID3D11Device*, HWND, wchar_t *vsFilename, char *vsFunctionName, wchar_t *psFilename, char *psFunctionName);
+        bool SetLights(ID3D11DeviceContext*, XMFLOAT4 ambientColor, XMFLOAT4 diffuseColor, XMFLOAT3 lightDirection, float specularPower, XMFLOAT4 specularColor);
 
 private:
 	void ShutdownShader();
 	void OutputShaderErrorMessage(ID3D10Blob*, HWND, WCHAR*);
 
-	bool SetShaderParameters(ID3D11DeviceContext*, CXMMATRIX, CXMMATRIX, CXMMATRIX, ID3D11ShaderResourceView*);
+	bool SetShaderParameters(ID3D11DeviceContext*, CXMMATRIX, CXMMATRIX, CXMMATRIX, ID3D11ShaderResourceView*, CXMVECTOR);
 	void RenderShader(ID3D11DeviceContext*, int);
 
 private:
 	ID3D11VertexShader* m_vertexShader;
 	ID3D11PixelShader* m_pixelShader;
 	ID3D11InputLayout* m_layout;
-	ID3D11Buffer* m_matrixBuffer;
+	ID3D11Buffer* m_matrixBuffer, *m_cameraBuffer, *m_lightBuffer;
 	ID3D11SamplerState* m_sampleState;
 };
 

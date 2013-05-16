@@ -16,6 +16,8 @@ TextureShaderClass::TextureShaderClass()
 	m_pixelShader = 0;
 	m_layout = 0;
 	m_matrixBuffer = 0;
+        m_lightBuffer = 0;
+        m_cameraBuffer = 0;
 	m_sampleState = 0;
 }
 
@@ -40,13 +42,13 @@ void TextureShaderClass::Shutdown()
 
 
 bool TextureShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCount, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, 
-								CXMMATRIX projectionMatrix, ID3D11ShaderResourceView* texture)
+								CXMMATRIX projectionMatrix, ID3D11ShaderResourceView* texture, CXMVECTOR cameraPos)
 {
 	bool result;
 
 
 	// Set the shader parameters that it will use for rendering.
-	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, texture);
+	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, texture, cameraPos);
 	if(!result)
 	{
 		return false;
@@ -68,7 +70,7 @@ bool TextureShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, wchar
     ID3D10Blob* vertexShaderBuffer = nullptr;
 
     // Compile the vertex shader code.
-    result = D3DX11CompileFromFile(vsFilename, NULL, NULL, vsFunctionName, "vs_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, NULL, 
+    result = D3DX11CompileFromFile(vsFilename, NULL, NULL, vsFunctionName, "vs_4_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, NULL, 
 								&vertexShaderBuffer, &errorMessage, NULL); // XXX D3DX11 is deprecated, replace this with CompileFromFile()
     if(FAILED(result))
     {
@@ -90,7 +92,7 @@ bool TextureShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, wchar
     ID3D10Blob* pixelShaderBuffer = nullptr;
 
     // Compile the pixel shader code.
-    result = D3DX11CompileFromFile(psFilename, NULL, NULL, psFunctionName, "ps_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, NULL, 
+    result = D3DX11CompileFromFile(psFilename, NULL, NULL, psFunctionName, "ps_4_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, NULL, 
 								&pixelShaderBuffer, &errorMessage, NULL); // XXX replace with CompileFromFile()
     if(FAILED(result))
     {
@@ -190,7 +192,30 @@ bool TextureShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, wchar
     result = device->CreateBuffer(&matrixBufferDesc, NULL, &m_matrixBuffer);
     if(FAILED(result))
     {
-	    return false;
+        std::cerr << "Could not create constant buffer!" << std::endl;
+	return false;
+    }
+
+    // another buffer for camera data
+    D3D11_BUFFER_DESC cameraBufferDesc = matrixBufferDesc; // in the interest of brevity, copy all the identical values from a previous buffer_desc
+    cameraBufferDesc.ByteWidth = sizeof(CameraBufferType);
+
+    result = device->CreateBuffer(&cameraBufferDesc, NULL, &m_cameraBuffer);
+    if(FAILED(result))
+    {
+        std::cerr << "Could not create constant buffer!" << std::endl;
+	return false;
+    }
+
+    // another buffer, for the light data in the pixel shader
+    D3D11_BUFFER_DESC lightBufferDesc = cameraBufferDesc;
+    cameraBufferDesc.ByteWidth = sizeof(LightBufferType);
+
+    result = device->CreateBuffer(&lightBufferDesc, NULL, &m_lightBuffer);
+    if(FAILED(result))
+    {
+        std::cerr << "Could not create constant buffer!" << std::endl;
+	return false;
     }
 
     // Create a texture sampler state description.
@@ -276,14 +301,16 @@ void TextureShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND
 	// Open a file to write the error message to.
 	fout.open("shader-error.txt");
 
-	std::cout << "Error compiling shader:";
+	std::cerr << "Error compiling shader:";
 
 	// Write out the error message.
 	for(i=0; i<bufferSize; i++)
 	{
 		fout << compileErrors[i];
-		std::cout << compileErrors[i] << std::endl;
+		std::cerr << compileErrors[i];
 	}
+
+        std::cerr << std::endl;
 
 	// Close the file.
 	fout.close();
@@ -300,11 +327,12 @@ void TextureShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND
 
 
 bool TextureShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, 
-											 CXMMATRIX projectionMatrix, ID3D11ShaderResourceView* texture)
+											 CXMMATRIX projectionMatrix, ID3D11ShaderResourceView* texture, CXMVECTOR cameraPos)
 {
     HRESULT result;
     D3D11_MAPPED_SUBRESOURCE mappedResource;
     MatrixBufferType* dataPtr;
+    CameraBufferType* cDataPtr;
     unsigned int bufferNumber;
     //XMFLOAT4X4 worldF4X4, viewF4X4, projectionF4X4;    
 
@@ -342,11 +370,61 @@ bool TextureShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext,
     // Now set the constant buffer in the vertex shader with the updated values.
     deviceContext->VSSetConstantBuffers(bufferNumber, 1, &m_matrixBuffer);
 
+    //
+    // camera constant buffer!
+    //
+    result = deviceContext->Map(m_cameraBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+    if(FAILED(result))
+    {
+	 return false;
+    }
+
+    // Get a pointer to the data in the constant buffer.
+    cDataPtr = (CameraBufferType*)mappedResource.pData;
+    
+    XMStoreFloat4(&cDataPtr->cameraPosition, cameraPos);
+    //cDataPtr->padding = 0.0f;
+
+    deviceContext->Unmap(m_cameraBuffer, 0);
+
+    ++bufferNumber;
+    deviceContext->VSSetConstantBuffers(bufferNumber, 1, &m_cameraBuffer);
+
+
     // Set shader texture resource in the pixel shader.
     deviceContext->PSSetShaderResources(0, 1, &texture);
 
     return true;
 }
+
+// set light values; likely only needed once per scene and the previous method's parameter list was getting out of hand
+bool TextureShaderClass::SetLights(ID3D11DeviceContext *deviceContext, XMFLOAT4 ambientColor, XMFLOAT4 diffuseColor, XMFLOAT3 lightDirection, float specularPower, XMFLOAT4 specularColor)
+{
+    HRESULT result;
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    LightBufferType* dataPtr;
+
+    result = deviceContext->Map(m_lightBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+    if (FAILED(result))
+    {
+        return false;
+    }
+
+    dataPtr = (LightBufferType*)mappedResource.pData;
+
+    dataPtr->ambientColor = ambientColor;
+    dataPtr->diffuseColor = diffuseColor;
+    dataPtr->lightDirection = lightDirection;
+    dataPtr->specularPower = specularPower;
+    dataPtr->specularColor = specularColor;
+
+    deviceContext->Unmap(m_lightBuffer, 0);
+
+    deviceContext->PSSetConstantBuffers(0, 1, &m_lightBuffer);
+
+    return true;
+}
+
 
 
 void TextureShaderClass::RenderShader(ID3D11DeviceContext* deviceContext, int indexCount)
@@ -355,7 +433,7 @@ void TextureShaderClass::RenderShader(ID3D11DeviceContext* deviceContext, int in
 	deviceContext->IASetInputLayout(m_layout);
 
         // Set the vertex and pixel shaders that will be used to render this triangle.
-        deviceContext->VSSetShader(m_vertexShader, NULL, 0); // TODO change this to an "effect"
+        deviceContext->VSSetShader(m_vertexShader, NULL, 0); // TODO change this to an "effect?" or are effects going out of style?
         deviceContext->PSSetShader(m_pixelShader, NULL, 0);
 
 	// Set the sampler state in the pixel shader.

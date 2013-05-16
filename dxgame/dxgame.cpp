@@ -106,14 +106,19 @@ int _tmain(int argc, _TCHAR* argv[])
 	d3d.Initialize(width, height, true, window, false, 32, 1.0f);
 
 	TextureShaderClass shaders0;
-	shaders0.InitializeShader(d3d.GetDevice(), window, L"texture.vs", "TextureVertexShader",  L"texture.ps", "TexturePixelShader");
+	if (!shaders0.InitializeShader(d3d.GetDevice(), window, L"light.vs", "LightVertexShader",  L"light.ps", "LightPixelShader"))
+        {
+            return 1;
+        }
 
         SimpleMesh mesh;
-        mesh.load(L"cube.obj", d3d.GetDevice());
+        if (!mesh.load(L"duck.obj", d3d.GetDevice()))
+        {
+            return 1;
+        }
 
         TextureClass texture;
-        texture.Initialize(d3d.GetDevice(), d3d.GetDeviceContext(), L"texture.jpg");
-        
+        texture.Initialize(d3d.GetDevice(), d3d.GetDeviceContext(), L"duck_texture.png");
 
         XMVECTOR cameraPos = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
         XMVECTOR cameraLook = XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
@@ -121,11 +126,11 @@ int _tmain(int argc, _TCHAR* argv[])
         
         XMMATRIX view = XMMatrixLookAtLH(cameraPos, cameraLook, up);
 
-        XMMATRIX world = XMMatrixTranslation(0.0f, 0.0f, 10.0f);
+        XMMATRIX world = XMMatrixTranslation(0.0f, 0.0f, 7.0f);
 
         XMMATRIX projection = XMMatrixPerspectiveFovLH((float)((70.0/360.0) * M_PI), (float)width / (float)height, 1.0f, 1000.0f);
 
-
+        shaders0.SetLights(d3d.GetDeviceContext(), XMFLOAT4(0.25f, 0.2f, 0.2f, 1.0f), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), 100.0f, XMFLOAT4(0.0f, 0.0f, 0.75f, 1.0f));
         
 
 	MSG msg;
@@ -150,13 +155,14 @@ int _tmain(int argc, _TCHAR* argv[])
 			done = true;
 		}
 
-                d3d.BeginScene(0.0f, sinf(angle), sinf(angle+3.141592653589f), 0.0f);
+                //d3d.BeginScene(0.0f, sinf(angle), sinf(angle+3.141592653589f), 0.0f);
+                d3d.BeginScene(0.0f, 0.0f, 0.0f, 0.0f);
                 mesh.setBuffers(d3d.GetDeviceContext());
 
                 
                 XMMATRIX worldFinal = XMMatrixRotationAxis(axis, angle) * world;
 
-                if (!shaders0.Render(d3d.GetDeviceContext(), mesh.getIndexCount(), worldFinal, view, projection, texture.GetTexture()))
+                if (!shaders0.Render(d3d.GetDeviceContext(), mesh.getIndexCount(), worldFinal, view, projection, texture.GetTexture(), cameraPos))
                 {
                     std::cout << "Render error!";
                     break;

@@ -28,6 +28,7 @@ struct VertexInputType
 struct PixelInputType
 {
     float4 position : SV_POSITION;
+	float view_z : VIEW_Z;
     float2 tex : TEXCOORD0;
 };
 
@@ -46,6 +47,7 @@ PixelInputType TextureVertexShader(VertexInputType input)
 	// Calculate the position of the vertex against the world, view, and projection matrices.
     output.position = mul(input.position, worldMatrix);
     output.position = mul(output.position, viewMatrix);
+	output.view_z = output.position.z;
     output.position = mul(output.position, projectionMatrix);
     
 	// Store the texture coordinates for the pixel shader.
