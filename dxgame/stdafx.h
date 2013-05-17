@@ -30,6 +30,7 @@
 #include "textureclass.h"
 #include "WICTextureLoader.h"
 #include "vertex.h"
+#include "Chronometer.h"
 
 
 #include <iostream>

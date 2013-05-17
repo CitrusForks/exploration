@@ -6,7 +6,7 @@
 #include <d3d11.h>
 #include "vertex.h"
 #include "textureclass.h"
-#include "textureshaderclass.h"
+#include "vanillashaderclass.h"
 
 class SimpleMesh
 {
@@ -14,7 +14,7 @@ private:
     bool loaded;
     ID3D11Buffer *m_vertexBuffer, *m_indexBuffer;
     TextureClass *m_Texture;
-    TextureShaderClass *m_Shaders;
+    VanillaShaderClass *m_Shaders;
     unsigned int m_indexCount;
 
 
@@ -26,7 +26,7 @@ public:
 
 
     SimpleMesh();
-    SimpleMesh(wchar_t *objFileName, ID3D11Device* device, TextureClass *t = nullptr, TextureShaderClass *ts = nullptr);
+    SimpleMesh(wchar_t *objFileName, ID3D11Device* device, TextureClass *t = nullptr, VanillaShaderClass *ts = nullptr);
     ~SimpleMesh(void);
 };
 

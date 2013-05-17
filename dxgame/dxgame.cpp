@@ -15,7 +15,7 @@
 #include <math.h>
 
 #include "d3dclass.h"
-#include "textureshaderclass.h"
+#include "vanillashaderclass.h"
 #include "textureclass.h"
 #include "SimpleMesh.h"
 
@@ -101,11 +101,13 @@ int _tmain(int argc, _TCHAR* argv[])
 	SetForegroundWindow(window);
 	SetFocus(window);
 
+        Chronometer timer;
+
 	D3DClass d3d;
 
 	d3d.Initialize(width, height, true, window, false, 32, 1.0f);
 
-	TextureShaderClass shaders0;
+	VanillaShaderClass shaders0;
 	if (!shaders0.InitializeShader(d3d.GetDevice(), window, L"light.vs", "LightVertexShader",  L"light.ps", "LightPixelShader"))
         {
             return 1;
@@ -130,9 +132,6 @@ int _tmain(int argc, _TCHAR* argv[])
 
         XMMATRIX projection = XMMatrixPerspectiveFovLH((float)((70.0/360.0) * M_PI), (float)width / (float)height, 1.0f, 1000.0f);
 
-        shaders0.SetLights(d3d.GetDeviceContext(), XMFLOAT4(0.25f, 0.2f, 0.2f, 1.0f), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), 100.0f, XMFLOAT4(0.0f, 0.0f, 0.75f, 1.0f));
-        
-
 	MSG msg;
 	ZeroMemory(&msg, sizeof(MSG)); // clear message structure
 	
@@ -142,6 +141,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	bool done = false;
 	while (!done)
 	{
+                timer.Sample();
+
 		// Handle the windows messages.
 		if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
@@ -158,8 +159,10 @@ int _tmain(int argc, _TCHAR* argv[])
                 //d3d.BeginScene(0.0f, sinf(angle), sinf(angle+3.141592653589f), 0.0f);
                 d3d.BeginScene(0.0f, 0.0f, 0.0f, 0.0f);
                 mesh.setBuffers(d3d.GetDeviceContext());
-
                 
+                shaders0.SetPSConstants(d3d.GetDeviceContext(), XMFLOAT4(0.25f, 0.2f, 0.2f, 1.0f), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), 100.0f, XMFLOAT4(0.0f, 0.0f, 0.75f, 1.0f), (float)timer.sinceInit());
+
+
                 XMMATRIX worldFinal = XMMatrixRotationAxis(axis, angle) * world;
 
                 if (!shaders0.Render(d3d.GetDeviceContext(), mesh.getIndexCount(), worldFinal, view, projection, texture.GetTexture(), cameraPos))

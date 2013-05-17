@@ -87,7 +87,7 @@ SimpleMesh::SimpleMesh() : loaded(false), m_indexCount(0)
 {
 }
 
-SimpleMesh::SimpleMesh(wchar_t *objFN, ID3D11Device *device, TextureClass *t, TextureShaderClass *ts) : m_Texture(t), m_Shaders(ts)
+SimpleMesh::SimpleMesh(wchar_t *objFN, ID3D11Device *device, TextureClass *t, VanillaShaderClass *ts) : m_Texture(t), m_Shaders(ts)
 {
 	load(objFN, device);
 }
