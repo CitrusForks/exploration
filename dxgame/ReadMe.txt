@@ -59,9 +59,7 @@ StdAfx.h, StdAfx.cpp
     named dxgame.pch and a precompiled types file named StdAfx.obj.
 
 /////////////////////////////////////////////////////////////////////////////
-Other notes:
 
-AppWizard uses "TODO:" comments to indicate parts of the source code you
-should add to or customize.
 
-/////////////////////////////////////////////////////////////////////////////
+art notes:
+http://insurrectionx.deviantart.com/art/damask-wallpaper-85958835

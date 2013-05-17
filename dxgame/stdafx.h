@@ -31,6 +31,9 @@
 #include "WICTextureLoader.h"
 #include "vertex.h"
 #include "Chronometer.h"
+#include "Sound.h"
+#include "inputclass.h"
+#include "FirstPerson.h"
 
 
 #include <iostream>
@@ -43,4 +46,7 @@
 #include <fstream>
 #include <map>
 
-// TODO: reference additional headers your program requires here
+
+// external lib deps:
+#include <lua.hpp>
+#include <fmod.hpp>
