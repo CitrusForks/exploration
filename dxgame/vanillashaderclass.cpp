@@ -401,7 +401,7 @@ bool VanillaShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext,
 }
 
 // set light values and time
-bool VanillaShaderClass::SetPSConstants( ID3D11DeviceContext *deviceContext, XMFLOAT4 &ambientColor, XMFLOAT4 &diffuseColor, XMFLOAT3 &lightDirection, float specularPower, XMFLOAT4 &specularColor, float time)
+bool VanillaShaderClass::SetPSConstants( ID3D11DeviceContext *deviceContext, XMFLOAT4 &ambientColor, XMFLOAT4 &diffuseColor, XMFLOAT3 &lightDirection, float specularPower, XMFLOAT4 &specularColor, float time, FXMVECTOR cameraPos)
 {
     HRESULT result;
     D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -421,7 +421,8 @@ bool VanillaShaderClass::SetPSConstants( ID3D11DeviceContext *deviceContext, XMF
     dataPtr->specularPower = specularPower;
     dataPtr->specularColor = specularColor;
     dataPtr->time = time;
-    dataPtr->padding[0] = dataPtr->padding[1] = dataPtr->padding[2] = 0.0f;
+    //dataPtr->padding[0] = dataPtr->padding[1] = dataPtr->padding[2] = 0.0f;
+    XMStoreFloat3(&dataPtr->cameraPos, cameraPos);
 
 
 

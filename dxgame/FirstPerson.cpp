@@ -19,6 +19,7 @@ FirstPerson::~FirstPerson(void)
 }
 
 
+// move based on input
 void FirstPerson::perFrameUpdate(double timeElapsed, InputClass &input)
 {
     XMVECTOR forward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
@@ -61,11 +62,10 @@ void FirstPerson::perFrameUpdate(double timeElapsed, InputClass &input)
             XMLoadFloat4(&m_position) + XMVector3Rotate(forward, XMQuaternionRotationRollPitchYaw(0.0f, m_heading + (float)M_PI_2, 0.0f)) * (float)(movementSpeed * timeElapsed * sign) 
            );
     }
-
-
 }
 
 
+// matrix for worldspace->viewspace
 XMMATRIX FirstPerson::getViewMatrix()
 {
     XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
@@ -75,13 +75,13 @@ XMMATRIX FirstPerson::getViewMatrix()
     return XMMatrixLookToLH(XMLoadFloat4(&m_position) + height, XMVector3Rotate(forward, XMQuaternionRotationRollPitchYaw(m_pitch, m_heading, 0.0f)), up);
 }
 
-
+// just the position
 XMVECTOR FirstPerson::getPosition()
 {
     return XMLoadFloat4(&m_position);
 }
 
-
+// currently unused...
 void FirstPerson::setPosition(CXMVECTOR to)
 {
     XMStoreFloat4(&m_position, to);

@@ -177,7 +177,7 @@ int _tmain(int argc, _TCHAR* argv[])
                 d3d.BeginScene(0.0f, 0.0f, 0.0f, 0.0f);
                 mesh.setBuffers(d3d.GetDeviceContext());
                 
-                shaders0.SetPSConstants(d3d.GetDeviceContext(), XMFLOAT4(0.25f, 0.2f, 0.2f, 1.0f), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), 100.0f, XMFLOAT4(0.0f, 0.0f, 0.75f, 1.0f), (float)timer.sinceInit());
+                shaders0.SetPSConstants(d3d.GetDeviceContext(), XMFLOAT4(0.25f, 0.2f, 0.2f, 1.0f), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), 200.0f, XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f), (float)timer.sinceInit(), FPCamera.getPosition());
 
 
                 XMMATRIX worldFinal = /* XMMatrixRotationAxis(axis, angle) * */ world;

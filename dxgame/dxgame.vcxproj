@@ -81,8 +81,6 @@
     <None Include="light.ps" />
     <None Include="light.vs" />
     <None Include="ReadMe.txt" />
-    <None Include="texture.ps" />
-    <None Include="texture.vs" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Chronometer.h" />

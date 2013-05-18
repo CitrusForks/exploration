@@ -41,7 +41,7 @@ private:
         XMFLOAT3 lightDirection;
         float specularPower;
         float time;
-        float padding[3];
+        XMFLOAT3 cameraPos;
     };
 
 
@@ -53,7 +53,7 @@ public:
 	void Shutdown();
 	bool Render(ID3D11DeviceContext*, int indexCount, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix, ID3D11ShaderResourceView *texture, CXMVECTOR cameraPos);
 	bool InitializeShader(ID3D11Device*, HWND, wchar_t *vsFilename, char *vsFunctionName, wchar_t *psFilename, char *psFunctionName);
-        bool SetPSConstants(ID3D11DeviceContext *deviceContext, XMFLOAT4 &ambientColor, XMFLOAT4 &diffuseColor, XMFLOAT3 &lightDirection, float specularPower, XMFLOAT4 &specularColor, float time);
+        bool SetPSConstants(ID3D11DeviceContext *deviceContext, XMFLOAT4 &ambientColor, XMFLOAT4 &diffuseColor, XMFLOAT3 &lightDirection, float specularPower, XMFLOAT4 &specularColor, float time, FXMVECTOR cameraPos);
 
 private:
 	void ShutdownShader();

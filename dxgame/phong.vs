@@ -37,7 +37,7 @@ struct PixelInputType
 	float4 worldPos : WORLDPOS;
     float2 tex : TEXCOORD0;
 	float3 normal : NORMAL;
-	float3 viewDirection : VIEWDIR;
+	float3 viewDirection : TEXCOORD1;
 };
 
 
