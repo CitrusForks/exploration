@@ -87,15 +87,13 @@ SimpleMesh::SimpleMesh() : loaded(false), m_indexCount(0)
 {
 }
 
-SimpleMesh::SimpleMesh(wchar_t *objFN, ID3D11Device *device, TextureClass *t, VanillaShaderClass *ts) : m_Texture(t), m_Shaders(ts)
-{
-	load(objFN, device);
-}
 
 SimpleMesh::~SimpleMesh(void)
 {
 }
 
+
+// Set this mesh's buffers as the buffers to render
 void SimpleMesh::setBuffers(ID3D11DeviceContext *deviceContext)
 {
     // this is basically copied from the rastertek tutorial too

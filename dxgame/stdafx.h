@@ -27,13 +27,15 @@
 #include <xnamath.h>
 
 #include "d3dclass.h"
-#include "textureclass.h"
+#include "LoadedTexture.h"
 #include "WICTextureLoader.h"
 #include "vertex.h"
 #include "Chronometer.h"
 #include "Sound.h"
 #include "inputclass.h"
 #include "FirstPerson.h"
+#include "IntermediateRenderTarget.h"
+#include "Errors.h"
 
 
 #include <iostream>

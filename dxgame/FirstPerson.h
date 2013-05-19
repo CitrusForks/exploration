@@ -17,7 +17,7 @@ public:
     FirstPerson(void);
     ~FirstPerson(void);
 
-    void perFrameUpdate(double timeElapsed, InputClass &input);
+    void perFrameUpdate(double timeElapsed, Input &input);
     XMMATRIX getViewMatrix(); 
     XMVECTOR getPosition();
     void setPosition(CXMVECTOR to);

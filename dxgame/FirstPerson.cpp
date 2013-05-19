@@ -20,7 +20,7 @@ FirstPerson::~FirstPerson(void)
 
 
 // move based on input
-void FirstPerson::perFrameUpdate(double timeElapsed, InputClass &input)
+void FirstPerson::perFrameUpdate(double timeElapsed, Input &input)
 {
     XMVECTOR forward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
 

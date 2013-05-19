@@ -44,6 +44,8 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	float4 color;
     float4 specular;
 
+	//return input.tex.yxxy;
+
 	// Sample the pixel color from the texture using the sampler at this texture coordinate location.
 	textureColor = shaderTexture.Sample(SampleType, input.tex);
 
@@ -69,6 +71,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 
 		float3 viewDirection = normalize(cameraPos - input.worldPos.xyz);
 
+		//a graphical representation of the slight difference between the results of interpolating view direction and interpolating world position for recalculating view direction
 		//float3 r = 400 * abs(viewDirection - input.viewDirection);
 		//float3 r = abs(input.normal);
 		//float4 rr = {r.x, r.y, r.z, 1.0f};

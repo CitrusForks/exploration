@@ -27,12 +27,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Class name: InputClass
 ////////////////////////////////////////////////////////////////////////////////
-class InputClass
+class Input
 {
 public:
-	InputClass();
-	InputClass(const InputClass&);
-	~InputClass();
+	Input();
+	Input(const Input&);
+	~Input();
 
 	bool Initialize(HINSTANCE, HWND, int, int);
 	void Shutdown();

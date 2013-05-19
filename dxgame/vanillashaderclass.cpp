@@ -8,8 +8,6 @@
 
 #include <iostream>
 
-using namespace std; // TODO make this go away
-
 VanillaShaderClass::VanillaShaderClass()
 {
 	m_vertexShader = 0;
@@ -345,6 +343,10 @@ bool VanillaShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext,
     //D3DXMatrixTranspose(&viewMatrix, &viewMatrix);
     //D3DXMatrixTranspose(&projectionMatrix, &projectionMatrix);
 
+    deviceContext->VSSetShader(m_vertexShader, NULL, 0); // TODO change this to an "effect?" or are effects going out of style?
+    deviceContext->PSSetShader(m_pixelShader, NULL, 0);
+
+
     // Lock the constant buffer so it can be written to.
     result = deviceContext->Map(m_matrixBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
     if(FAILED(result))
@@ -407,6 +409,10 @@ bool VanillaShaderClass::SetPSConstants( ID3D11DeviceContext *deviceContext, XMF
     D3D11_MAPPED_SUBRESOURCE mappedResource;
     LightBufferType* dataPtr;
 
+    deviceContext->VSSetShader(m_vertexShader, NULL, 0); // TODO change this to an "effect?" or are effects going out of style?
+    deviceContext->PSSetShader(m_pixelShader, NULL, 0);
+
+
     result = deviceContext->Map(m_lightBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
     if (FAILED(result))
     {
@@ -446,7 +452,7 @@ void VanillaShaderClass::RenderShader(ID3D11DeviceContext* deviceContext, int in
 	// Set the sampler state in the pixel shader.
 	deviceContext->PSSetSamplers(0, 1, &m_sampleState);
 
-	// Render the triangle.
+	// Render the triangles
 	deviceContext->DrawIndexed(indexCount, 0, 0);
 
 	return;

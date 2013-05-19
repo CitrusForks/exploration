@@ -41,11 +41,11 @@ public:
 	
 	void Shutdown();
 	
-	void BeginScene(float, float, float, float);
+        void BeginScene(bool clear = true, float red = 0.0f, float green = 0.0f, float blue = 0.0f, float alpha = 0.0f);
 	void EndScene();
 
 	ID3D11Device* GetDevice();
-	ID3D11DeviceContext* GetDeviceContext();
+        ID3D11DeviceContext* GetDeviceContext();
 
 	void GetProjectionMatrix(D3DXMATRIX&);
 	void GetWorldMatrix(D3DXMATRIX&);
@@ -53,6 +53,11 @@ public:
 
 	void GetVideoCardInfo(char*, int&);
 
+        ID3D11DepthStencilView *GetDepthStencilView();
+        void setAsRenderTarget();
+
+        void depthOn();
+        void depthOff();
 private:
 	bool m_vsync_enabled;
 	int m_videoCardMemory;
@@ -63,6 +68,7 @@ private:
 	ID3D11RenderTargetView* m_renderTargetView;
 	ID3D11Texture2D* m_depthStencilBuffer;
 	ID3D11DepthStencilState* m_depthStencilState;
+        ID3D11DepthStencilState* m_depthStencilDisabledState;
 	ID3D11DepthStencilView* m_depthStencilView;
 	ID3D11RasterizerState* m_rasterState;
 	D3DXMATRIX m_projectionMatrix;

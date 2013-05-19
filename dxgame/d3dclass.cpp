@@ -139,6 +139,11 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 
 	// Now go through all the display modes and find the one that matches the screen width and height.
 	// When a match is found store the numerator and denominator of the refresh rate for that monitor.
+        for(i = 0; i < numModes; ++i)
+        {
+            std::cout << "Mode " << i << ": " << displayModeList[i].Width << "x" << displayModeList[i].Height << std::endl;
+        }
+
 	for(i=0; i<numModes; i++)
 	{
 		if(displayModeList[i].Width == (unsigned int)screenWidth)
@@ -147,6 +152,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 			{
 				numerator = displayModeList[i].RefreshRate.Numerator;
 				denominator = displayModeList[i].RefreshRate.Denominator;
+                                break;
 			}
 		}
 	}
@@ -159,7 +165,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	}
 
 	// Store the dedicated video card memory in megabytes.
-	m_videoCardMemory = (int)(adapterDesc.DedicatedVideoMemory / 1024 / 1024);
+	m_videoCardMemory = (int)(adapterDesc.DedicatedVideoMemory / (1024 * 1024));
 
 	// Release the display mode list.
 	delete [] displayModeList;
@@ -241,7 +247,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 
 	// Create the swap chain, Direct3D device, and Direct3D device context.
 	result = D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, 0, featureLevels, 3, 
-										   D3D11_SDK_VERSION, &swapChainDesc, &m_swapChain, &m_device, NULL, &m_deviceContext);
+						D3D11_SDK_VERSION, &swapChainDesc, &m_swapChain, &m_device, NULL, &m_deviceContext);
 	if(FAILED(result))
 	{
 		return false;
@@ -316,6 +322,10 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	depthStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
 	depthStencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS; // same as above
 
+        D3D11_DEPTH_STENCIL_DESC depthStencilDisabledDesc = depthStencilDesc;
+        depthStencilDisabledDesc.DepthEnable = false;
+        depthStencilDisabledDesc.StencilEnable = false;
+
 	// Create the depth stencil state.
 	result = m_device->CreateDepthStencilState(&depthStencilDesc, &m_depthStencilState);
 	if(FAILED(result))
@@ -325,6 +335,13 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 
 	// Set the depth stencil state.
 	m_deviceContext->OMSetDepthStencilState(m_depthStencilState, 1);
+
+        // Create the non-depth non-stencil state?
+        result = m_device->CreateDepthStencilState(&depthStencilDisabledDesc, &m_depthStencilDisabledState);
+        if(FAILED(result))
+        {
+            return false;
+        }
 
 	// Initialize the depth stencil view.
 	D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
@@ -457,10 +474,9 @@ void D3DClass::Shutdown()
 }
 
 
-void D3DClass::BeginScene(float red, float green, float blue, float alpha)
+void D3DClass::BeginScene( bool clear /*= true*/, float red /*= 0.0f*/, float green /*= 0.0f*/, float blue /*= 0.0f*/, float alpha /*= 0.0f*/ )
 {
 	float color[4];
-
 
 	// Setup the color to clear the buffer to.
 	color[0] = red;
@@ -469,9 +485,9 @@ void D3DClass::BeginScene(float red, float green, float blue, float alpha)
 	color[3] = alpha;
 
 	// Clear the back buffer.
-	m_deviceContext->ClearRenderTargetView(m_renderTargetView, color);
+	if (clear) m_deviceContext->ClearRenderTargetView(m_renderTargetView, color);
     
-	// Clear the depth buffer.
+	// Clear the depth buffer. (always for now)
 	m_deviceContext->ClearDepthStencilView(m_depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
 	return;
@@ -535,3 +551,33 @@ void D3DClass::GetVideoCardInfo(char* cardName, int& memory)
 	memory = m_videoCardMemory;
 	return;
 }
+
+
+// we need this to pass on to IntermediateRenderTarget
+ID3D11DepthStencilView * D3DClass::GetDepthStencilView()
+{
+    return m_depthStencilView;
+}
+
+
+void D3DClass::setAsRenderTarget()
+{
+    // Bind the render target view and depth stencil buffer to the output render pipeline.
+    m_deviceContext->OMSetRenderTargets(1, &m_renderTargetView, m_depthStencilView);
+}
+
+
+// turn on depth and stencil checks by setting the appropriate state
+void D3DClass::depthOn()
+{
+    m_deviceContext->OMSetDepthStencilState(m_depthStencilState, 0);
+}
+
+
+// turn off depth and stencil checks
+void D3DClass::depthOff()
+{
+    m_deviceContext->OMSetDepthStencilState(m_depthStencilDisabledState, 0);
+}
+
+

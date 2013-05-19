@@ -100,11 +100,12 @@ bool loadOBJ(const wchar_t * path,
 
         // pack into DirectX-friendly Vertex structure
         Vertex v;
-        v.pos = vertex;
+        v.pos = vertex; 
         v.tex0 = uv;
+        v.tex1.x = v.tex1.y = 0;
         v.normal = normal;
         
-        // Put the attributes in buffers
+        // Put the attributes in buffer
         out_vertices.push_back(v);
     }
 

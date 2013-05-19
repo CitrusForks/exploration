@@ -7,12 +7,13 @@
 
 #include <string.h> // for memcmp
 
-#if 0
+
 // Returns true iif v1 can be considered equal to v2
 bool is_near(float v1, float v2){
     return fabs( v1-v2 ) < 0.01f;
 }
 
+#if 0
 // Searches through all already-exported vertices
 // for a similar one.
 // Similar = same position + same UVs + same normal
@@ -80,7 +81,8 @@ bool getSimilarVertexIndex_fast(
     Vertex & packed, 
     std::map<Vertex,unsigned int> & VertexToOutIndex,
     unsigned int & result
-){
+    )
+{
     auto it = VertexToOutIndex.find(packed);
     if ( it == VertexToOutIndex.end() ){
         return false;
@@ -90,10 +92,14 @@ bool getSimilarVertexIndex_fast(
     }
 }
 
+
+// the utility of this function is in doubt
+// at the very least, its results should be cached since it can be slow
 void indexVBO(
     std::vector<Vertex> & in_vertices,
     std::vector<unsigned int> & out_indices,
-    std::vector<Vertex> & out_vertices)
+    std::vector<Vertex> & out_vertices
+    )
 {
     std::map<Vertex,unsigned int> VertexToOutIndex;
 

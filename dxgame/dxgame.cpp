@@ -18,7 +18,7 @@
 
 #include "d3dclass.h"
 #include "vanillashaderclass.h"
-#include "textureclass.h"
+#include "LoadedTexture.h"
 #include "SimpleMesh.h"
 #include "Sound.h"
 #include "inputclass.h"
@@ -116,9 +116,40 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	d3d.Initialize(width, height, true, window, false, 32, 1.0f);
 
+        IntermediateRenderTarget offScreen(d3d.GetDevice(), d3d.GetDeviceContext(), width, height);
+        if (!offScreen.getResourceView())
+        {
+            return 1;
+        }
+
+        D3DX10_FONT_DESCW FontDesc = {24,
+            0,
+            400,
+            0,
+            false,
+            DEFAULT_CHARSET,
+            OUT_TT_PRECIS,
+            CLIP_DEFAULT_PRECIS,
+            DEFAULT_PITCH,
+            L"Arial"};
+
+        RECT FontPosition;
+        FontPosition.top = 0;
+        FontPosition.left = 0;
+        FontPosition.right = width;
+        FontPosition.bottom = height;
+
+        LPD3DX10FONT font;
+
+        if (FAILED(D3DX10CreateFontIndirectW(d3d.GetDevice(), &FontDesc, &font)))
+        {
+            Errors::Cry("Couldn't create font object :|");
+        }
+
+
         Sound soundSystem;
 
-        InputClass input; input.Initialize(progInstance, window, width, height);
+        Input input; input.Initialize(progInstance, window, width, height);
 
         FirstPerson FPCamera;
 
@@ -130,18 +161,32 @@ int _tmain(int argc, _TCHAR* argv[])
             return 1;
         }
 
+        VanillaShaderClass postProcess;
+        if (!postProcess.InitializeShader(d3d.GetDevice(), window, L"postprocess.vs", "PostProcVShader", L"postprocess.ps", "PostProcPixelShader"))
+        {
+            return 1;
+        }
+
         SimpleMesh mesh;
         if (!mesh.load(L"duck.obj", d3d.GetDevice()))
         {
             return 1;
         }
 
-        TextureClass texture;
+        SimpleMesh square;
+        if (!square.load(L"square.obj", d3d.GetDevice()))
+        {
+            return 1;
+        }
+
+        LoadedTexture texture;
         texture.Initialize(d3d.GetDevice(), d3d.GetDeviceContext(), L"duck_texture.png");
         
         XMMATRIX world = XMMatrixTranslation(0.0f, 0.0f, 7.0f);
 
-        XMMATRIX projection = XMMatrixPerspectiveFovLH((float)((60.0/360.0) * M_PI * 2), (float)width / (float)height, 1.0f, 1000.0f);
+        XMMATRIX projection = XMMatrixPerspectiveFovLH((float)((60.0/360.0) * M_PI * 2), (float)width / (float)height, 0.9f, 1000.0f);
+
+        XMMATRIX ortho = XMMatrixOrthographicOffCenterLH(0.0f, 1.0f, 0.0f, 1.0f, 0.1f, 1.1f);
 
 	MSG msg;
 	ZeroMemory(&msg, sizeof(MSG)); // clear message structure
@@ -174,25 +219,45 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 
                 //d3d.BeginScene(0.0f, sinf(angle), sinf(angle+3.141592653589f), 0.0f);
-                d3d.BeginScene(0.0f, 0.0f, 0.0f, 0.0f);
-                mesh.setBuffers(d3d.GetDeviceContext());
-                
+                d3d.BeginScene(false); // don't clear back buffer; we're just going to overwrite it completely from the off-screen buffer
+                              
+                // populate pixel shader constant buffer
+                // note to self, the buffer is actually kinda global; switching shaders does not switch constant buffers
                 shaders0.SetPSConstants(d3d.GetDeviceContext(), XMFLOAT4(0.25f, 0.2f, 0.2f, 1.0f), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), 200.0f, XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f), (float)timer.sinceInit(), FPCamera.getPosition());
-
 
                 XMMATRIX worldFinal = /* XMMatrixRotationAxis(axis, angle) * */ world;
 
                 XMMATRIX view = FPCamera.getViewMatrix();
 
+                offScreen.setAsRenderTarget(d3d.GetDeviceContext(), d3d.GetDepthStencilView()); // set the off-screen texture as the render target
+                offScreen.clear(d3d.GetDeviceContext());
+
+                // prepare to render a mesh:
+                mesh.setBuffers(d3d.GetDeviceContext());
+                // and actually render it, via specific shaders:
                 if (!shaders0.Render(d3d.GetDeviceContext(), mesh.getIndexCount(), worldFinal, view, projection, texture.GetTexture(), FPCamera.getPosition()))
                 {
-                    std::cout << "Render error!";
+                    Errors::Cry(L"Render error in scene. :|");
                     break;
                 }
+
+                d3d.setAsRenderTarget(); // set a swap chain buffer as render target again
+                
+                d3d.depthOff(); // disable depth test
+
+                square.setBuffers(d3d.GetDeviceContext()); // use the two triangles to render off-screen texture to swap chain, through a shader
+                if (!postProcess.Render(d3d.GetDeviceContext(), square.getIndexCount(), XMMatrixIdentity(), XMMatrixIdentity(), ortho, offScreen.getResourceView(), XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f)))
+                {
+                    Errors::Cry(L"Error rendering off-screen texture to display. :/");
+                    break;
+                }
+
+                d3d.depthOn(); // enable depth test again for normal drawing
+
                 d3d.EndScene();
 
 
-		Sleep(4); // don't cook the CPU yet
+		//Sleep(10); // don't cook the CPU yet
                 angle += (float)(M_PI) * (float)timer.sincePrev();
 
 
@@ -210,6 +275,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 
 	shaders0.Shutdown();
+        postProcess.Shutdown();
 
 	d3d.Shutdown();
 
