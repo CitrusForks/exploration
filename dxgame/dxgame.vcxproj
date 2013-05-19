@@ -94,6 +94,7 @@
     <ClInclude Include="objloader.hpp" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SimpleMesh.h" />
+    <ClInclude Include="SimpleText.h" />
     <ClInclude Include="Sound.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -113,6 +114,7 @@
     <ClCompile Include="IntermediateRenderTarget.cpp" />
     <ClCompile Include="objloader.cpp" />
     <ClCompile Include="SimpleMesh.cpp" />
+    <ClCompile Include="SimpleText.cpp" />
     <ClCompile Include="Sound.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

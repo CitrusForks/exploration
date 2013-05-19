@@ -15,6 +15,7 @@
 #include <math.h>
 
 #include <lua.hpp>
+#include <FW1FontWrapper.h>
 
 #include "d3dclass.h"
 #include "vanillashaderclass.h"
@@ -23,12 +24,15 @@
 #include "Sound.h"
 #include "inputclass.h"
 #include "FirstPerson.h"
+#include "SimpleText.h"
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "d3dx11.lib")
 #pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "lua52.lib")
 
+// extra dependencies:
+#pragma comment(lib, "lua52.lib")
+#pragma comment(lib, "FW1FontWrapper.lib")
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
 {
@@ -54,6 +58,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
 	return 0;
 }
 
+
 void reportError(const char *prefix)
 {
 	int error = GetLastError();
@@ -61,8 +66,6 @@ void reportError(const char *prefix)
 	FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, error, 0, errorStr, 255, nullptr);
 	std::cout << prefix << errorStr << std::endl;
 }
-
-
 
 
 int _tmain(int argc, _TCHAR* argv[])
@@ -122,30 +125,7 @@ int _tmain(int argc, _TCHAR* argv[])
             return 1;
         }
 
-        D3DX10_FONT_DESCW FontDesc = {24,
-            0,
-            400,
-            0,
-            false,
-            DEFAULT_CHARSET,
-            OUT_TT_PRECIS,
-            CLIP_DEFAULT_PRECIS,
-            DEFAULT_PITCH,
-            L"Arial"};
-
-        RECT FontPosition;
-        FontPosition.top = 0;
-        FontPosition.left = 0;
-        FontPosition.right = width;
-        FontPosition.bottom = height;
-
-        LPD3DX10FONT font;
-
-        if (FAILED(D3DX10CreateFontIndirectW(d3d.GetDevice(), &FontDesc, &font)))
-        {
-            Errors::Cry("Couldn't create font object :|");
-        }
-
+        SimpleText text(d3d.GetDevice(), L"Arial");
 
         Sound soundSystem;
 
@@ -251,6 +231,8 @@ int _tmain(int argc, _TCHAR* argv[])
                     Errors::Cry(L"Error rendering off-screen texture to display. :/");
                     break;
                 }
+
+                text.write(d3d.GetDeviceContext(), L"Hello?", 0, 0);
 
                 d3d.depthOn(); // enable depth test again for normal drawing
 

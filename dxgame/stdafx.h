@@ -36,6 +36,7 @@
 #include "FirstPerson.h"
 #include "IntermediateRenderTarget.h"
 #include "Errors.h"
+#include "SimpleText.h"
 
 
 #include <iostream>
