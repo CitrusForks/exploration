@@ -61,7 +61,7 @@ void SimpleText::write( ID3D11DeviceContext *devCtx, wchar_t *message, float x, 
         x,// X position
         y,// Y position
         m_color,// Text color, 0xAaBbGgRr
-        0// Flags (for example FW1_RESTORESTATE to keep context states unchanged)
+        FW1_RESTORESTATE// Flags (for example FW1_RESTORESTATE to keep context states unchanged)
         );
 
 }

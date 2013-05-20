@@ -125,7 +125,7 @@ int _tmain(int argc, _TCHAR* argv[])
             return 1;
         }
 
-        SimpleText text(d3d.GetDevice(), L"Arial");
+        SimpleText text(d3d.GetDevice(), L"DejaVu Serif");
 
         Sound soundSystem;
 
