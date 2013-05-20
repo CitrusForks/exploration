@@ -153,6 +153,12 @@ int _tmain(int argc, _TCHAR* argv[])
             return 1;
         }
 
+        SimpleMesh spider;
+        if (!spider.load(L"spider.obj", d3d.GetDevice()))
+        {
+            return 1;
+        }
+
         SimpleMesh square;
         if (!square.load(L"square.obj", d3d.GetDevice()))
         {
@@ -161,6 +167,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
         LoadedTexture texture;
         texture.Initialize(d3d.GetDevice(), d3d.GetDeviceContext(), L"duck_texture.png");
+
+        LoadedTexture spiderTex;
+        spiderTex.Initialize(d3d.GetDevice(), d3d.GetDeviceContext(), L"spiderTex.jpg");
         
         XMMATRIX world = XMMatrixTranslation(0.0f, 0.0f, 7.0f);
 
@@ -220,6 +229,11 @@ int _tmain(int argc, _TCHAR* argv[])
                     Errors::Cry(L"Render error in scene. :|");
                     break;
                 }
+
+                spider.setBuffers(d3d.GetDeviceContext());
+                shaders0.Render(d3d.GetDeviceContext(), spider.getIndexCount(), XMMatrixScaling(0.05f, 0.05f, 0.05f) * worldFinal * XMMatrixTranslation(-1.0f, 2.0f, 6.0f), view, projection, spiderTex.GetTexture(), FPCamera.getPosition());
+
+                // done rendering scene
 
                 d3d.setAsRenderTarget(); // set a swap chain buffer as render target again
                 
