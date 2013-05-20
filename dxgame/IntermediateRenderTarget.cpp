@@ -75,3 +75,14 @@ void IntermediateRenderTarget::clear(ID3D11DeviceContext *devCtx)
     float const blank[4] = {0.0f, 0.0f, 0.0f, 0.0f};
     devCtx->ClearRenderTargetView(m_targetView, blank);
 }
+
+void IntermediateRenderTarget::Shutdown()
+{
+    m_targetView->Release();
+    m_resourceView->Release();
+    m_texture->Release();
+
+    m_targetView = nullptr;
+    m_resourceView = nullptr;
+    m_texture = nullptr;
+}

@@ -13,9 +13,18 @@ private:
 public:
     IntermediateRenderTarget(ID3D11Device *dev, ID3D11DeviceContext *devCtx, int width, int height);
     ~IntermediateRenderTarget(void);
+
+    // should be clear; this sets m_targetView as the current render target
     void setAsRenderTarget(ID3D11DeviceContext *devCtx, ID3D11DepthStencilView *realDepthBuffer);
+
+    // returns m_resourceView for use as a texture source
     ID3D11ShaderResourceView *getResourceView();
+
+    // clear the buffer with 0x00000000
     void clear(ID3D11DeviceContext *devCtx);
+
+    // release the texture
+    void Shutdown();
 };
 
 #endif

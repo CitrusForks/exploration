@@ -259,6 +259,12 @@ int _tmain(int argc, _TCHAR* argv[])
 	shaders0.Shutdown();
         postProcess.Shutdown();
 
+        texture.Shutdown();
+        offScreen.Shutdown();
+
+        text.Release();
+        text.ReleaseFactory();
+
 	d3d.Shutdown();
 
 	DestroyWindow(window);
