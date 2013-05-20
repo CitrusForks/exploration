@@ -270,14 +270,19 @@ int _tmain(int argc, _TCHAR* argv[])
                 if (input.IsPressed(DIK_LALT) && input.IsPressed(DIK_F4)) done = true; // be nice
 	}
 
+        // need some kind of container to take care of all this cleanup...
 	shaders0.Shutdown();
         postProcess.Shutdown();
 
         texture.Shutdown();
+        spiderTex.Shutdown();
         offScreen.Shutdown();
 
         text.Release();
         text.ReleaseFactory();
+
+        mesh.Release();
+        spider.Release();
 
 	d3d.Shutdown();
 

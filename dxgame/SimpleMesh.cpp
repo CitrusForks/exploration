@@ -117,3 +117,10 @@ void SimpleMesh::setBuffers(ID3D11DeviceContext *deviceContext)
     return;
 }
 
+// release resources? meh?
+void SimpleMesh::Release()
+{
+    m_indexBuffer->Release();
+    m_vertexBuffer->Release();
+}
+
