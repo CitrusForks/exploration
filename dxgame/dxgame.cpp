@@ -17,6 +17,7 @@
 #include <lua.hpp>
 #include <FW1FontWrapper.h>
 
+
 #include "d3dclass.h"
 #include "vanillashaderclass.h"
 #include "LoadedTexture.h"
@@ -33,6 +34,8 @@
 // extra dependencies:
 #pragma comment(lib, "lua52.lib")
 #pragma comment(lib, "FW1FontWrapper.lib")
+#pragma comment(lib, "assimp.lib")
+
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
 {

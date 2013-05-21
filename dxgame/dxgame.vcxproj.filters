@@ -87,6 +87,9 @@
     <ClInclude Include="SimpleText.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ComplexMesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -135,6 +138,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SimpleText.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ComplexMesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

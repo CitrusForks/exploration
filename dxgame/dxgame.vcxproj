@@ -86,6 +86,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Chronometer.h" />
+    <ClInclude Include="ComplexMesh.h" />
     <ClInclude Include="d3dclass.h" />
     <ClInclude Include="Errors.h" />
     <ClInclude Include="FirstPerson.h" />
@@ -106,6 +107,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Chronometer.cpp" />
+    <ClCompile Include="ComplexMesh.cpp" />
     <ClCompile Include="d3dclass.cpp" />
     <ClCompile Include="dxgame.cpp" />
     <ClCompile Include="Errors.cpp" />

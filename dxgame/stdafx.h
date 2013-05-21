@@ -12,12 +12,23 @@
 #include <stdio.h>
 #include <string.h>
 #include <tchar.h>
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 #include <dxgi.h>
 #include <d3d11.h>
+
+// external lib deps:
+#include <lua.hpp>
+#include <fmod.hpp>
+
+#include <assimp/types.h>
+#include <assimp/cimport.h>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 // mm, obsolete D3DX11 library stuff...
 #include <d3dx10math.h>
@@ -49,7 +60,3 @@
 #include <fstream>
 #include <map>
 
-
-// external lib deps:
-#include <lua.hpp>
-#include <fmod.hpp>

@@ -27,7 +27,6 @@ public:
 
 
     SimpleMesh();
-    SimpleMesh(wchar_t *objFileName, ID3D11Device* device, LoadedTexture *t = nullptr, VanillaShaderClass *ts = nullptr);
     ~SimpleMesh(void);
 };
 
