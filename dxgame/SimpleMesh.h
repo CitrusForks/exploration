@@ -14,7 +14,6 @@ private:
     bool loaded;
     ID3D11Buffer *m_vertexBuffer, *m_indexBuffer;
     LoadedTexture *m_Texture;
-    //VanillaShaderClass *m_Shaders;
     unsigned int m_indexCount;
 
 

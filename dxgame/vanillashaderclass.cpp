@@ -46,7 +46,7 @@ bool VanillaShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCou
 
 
 	// Set the shader parameters that it will use for rendering.
-	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, texture, cameraPos);
+	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, cameraPos, texture, 1);
 	if(!result)
 	{
 		return false;
@@ -59,11 +59,10 @@ bool VanillaShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCou
 }
 
 
-bool VanillaShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, wchar_t *vsFilename, char *vsFunctionName, wchar_t *psFilename, char *psFunctionName)
+bool VanillaShaderClass::InitializeShader( ID3D11Device *device, HWND hwnd, wchar_t *vsFilename, char *vsFunctionName, wchar_t *psFilename, char *psFunctionName, bool multiStreaming /*= false*/ )
 {
     HRESULT result;
     ID3D10Blob* errorMessage = 0;
-
 
     ID3D10Blob* vertexShaderBuffer = nullptr;
 
@@ -137,24 +136,32 @@ bool VanillaShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, wchar
     polygonLayout[1].SemanticName = "NORMAL";
     polygonLayout[1].SemanticIndex = 0;
     polygonLayout[1].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-    polygonLayout[1].InputSlot = 0;
-    polygonLayout[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+    polygonLayout[1].InputSlot = multiStreaming ? 1 : 0;
+    polygonLayout[1].AlignedByteOffset = multiStreaming ? 0 : D3D11_APPEND_ALIGNED_ELEMENT;
     polygonLayout[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
     polygonLayout[1].InstanceDataStepRate = 0;
 
     polygonLayout[2].SemanticName = "TEXCOORD";
     polygonLayout[2].SemanticIndex = 0;
     polygonLayout[2].Format = DXGI_FORMAT_R32G32_FLOAT;
-    polygonLayout[2].InputSlot = 0;
-    polygonLayout[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+    polygonLayout[2].InputSlot = multiStreaming ? 2 : 0;
+    polygonLayout[2].AlignedByteOffset = multiStreaming ? 0 : D3D11_APPEND_ALIGNED_ELEMENT;
     polygonLayout[2].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
     polygonLayout[2].InstanceDataStepRate = 0;
 
     polygonLayout[3].SemanticName = "TEXCOORD";
     polygonLayout[3].SemanticIndex = 1;
     polygonLayout[3].Format = DXGI_FORMAT_R32G32_FLOAT;
-    polygonLayout[3].InputSlot = 0;
-    polygonLayout[3].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+    polygonLayout[3].InputSlot = multiStreaming ? 3 : 0;
+    polygonLayout[3].AlignedByteOffset = multiStreaming ? 0 : D3D11_APPEND_ALIGNED_ELEMENT;
+    polygonLayout[3].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+    polygonLayout[3].InstanceDataStepRate = 0;
+
+    polygonLayout[3].SemanticName = "TEXINDEX";
+    polygonLayout[3].SemanticIndex = 0;
+    polygonLayout[3].Format = DXGI_FORMAT_R8_UINT;
+    polygonLayout[3].InputSlot = multiStreaming ? 4 : 0;
+    polygonLayout[3].AlignedByteOffset = multiStreaming ? 0 : D3D11_APPEND_ALIGNED_ELEMENT;
     polygonLayout[3].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
     polygonLayout[3].InstanceDataStepRate = 0;
 
@@ -328,7 +335,7 @@ void VanillaShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND
 
 
 bool VanillaShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, 
-											 CXMMATRIX projectionMatrix, ID3D11ShaderResourceView* texture, CXMVECTOR cameraPos)
+											 CXMMATRIX projectionMatrix, CXMVECTOR cameraPos, ID3D11ShaderResourceView* texture, unsigned numViews)
 {
     HRESULT result;
     D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -397,7 +404,7 @@ bool VanillaShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext,
 
 
     // Set shader texture resource in the pixel shader.
-    deviceContext->PSSetShaderResources(0, 1, &texture);
+    deviceContext->PSSetShaderResources(0, numViews, &texture);
 
     return true;
 }

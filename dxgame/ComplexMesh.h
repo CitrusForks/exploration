@@ -22,6 +22,8 @@ private:
     void get_bounding_box_for_node (const aiNode* nd, aiVector3D* min, aiVector3D* max, aiMatrix4x4* trafo);
     void get_bounding_box (aiVector3D* min, aiVector3D* max);
 
+    void recursive_render (ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, const struct aiScene *sc, const struct aiNode *nd);
+
 public:
     void setBuffers(ID3D11DeviceContext *deviceContext);
     bool load(char *modelFileName, ID3D11Device* device, Assimp::Importer &importer);

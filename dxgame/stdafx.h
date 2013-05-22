@@ -49,6 +49,7 @@
 #include "Errors.h"
 #include "SimpleText.h"
 
+#include "vanillashaderclass.h"
 
 #include <iostream>
 #include <string>

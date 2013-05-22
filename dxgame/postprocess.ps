@@ -49,7 +49,7 @@ float4 PostProcPixelShader(PixelInputType input) : SV_TARGET
 	baseOffset = input.tex - Half;
 	float2 tex = input.tex - baseOffset * 0.05; // zoom in a little to have some extra source image "off-screen"
 
-#if 1
+#if 0
 	// wavy ghost image effect
 	ghostImageOffset = baseOffset * 0.01;
 	ghostImageOffset.x += 0.01 * cos(ghostImageOffset.x * 1000 + time*7);
@@ -63,7 +63,7 @@ float4 PostProcPixelShader(PixelInputType input) : SV_TARGET
 	textureColor /= 2;
 #endif
 
-#if 0
+#if 1
     // crude edge detection!
 	float4 textureColor = shaderTexture.Sample(SampleType, tex);
 	tex.x += 0.001;

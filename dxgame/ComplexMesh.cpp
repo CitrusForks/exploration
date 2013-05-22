@@ -19,9 +19,9 @@ ComplexMesh::~ComplexMesh(void)
 }
 
 
-bool ComplexMesh::load(char *modelFileName, ID3D11Device* device)
+bool ComplexMesh::load(char *modelFileName, ID3D11Device* device, Assimp::Importer &importer)
 {
-    m_aiScene = aiImportFile(modelFileName, aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_MakeLeftHanded);
+    m_aiScene = importer.ReadFile(modelFileName, aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_MakeLeftHanded);
 
     return m_aiScene != nullptr;
 }
@@ -63,7 +63,8 @@ void ComplexMesh::get_bounding_box_for_node (const aiNode* nd,
 	*trafo = prev;
 }
 
-
+// gets a bounding box... could be useful perhaps?
+// don't call it repeatedly; cache the results
 void ComplexMesh::get_bounding_box (aiVector3D* min, aiVector3D* max)
 {
 	aiMatrix4x4 trafo;
@@ -72,4 +73,93 @@ void ComplexMesh::get_bounding_box (aiVector3D* min, aiVector3D* max)
 	min->x = min->y = min->z =  1e10f;
 	max->x = max->y = max->z = -1e10f;
 	get_bounding_box_for_node(m_aiScene->mRootNode,min,max,&trafo);
+}
+
+
+void ComplexMesh::recursive_render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, const struct aiScene *sc, const struct aiNode *nd )
+{
+    unsigned int i;
+    unsigned int n = 0, t;
+    aiMatrix4x4 m = nd->mTransformation;
+
+    // update transform
+    // TODO XXX
+#if 0
+    aiTransposeMatrix4(&m);
+    glPushMatrix();
+    glMultMatrixf((float*)&m);
+#endif
+
+    // draw all meshes assigned to this node
+    for (; n < nd->mNumMeshes; ++n) {
+        const aiMesh* mesh = m_aiScene->mMeshes[nd->mMeshes[n]];
+
+        //apply_material(sc->mMaterials[mesh->mMaterialIndex]);
+
+#if 0
+        if(mesh->mNormals == NULL) {
+            glDisable(GL_LIGHTING);
+        } else {
+            glEnable(GL_LIGHTING);
+        }
+#endif
+        for (t = 0; t < mesh->mNumFaces; ++t) {
+            const struct aiFace* face = &mesh->mFaces[t];
+#if 0
+
+            GLenum face_mode;
+
+            switch(face->mNumIndices) {
+            case 1: face_mode = GL_POINTS; break;
+            case 2: face_mode = GL_LINES; break;
+            case 3: face_mode = GL_TRIANGLES; break;
+            default: face_mode = GL_POLYGON; break;
+            }
+
+            glBegin(face_mode);
+
+#endif
+            if (face->mNumIndices != 3) continue; // we're only drawing triangles. 
+            // The load flags are set for triangulating complex polygons. Points and lines are of dubious utility for this game engine.
+
+#if 0
+            for(i = 0; i < face->mNumIndices; i++) {
+                int index = face->mIndices[i];
+                if(mesh->mColors[0] != NULL)
+                    glColor4fv((GLfloat*)&mesh->mColors[0][index]);
+                if(mesh->mNormals != NULL) 
+                    glNormal3fv(&mesh->mNormals[index].x);
+                glVertex3fv(&mesh->mVertices[index].x);
+            }
+
+            glEnd();
+#endif
+     
+            //mesh->mColors;
+
+            // four buffers, 
+            unsigned int stride[4] = { sizeof(aiVector3D), sizeof(aiVector3D), sizeof(aiVector3D), sizeof(aiVector3D) }; // position, normal, uv0, uv1 (just reserving a spot for now)
+            unsigned int offset[4] = {0, 0, 0, 0};
+
+            // Set the vertex buffer to active in the input assembler so it can be rendered.
+            deviceContext->IASetVertexBuffers(0, 1, &m_vertexBuffer, stride, offset);
+
+            // Set the index buffer to active in the input assembler so it can be rendered.
+            deviceContext->IASetIndexBuffer(m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+            // Set the type of primitive that should be rendered from this vertex buffer, in this case triangles.
+            deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+
+
+        }
+
+    }
+
+    // draw all children
+    for (n = 0; n < nd->mNumChildren; ++n) {
+        recursive_render(deviceContext, shader, sc, nd->mChildren[n]);
+    }
+
+    //glPopMatrix();
 }
