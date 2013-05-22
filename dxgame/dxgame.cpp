@@ -16,7 +16,7 @@
 
 #include <lua.hpp>
 #include <FW1FontWrapper.h>
-
+#include <assimp/Importer.hpp>
 
 #include "d3dclass.h"
 #include "vanillashaderclass.h"
@@ -128,7 +128,7 @@ int _tmain(int argc, _TCHAR* argv[])
             return 1;
         }
 
-        SimpleText text(d3d.GetDevice(), L"DejaVu Serif");
+        SimpleText text(d3d.GetDevice(), L"Special Elite");
 
         Sound soundSystem;
 
@@ -137,6 +137,8 @@ int _tmain(int argc, _TCHAR* argv[])
         FirstPerson FPCamera;
 
         int beepverb = soundSystem.loadSound("data/beepverb.wav");
+
+        Assimp::Importer modelImporter; // this object will own the memory allocated for the models it loads; when it's destroyed, memory is automatically deallocated
 
 	VanillaShaderClass shaders0;
 	if (!shaders0.InitializeShader(d3d.GetDevice(), window, L"light.vs", "LightVertexShader",  L"light.ps", "LightPixelShader"))
