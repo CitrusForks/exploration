@@ -22,7 +22,8 @@
 #include "vanillashaderclass.h"
 #include "LoadedTexture.h"
 #include "SimpleMesh.h"
-#include "ComplexMesh.h"
+//#include "ComplexMesh.h"
+#include "CompoundMesh.h"
 #include "Sound.h"
 #include "inputclass.h"
 #include "FirstPerson.h"
@@ -156,13 +157,13 @@ int _tmain(int argc, _TCHAR* argv[])
 
         int beepverb = soundSystem.loadSound("beepverb.wav");
 
-        ComplexMesh mesh;
+        CompoundMesh mesh;
         if (!mesh.load(d3d.GetDevice(), d3d.GetDeviceContext(), /* "duck.obj" */ "Chekov.obj"))
         {
             return 1;
         }
 
-        ComplexMesh spider;
+        CompoundMesh spider;
         if (!spider.load(d3d.GetDevice(), d3d.GetDeviceContext(), "spider.obj"))
         {
             return 1;
@@ -184,6 +185,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	ZeroMemory(&msg, sizeof(MSG)); // clear message structure
 	
         XMVECTOR axis = XMVectorSet(0.7071067811865475f, 0.7071067811865475f, 0.0f, 0.0f); // normalized 45 degree angle vector
+
+        XMFLOAT3 lightDirection(0.0f, -1.0f, 0.0f);
 
         float angle = 0.0f;
 	bool done = false;
@@ -224,31 +227,17 @@ int _tmain(int argc, _TCHAR* argv[])
                 offScreen.setAsRenderTarget(d3d.GetDeviceContext(), d3d.GetDepthStencilView()); // set the off-screen texture as the render target
                 offScreen.clear(d3d.GetDeviceContext());
 
-                // prepare to render a mesh:
-                mesh.setBuffers(d3d.GetDeviceContext());
-                // and actually render it, via specific shaders:
-                if (!shaders0.Render(d3d.GetDeviceContext(), 
-                                    mesh.getIndexCount(), 
-                                    XMMatrixScaling(0.55f, 0.55f, 0.55f) * worldFinal, 
-                                    view, 
-                                    projection, 
-                                    FPCamera.getPosition(), 
-                                    mesh.getShaderResourceViews(), 
-                                    mesh.getShaderResourceViewCount()))
+                if (!mesh.Render(d3d.GetDeviceContext(), &shaders0, lightDirection, (float)timer.sinceInit(), FPCamera.getPosition(), XMMatrixScaling(0.56f, 0.56f, 0.56f) * worldFinal, view, projection))
                 {
                     Errors::Cry(L"Render error in scene. :|");
                     break;
                 }
 
-                spider.setBuffers(d3d.GetDeviceContext());
-                shaders0.Render(d3d.GetDeviceContext(), 
-                                spider.getIndexCount(), 
-                                XMMatrixScaling(0.05f, 0.05f, 0.05f) * worldFinal * XMMatrixTranslation(-1.0f, 2.0f, 6.0f), 
-                                view, 
-                                projection, 
-                                FPCamera.getPosition(),
-                                spider.getShaderResourceViews(),
-                                spider.getShaderResourceViewCount());
+                if (!spider.Render(d3d.GetDeviceContext(), &shaders0, lightDirection, (float)timer.sinceInit(), FPCamera.getPosition(), XMMatrixScaling(0.05f, 0.05f, 0.05f) * worldFinal * XMMatrixTranslation(-1.0f, 2.0f, 6.0f), view, projection))
+                {
+                    Errors::Cry(L"Render error in scene. :|");
+                    break;
+                }
 
                 // done rendering scene
 

@@ -7,18 +7,20 @@
 
 #include "targetver.h"
 
-#include <iostream>
-#include <string>
-#include <locale>
+#include <algorithm>
 #include <codecvt>
-#include <iomanip>
-#include <memory>
-#include <vector>
-#include <fstream>
-#include <map>
 #include <cstring>
+#include <fstream>
+#include <functional>
+#include <iomanip>
+#include <iostream>
+#include <locale>
+#include <map>
+#include <memory>
+#include <string>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include <stdio.h>
 #include <string.h>
@@ -60,6 +62,9 @@
 #include "IntermediateRenderTarget.h"
 #include "Errors.h"
 #include "SimpleText.h"
+#include "CompoundMesh.h"
+#include "ComplexMesh.h"
+#include "SimpleMesh.h"
 
 #include "vanillashaderclass.h"
 

@@ -1,14 +1,10 @@
 // Filename: light.ps
 
-
-/////////////
-// GLOBALS //
-/////////////
+// globals:
 Texture2D shaderTexture[15] : register(t0);
 SamplerState SampleType;
 
-
-
+// this buffer needs to be split up into separate lights and material buffers:
 cbuffer LightBuffer
 {
 	float4 ambientColor;
@@ -19,11 +15,8 @@ cbuffer LightBuffer
 	float time;            // this isn't strictly light but it's useful for goofy effects
 	float3 cameraPos;
 };
+// end of globals
 
-
-//////////////
-// TYPEDEFS //
-//////////////
 struct PixelInputType
 {
     float4 position : SV_POSITION;

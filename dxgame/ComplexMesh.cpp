@@ -1,3 +1,8 @@
+// This loader reads a 3D object with libassimp and dumps it all into one indexed buffer. 
+// That saves on draw calls but makes it impossible to set materials per mesh. Instead, 
+// materials would have to be sent with every vertex, approximately doubling the memory 
+// required for vertex data. 
+
 #include "StdAfx.h"
 #include "ComplexMesh.h"
 

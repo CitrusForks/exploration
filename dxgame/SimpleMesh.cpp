@@ -5,9 +5,9 @@
 #include "objloader.hpp"
 #include "vboindexer.hpp"
 #include <vector>
-// wat
 
-
+// load an obj file using a half-baked loader routine; not good for much besides testing and loading monolithic meshes without materials
+// CompoundMesh should be a better alternative
 bool SimpleMesh::load(wchar_t *objFileName, ID3D11Device* device, XMFLOAT2 texture_scaler)
 {
 	if (loaded) return false;
@@ -88,6 +88,8 @@ SimpleMesh::SimpleMesh() : loaded(false), m_indexCount(0)
 }
 
 
+
+
 SimpleMesh::~SimpleMesh(void)
 {
 }
@@ -97,6 +99,10 @@ SimpleMesh::~SimpleMesh(void)
 void SimpleMesh::setBuffers(ID3D11DeviceContext *deviceContext)
 {
     // this is basically copied from the rastertek tutorial too
+
+    assert(loaded);
+    assert(m_indexBuffer != nullptr);
+    assert(m_vertexBuffer!= nullptr);
 
     // Set vertex buffer stride and offset.
     unsigned stride = sizeof(Vertex); 
@@ -112,10 +118,12 @@ void SimpleMesh::setBuffers(ID3D11DeviceContext *deviceContext)
     deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
-// release resources? meh?
+// release resources
 void SimpleMesh::Release()
 {
-    m_indexBuffer->Release();
-    m_vertexBuffer->Release();
+    if (!loaded) return;
+    m_indexBuffer->Release(); m_indexBuffer = nullptr;
+    m_vertexBuffer->Release(); m_vertexBuffer = nullptr;
+    loaded = false;
 }
 

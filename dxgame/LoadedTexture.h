@@ -5,7 +5,8 @@
 #include <d3d11.h>
 #include <d3dx11tex.h>
 
-
+// this is little more than a light weight wrapper for ID3D11ShaderResourceView*
+// as such, it's best to store and copy this object directly
 class LoadedTexture
 {
 public:

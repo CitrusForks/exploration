@@ -5,17 +5,30 @@
 #include <vector>
 #include <d3d11.h>
 #include "vertex.h"
-#include "LoadedTexture.h"
 #include "vanillashaderclass.h"
+
+class CompoundMesh;
+class LoadedTexture;
 
 class SimpleMesh
 {
-private:
+protected: // we're going to abuse SimpleMesh as a glorified struct in CompoundMesh; it's not good for much on its own.
+    struct Material
+    {
+        XMFLOAT4 ambient;  // multiply light components by these...
+        XMFLOAT4 diffuse;  //   ""
+        XMFLOAT4 specular; //   ""
+        float shininess;  // specular exponent
+        LoadedTexture diffuseTexture; // the bog standard texture
+        LoadedTexture normalMap;      // wishful thinking? not implemented yet
+        LoadedTexture specularMap;    // need this for characters to look correct
+    } m_material;
+
     bool loaded;
     ID3D11Buffer *m_vertexBuffer, *m_indexBuffer;
-    LoadedTexture *m_Texture;
     unsigned int m_indexCount;
 
+    friend CompoundMesh;
 
 public:
     void setBuffers(ID3D11DeviceContext *deviceContext);
