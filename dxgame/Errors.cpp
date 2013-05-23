@@ -3,6 +3,7 @@
 
 #include <windows.h>
 #include <iostream>
+#include <sstream>
 
 
 namespace Errors
@@ -22,5 +23,13 @@ void Cry(char *msg)
     std::cerr << msg << std::endl;
 }
 
+
+void Cry(char *msg, char *moreMsg)
+{
+    std::stringstream ss;
+
+    ss << msg << moreMsg;
+    Errors::Cry((char*)ss.str().c_str());
+}
 
 }

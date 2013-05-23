@@ -65,9 +65,9 @@ void IntermediateRenderTarget::setAsRenderTarget(ID3D11DeviceContext *devCtx, ID
     devCtx->OMSetRenderTargets(1, &m_targetView, realDepthBuffer);
 }
 
-ID3D11ShaderResourceView *IntermediateRenderTarget::getResourceView()
+ID3D11ShaderResourceView **IntermediateRenderTarget::getResourceView()
 {
-    return m_resourceView;
+    return &m_resourceView;
 }
 
 void IntermediateRenderTarget::clear(ID3D11DeviceContext *devCtx)

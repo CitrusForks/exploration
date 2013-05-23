@@ -63,7 +63,7 @@ float4 PostProcPixelShader(PixelInputType input) : SV_TARGET
 	textureColor /= 2;
 #endif
 
-#if 1
+#if 0
     // crude edge detection!
 	float4 textureColor = shaderTexture.Sample(SampleType, tex);
 	tex.x += 0.001;
@@ -71,7 +71,7 @@ float4 PostProcPixelShader(PixelInputType input) : SV_TARGET
 	textureColor -= shaderTexture.Sample(SampleType, tex);
 #endif
 
-#if 0
+#if 1
 	// chromatic aberration
 	float4 textureColor;
 	textureColor.x = shaderTexture.Sample(SampleType, tex - baseOffset * 0.01).x; // red is smudged outward

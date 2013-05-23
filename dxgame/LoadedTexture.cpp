@@ -1,6 +1,3 @@
-////////////////////////////////////////////////////////////////////////////////
-// Filename: textureclass.cpp
-////////////////////////////////////////////////////////////////////////////////
 #include "stdafx.h"
 
 #include "LoadedTexture.h"
@@ -9,14 +6,14 @@
 
 
 
-LoadedTexture::LoadedTexture()
+LoadedTexture::LoadedTexture() : m_texture(nullptr)
 {
-	m_texture = 0;
 }
 
 
 LoadedTexture::LoadedTexture(const LoadedTexture& other)
 {
+    *this = other;
 }
 
 
@@ -56,7 +53,7 @@ void LoadedTexture::Shutdown()
 }
 
 
-ID3D11ShaderResourceView* LoadedTexture::GetTexture()
+ID3D11ShaderResourceView **LoadedTexture::GetTexture()
 {
-	return m_texture;
+	return &m_texture;
 }

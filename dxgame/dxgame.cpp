@@ -22,6 +22,7 @@
 #include "vanillashaderclass.h"
 #include "LoadedTexture.h"
 #include "SimpleMesh.h"
+#include "ComplexMesh.h"
 #include "Sound.h"
 #include "inputclass.h"
 #include "FirstPerson.h"
@@ -136,7 +137,6 @@ int _tmain(int argc, _TCHAR* argv[])
 
         FirstPerson FPCamera;
 
-        int beepverb = soundSystem.loadSound("data/beepverb.wav");
 
         Assimp::Importer modelImporter; // this object will own the memory allocated for the models it loads; when it's destroyed, memory is automatically deallocated
 
@@ -152,14 +152,18 @@ int _tmain(int argc, _TCHAR* argv[])
             return 1;
         }
 
-        SimpleMesh mesh;
-        if (!mesh.load(L"duck.obj", d3d.GetDevice()))
+        SetCurrentDirectoryA(".\\data");
+
+        int beepverb = soundSystem.loadSound("beepverb.wav");
+
+        ComplexMesh mesh;
+        if (!mesh.load(d3d.GetDevice(), d3d.GetDeviceContext(), /* "duck.obj" */ "Chekov.obj"))
         {
             return 1;
         }
 
-        SimpleMesh spider;
-        if (!spider.load(L"spider.obj", d3d.GetDevice()))
+        ComplexMesh spider;
+        if (!spider.load(d3d.GetDevice(), d3d.GetDeviceContext(), "spider.obj"))
         {
             return 1;
         }
@@ -170,12 +174,6 @@ int _tmain(int argc, _TCHAR* argv[])
             return 1;
         }
 
-        LoadedTexture texture;
-        texture.Initialize(d3d.GetDevice(), d3d.GetDeviceContext(), L"duck_texture.png");
-
-        LoadedTexture spiderTex;
-        spiderTex.Initialize(d3d.GetDevice(), d3d.GetDeviceContext(), L"spiderTex.jpg");
-        
         XMMATRIX world = XMMatrixTranslation(0.0f, 0.0f, 7.0f);
 
         XMMATRIX projection = XMMatrixPerspectiveFovLH((float)((60.0/360.0) * M_PI * 2), (float)width / (float)height, 0.9f, 1000.0f);
@@ -217,7 +215,7 @@ int _tmain(int argc, _TCHAR* argv[])
                               
                 // populate pixel shader constant buffer
                 // note to self, the buffer is actually kinda global; switching shaders does not switch constant buffers
-                shaders0.SetPSConstants(d3d.GetDeviceContext(), XMFLOAT4(0.25f, 0.2f, 0.2f, 1.0f), XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), 200.0f, XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f), (float)timer.sinceInit(), FPCamera.getPosition());
+                shaders0.SetPSConstants(d3d.GetDeviceContext(), XMFLOAT4(0.2f, 0.1f, 0.1f, 1.0f), XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), 200.0f, XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f), (float)timer.sinceInit(), FPCamera.getPosition());
 
                 XMMATRIX worldFinal = /* XMMatrixRotationAxis(axis, angle) * */ world;
 
@@ -229,14 +227,28 @@ int _tmain(int argc, _TCHAR* argv[])
                 // prepare to render a mesh:
                 mesh.setBuffers(d3d.GetDeviceContext());
                 // and actually render it, via specific shaders:
-                if (!shaders0.Render(d3d.GetDeviceContext(), mesh.getIndexCount(), worldFinal, view, projection, texture.GetTexture(), FPCamera.getPosition()))
+                if (!shaders0.Render(d3d.GetDeviceContext(), 
+                                    mesh.getIndexCount(), 
+                                    XMMatrixScaling(0.55f, 0.55f, 0.55f) * worldFinal, 
+                                    view, 
+                                    projection, 
+                                    FPCamera.getPosition(), 
+                                    mesh.getShaderResourceViews(), 
+                                    mesh.getShaderResourceViewCount()))
                 {
                     Errors::Cry(L"Render error in scene. :|");
                     break;
                 }
 
                 spider.setBuffers(d3d.GetDeviceContext());
-                shaders0.Render(d3d.GetDeviceContext(), spider.getIndexCount(), XMMatrixScaling(0.05f, 0.05f, 0.05f) * worldFinal * XMMatrixTranslation(-1.0f, 2.0f, 6.0f), view, projection, spiderTex.GetTexture(), FPCamera.getPosition());
+                shaders0.Render(d3d.GetDeviceContext(), 
+                                spider.getIndexCount(), 
+                                XMMatrixScaling(0.05f, 0.05f, 0.05f) * worldFinal * XMMatrixTranslation(-1.0f, 2.0f, 6.0f), 
+                                view, 
+                                projection, 
+                                FPCamera.getPosition(),
+                                spider.getShaderResourceViews(),
+                                spider.getShaderResourceViewCount());
 
                 // done rendering scene
 
@@ -245,7 +257,7 @@ int _tmain(int argc, _TCHAR* argv[])
                 d3d.depthOff(); // disable depth test
 
                 square.setBuffers(d3d.GetDeviceContext()); // use the two triangles to render off-screen texture to swap chain, through a shader
-                if (!postProcess.Render(d3d.GetDeviceContext(), square.getIndexCount(), XMMatrixIdentity(), XMMatrixIdentity(), ortho, offScreen.getResourceView(), XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f)))
+                if (!postProcess.Render(d3d.GetDeviceContext(), square.getIndexCount(), XMMatrixIdentity(), XMMatrixIdentity(), ortho, XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), offScreen.getResourceView()))
                 {
                     Errors::Cry(L"Error rendering off-screen texture to display. :/");
                     break;
@@ -279,15 +291,10 @@ int _tmain(int argc, _TCHAR* argv[])
 	shaders0.Shutdown();
         postProcess.Shutdown();
 
-        texture.Shutdown();
-        spiderTex.Shutdown();
         offScreen.Shutdown();
 
         text.Release();
         text.ReleaseFactory();
-
-        mesh.Release();
-        spider.Release();
 
 	d3d.Shutdown();
 

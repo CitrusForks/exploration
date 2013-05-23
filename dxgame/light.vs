@@ -28,6 +28,7 @@ struct VertexInputType
     float4 position : POSITION;
     float2 tex : TEXCOORD0;
 	float3 normal : NORMAL;
+	uint texNum : TEXINDEX;
 };
 
 struct PixelInputType
@@ -38,6 +39,7 @@ struct PixelInputType
     float2 tex : TEXCOORD0;
 	float3 normal : NORMAL;
 	float3 viewDirection : VIEWDIR;
+	nointerpolation uint texNum : TEXINDEX;                    // which texture to use
 };
 
 
@@ -50,6 +52,7 @@ PixelInputType LightVertexShader(VertexInputType input)
 	float4 worldPosition;
 
 	output.modelPos = input.position;
+	output.texNum = input.texNum;
 
 
 	// Change the position vector to be 4 units for proper matrix calculations.

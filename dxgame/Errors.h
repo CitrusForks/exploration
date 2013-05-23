@@ -11,6 +11,8 @@ extern HWND window;
 void Cry(wchar_t *msg);
 void Cry(char *msg);
 
+void Cry(char *msg, char *moreMsg);
+
 }
 
 #endif

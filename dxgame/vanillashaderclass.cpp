@@ -40,13 +40,13 @@ void VanillaShaderClass::Shutdown()
 
 
 bool VanillaShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCount, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, 
-								CXMMATRIX projectionMatrix, ID3D11ShaderResourceView* texture, CXMVECTOR cameraPos)
+								CXMMATRIX projectionMatrix, CXMVECTOR cameraPos, ID3D11ShaderResourceView **texture, unsigned resourceViewCount)
 {
 	bool result;
 
 
 	// Set the shader parameters that it will use for rendering.
-	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, cameraPos, texture, 1);
+	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, cameraPos, texture, resourceViewCount);
 	if(!result)
 	{
 		return false;
@@ -124,7 +124,7 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device *device, HWND hwnd, wcha
     // Create the vertex input layout description.
     // This setup needs to match the VertexType stucture in the ModelClass and in the shader.
     // XXX Is this really a good place to define it then?
-    D3D11_INPUT_ELEMENT_DESC polygonLayout[4];
+    D3D11_INPUT_ELEMENT_DESC polygonLayout[5];
     polygonLayout[0].SemanticName = "POSITION";
     polygonLayout[0].SemanticIndex = 0;
     polygonLayout[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
@@ -157,13 +157,13 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device *device, HWND hwnd, wcha
     polygonLayout[3].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
     polygonLayout[3].InstanceDataStepRate = 0;
 
-    polygonLayout[3].SemanticName = "TEXINDEX";
-    polygonLayout[3].SemanticIndex = 0;
-    polygonLayout[3].Format = DXGI_FORMAT_R8_UINT;
-    polygonLayout[3].InputSlot = multiStreaming ? 4 : 0;
-    polygonLayout[3].AlignedByteOffset = multiStreaming ? 0 : D3D11_APPEND_ALIGNED_ELEMENT;
-    polygonLayout[3].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-    polygonLayout[3].InstanceDataStepRate = 0;
+    polygonLayout[4].SemanticName = "TEXINDEX";
+    polygonLayout[4].SemanticIndex = 0;
+    polygonLayout[4].Format = DXGI_FORMAT_R32_UINT;
+    polygonLayout[4].InputSlot = multiStreaming ? 4 : 0;
+    polygonLayout[4].AlignedByteOffset = multiStreaming ? 0 : D3D11_APPEND_ALIGNED_ELEMENT;
+    polygonLayout[4].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+    polygonLayout[4].InstanceDataStepRate = 0;
 
 
     // Get a count of the elements in the layout.
@@ -335,7 +335,7 @@ void VanillaShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND
 
 
 bool VanillaShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, 
-											 CXMMATRIX projectionMatrix, CXMVECTOR cameraPos, ID3D11ShaderResourceView* texture, unsigned numViews)
+											 CXMMATRIX projectionMatrix, CXMVECTOR cameraPos, ID3D11ShaderResourceView** texture, unsigned numViews)
 {
     HRESULT result;
     D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -404,7 +404,7 @@ bool VanillaShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext,
 
 
     // Set shader texture resource in the pixel shader.
-    deviceContext->PSSetShaderResources(0, numViews, &texture);
+    deviceContext->PSSetShaderResources(0, numViews, texture);
 
     return true;
 }

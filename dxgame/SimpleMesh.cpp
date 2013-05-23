@@ -97,13 +97,10 @@ SimpleMesh::~SimpleMesh(void)
 void SimpleMesh::setBuffers(ID3D11DeviceContext *deviceContext)
 {
     // this is basically copied from the rastertek tutorial too
-    unsigned int stride;
-    unsigned int offset;
-
 
     // Set vertex buffer stride and offset.
-    stride = sizeof(Vertex); 
-    offset = 0;
+    unsigned stride = sizeof(Vertex); 
+    unsigned offset = 0;
 
     // Set the vertex buffer to active in the input assembler so it can be rendered.
     deviceContext->IASetVertexBuffers(0, 1, &m_vertexBuffer, &stride, &offset);
@@ -113,8 +110,6 @@ void SimpleMesh::setBuffers(ID3D11DeviceContext *deviceContext)
 
     // Set the type of primitive that should be rendered from this vertex buffer, in this case triangles.
     deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-    return;
 }
 
 // release resources? meh?

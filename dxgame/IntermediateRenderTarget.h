@@ -18,7 +18,7 @@ public:
     void setAsRenderTarget(ID3D11DeviceContext *devCtx, ID3D11DepthStencilView *realDepthBuffer);
 
     // returns m_resourceView for use as a texture source
-    ID3D11ShaderResourceView *getResourceView();
+    ID3D11ShaderResourceView **getResourceView();
 
     // clear the buffer with 0x00000000
     void clear(ID3D11DeviceContext *devCtx);

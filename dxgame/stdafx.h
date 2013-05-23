@@ -7,13 +7,25 @@
 
 #include "targetver.h"
 
+#include <iostream>
+#include <string>
+#include <locale>
+#include <codecvt>
+#include <iomanip>
+#include <memory>
+#include <vector>
+#include <fstream>
+#include <map>
 #include <cstring>
+#include <string>
+#include <unordered_map>
 
 #include <stdio.h>
 #include <string.h>
 #include <tchar.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <assert.h>
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -50,14 +62,4 @@
 #include "SimpleText.h"
 
 #include "vanillashaderclass.h"
-
-#include <iostream>
-#include <string>
-#include <locale>
-#include <codecvt>
-#include <iomanip>
-#include <memory>
-#include <vector>
-#include <fstream>
-#include <map>
 

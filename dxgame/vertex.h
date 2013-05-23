@@ -10,7 +10,7 @@ struct Vertex
 	XMFLOAT3 normal; // yep, normal
 	XMFLOAT2 tex0;   // texture sampler, possibly an array
 	XMFLOAT2 tex1;   // not used, just experimenting
-        UINT8 texArray;  // texture to choose from array if using an array of textures
+        unsigned int texArray;  // texture to choose from array if using an array of textures
 
         Vertex() : pos(0.0f, 0.0f, 0.0f), normal(0.0f, 0.0f, 0.0f), tex0(0.0f, 0.0f), tex1(0.0f, 0.0f), texArray(0)
         {
