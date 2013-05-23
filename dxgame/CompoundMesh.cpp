@@ -79,6 +79,15 @@ bool CompoundMesh::load(ID3D11Device* device, ID3D11DeviceContext *devCtx, char 
     // populate vertices and indices with data from m_aiScene
     recursive_interleave(device, devCtx, m_aiScene->mRootNode, m_root);
 
+    int indexCount = 0;
+
+    WalkNodes(m_root, [&indexCount] (CompoundMeshNode &l_node)
+    {
+        for (auto i = l_node.meshes.begin(); i != l_node.meshes.end(); ++i) indexCount += i->getIndexCount();
+    });
+
+    std::cout << modelFileName << " loaded with " << indexCount << " total indices." << std::endl;
+
     return true;
 }
 
@@ -134,6 +143,28 @@ void CompoundMesh::get_bounding_box (aiVector3D* min, aiVector3D* max)
 #endif // 0
 
 
+
+void CompoundMesh::apply_material(SimpleMesh::Material *to, aiMaterial *mtl)
+{
+    assert(sizeof(XMFLOAT4) == sizeof(aiColor4D)); // they're both four floats packed into one structure
+    aiColor4D color;
+    float shinines, shininessStrength;
+    unsigned int max; // not used?
+
+    if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_DIFFUSE, &color)) 
+        memcpy(&to->diffuse, &color, sizeof(XMFLOAT4));
+    if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_AMBIENT, &color)) 
+        memcpy(&to->ambient, &color, sizeof(XMFLOAT4));
+    if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_SPECULAR, &color)) 
+        memcpy(&to->specular, &color, sizeof(XMFLOAT4));
+    if(AI_SUCCESS == aiGetMaterialFloatArray(mtl, AI_MATKEY_SHININESS, &shinines, &max)
+       && AI_SUCCESS == aiGetMaterialFloatArray(mtl, AI_MATKEY_SHININESS_STRENGTH, &shininessStrength, &max))
+        to->shininess = shinines * shininessStrength;
+
+}
+
+
+
 bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceContext *devCtx, const struct aiNode *nd, CompoundMeshNode &node )
 {
     assert(sizeof(XMFLOAT4X4) == sizeof(aiMatrix4x4));
@@ -161,40 +192,42 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
 
         unsigned texNum = 0;
 
-        //apply_material(m_aiScene->mMaterials[mesh->mMaterialIndex]);
-
-        //if (m_aiScene->mMaterials[mesh->mMaterialIndex]->Get(AI_MATKEY_BLEND_FUNC, 
+        // store the material properties
+        aiMaterial *mat = m_aiScene->mMaterials[mesh->mMaterialIndex];
+        apply_material(&interleavedMesh.m_material, mat);
+        
 
         // get the correct diffuse component texture, load it if necessary
         aiString texPath;
         aiReturn rc = m_aiScene->mMaterials[mesh->mMaterialIndex]->GetTexture(aiTextureType_DIFFUSE, 0, &texPath); // texPath is in utf8
         if (texPath.length)
         {
-            char *c_path = (char*)texPath.C_Str();
-            int c_len = texPath.length;
-            while (*c_path == '\\' || *c_path == '/' || *c_path == '.') { ++c_path; --c_len; }
-            int length = MultiByteToWideChar(CP_UTF8, 0, c_path, c_len + 1, 0, 0);
-            std::unique_ptr<wchar_t>wPath(new wchar_t[length]);
+            char *c_path = (char*)texPath.C_Str(); 
+            int c_len = texPath.length;  // not including terminating \0
+            while (*c_path == '\\' || *c_path == '/' || *c_path == '.') { ++c_path; --c_len; } // cut off any path stuff
+            int length = MultiByteToWideChar(CP_UTF8, 0, c_path, c_len + 1, 0, 0);  // get length of wchar_t result
+            std::unique_ptr<wchar_t>wPath(new wchar_t[length]);  // allocate buffer
             MultiByteToWideChar(CP_UTF8, 0, c_path, c_len + 1, wPath.get(), length); // get the path in wchar_t
             wstring path(wPath.get());  // and wstring
 
-            auto reference = m_textureReference.find(path);
+            auto reference = m_textureReference.find(path);  // have we loaded it already?
 
             if (reference == m_textureReference.end())
             {
-                std::cout << "Loading new texture: " << c_path << std::endl;
                 // texture not found, load it
+                std::cout << "Loading new texture: " << c_path << std::endl;
+
                 LoadedTexture newTex;
                 if (!newTex.Initialize(device, devCtx, wPath.get()))
                 {
                     Errors::Cry("Failed to load texture", c_path);
                 } else
                 {
-                    interleavedMesh.m_material.diffuseTexture = m_textureReference[path] = newTex;
+                    interleavedMesh.m_material.diffuseTexture = m_textureReference[path] = newTex; // success
                 }
             } else
             {
-                interleavedMesh.m_material.diffuseTexture = reference->second; // already loaded!
+                interleavedMesh.m_material.diffuseTexture = reference->second; // already loaded! 
             }
         }
 
@@ -282,15 +315,13 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
     return true;
 }
 
-
+#if 0
 // recursively render meshes for all nodes
-bool CompoundMesh::Render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, 
-                           XMFLOAT3 &lightDirection, float time, FXMVECTOR cameraPosition, 
-                           CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix )
+bool CompoundMesh::Render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, FXMVECTOR cameraPosition, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix, CompoundMeshNode *node /*= nullptr */ )
 {
     bool rc = true; // return value
 
-    WalkNodes(m_root, [=, &rc, &cameraPosition, &worldMatrix, &viewMatrix, &projectionMatrix] (CompoundMeshNode &node) // capturing an *XMVECTOR variable is a bad idea, doesn't work
+    WalkNodes(m_root, [&deviceContext, &shader, &time, &lightDirection, &rc, &cameraPosition, &worldMatrix, &viewMatrix, &projectionMatrix] (CompoundMeshNode &node) // capturing an *XMVECTOR variable is a bad idea, doesn't work
     {
         // auto deviceContext = in_deviceContext; // C++ lambda wart: can't capture a variable that's only in scope due to being captured by the containing lambda; must make a local copy
         //auto shader = in_shader; // maybe C++ lambdas aren't good :|
@@ -301,14 +332,12 @@ bool CompoundMesh::Render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
                 std::cerr << "strange, empty mesh";
                 continue;
             }
-            mesh->setBuffers(deviceContext);
-            if (!shader->SetPSConstants(deviceContext, mesh->m_material.ambient, mesh->m_material.diffuse, lightDirection, mesh->m_material.shininess, mesh->m_material.specular, time, XMVectorZero()))
-            {
-                rc = false;
-                break;
-            }
 
-            if (!shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, XMVectorZero(), mesh->m_material.diffuseTexture.GetTexture()))
+            mesh->setBuffers(deviceContext);
+
+            SimpleMesh::Material &mat = mesh->m_material;
+            if (!shader->SetPSMaterial(deviceContext, mat.ambient, mat.diffuse, mat.shininess, mat.specular) ||
+                !shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, XMVectorZero(), mesh->m_material.diffuseTexture.GetTexture()))
             {
                 rc = false;
                 break;
@@ -318,3 +347,43 @@ bool CompoundMesh::Render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 
     return rc;
 }
+#else
+
+// recursively render meshes for all nodes
+// lambda-free version
+bool CompoundMesh::Render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, 
+    FXMVECTOR cameraPosition, 
+    CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix, CompoundMeshNode *node /* = nullptr */ )
+{
+    if (!node) node = &m_root;
+
+    for (auto mesh = node->meshes.begin(), end = node->meshes.end(); mesh != end; ++mesh)
+    {
+        if (mesh->m_indexBuffer == nullptr || mesh->m_vertexBuffer == nullptr || !mesh->getIndexCount())
+        {
+            std::cerr << "strange, empty mesh";
+            continue;
+        }
+
+        mesh->setBuffers(deviceContext); // point the GPU at the right geometry data
+
+        SimpleMesh::Material &mat = mesh->m_material;
+        if (!shader->SetPSMaterial(deviceContext, mat.ambient, mat.diffuse, mat.shininess, mat.specular))
+        {
+            return false;
+        }
+
+        if (!shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, cameraPosition, mesh->m_material.diffuseTexture.GetTexture()))
+        {
+            return false;
+        }
+    }
+
+    for (auto i = node->children.begin(); i != node->children.end(); ++i)
+    {
+        if (!Render(deviceContext, shader, cameraPosition, worldMatrix, viewMatrix, projectionMatrix, &(*i))) return false;
+    }
+
+    return true;
+}
+#endif

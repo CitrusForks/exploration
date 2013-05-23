@@ -5,15 +5,25 @@ Texture2D shaderTexture[15] : register(t0);
 SamplerState SampleType;
 
 // this buffer needs to be split up into separate lights and material buffers:
-cbuffer LightBuffer
+cbuffer MaterialBuffer : register(b0)
 {
 	float4 ambientColor;
 	float4 diffuseColor;
     float4 specularColor;
-    float3 lightDirection;
     float specularPower;
+	float3 padding;
+}
+
+#define NUM_SPOTLIGHTS 4
+
+cbuffer LightBuffer : register(b1)
+{
+    float3 lightDirection; // directional light; one is enough for now?
 	float time;            // this isn't strictly light but it's useful for goofy effects
-	float3 cameraPos;
+	float4 cameraPos;
+	float4 spotlightPos[NUM_SPOTLIGHTS];  // spotlights!
+	float3 spotlightDir[NUM_SPOTLIGHTS]; 
+	float spotlightBeamAngle[NUM_SPOTLIGHTS]; // dir + angle = 4 floats so buffer size should be OK
 };
 // end of globals
 
@@ -41,6 +51,10 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
     float4 specular;
 	uint texNum = input.texNum;
 
+	// XXX this is only used by ComplexMesh which sends multiple disparate meshes as one draw call
+	// shaderTexture[texNum] doesn't compil so this was the best I could come up with
+	// anyway, it's not actually being used by anything in practice now
+	// CompoundMesh sends meshes separately
 	if (texNum == 0)
 	{
 		textureColor = shaderTexture[0].Sample(SampleType, input.tex);
@@ -69,6 +83,14 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	{
 		textureColor = shaderTexture[8].Sample(SampleType, input.tex);
 	}
+	// end nonsense
+
+	if (textureColor.a < 0.05f)
+	{
+		clip(-1); // discard transparent pixels
+		return float4(1.0f, 0.1f, 0.1f, 1.0f); // if discard doesn't work, pixels will show up red
+	}
+
 	// Set the default output color to the ambient light value for all pixels.
     color = ambientColor;
 
@@ -89,21 +111,38 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	    // Saturate the ambient and diffuse color.
 		color = saturate(color);
 
-		float3 viewDirection = normalize(cameraPos - input.worldPos.xyz);
+		float3 viewDirection = normalize(cameraPos.xyz - input.worldPos.xyz);
 
 		//a graphical representation of the slight difference between the results of interpolating view direction and interpolating world position for recalculating view direction
-		//float3 r = 400 * abs(viewDirection - input.viewDirection);
+		//float3 r = abs(normalize(viewDirection) - input.viewDirection); // actually, this seems broken right now
 		//float3 r = abs(input.normal);
 		//float4 rr = {r.x, r.y, r.z, 1.0f};
 		//return rr;
 
 		// calculate half-vector for Blinn-Phong specular model
 		float3 H = normalize(-lightDirection + viewDirection);
+		// calculate specular reflection based on dot product of half-vector and normal vector, along with material data
 		specular = specularColor * pow(saturate(dot(H, normalize(input.normal))), specularPower);
-
-		// Determine the amount of specular light based on the reflection vector, viewing direction, and specular power.
-        //specular = pow(saturate(dot(reflection, input.viewDirection)), specularPower);
     }
+
+	// spotlight calculations
+	//return float4(0, distance(input.worldPos, cameraPos), sin(time*10), 1);
+
+	float3 sourceToPixel = normalize(input.worldPos.xyz - spotlightPos[0].xyz);
+	float beamAlignment = dot(spotlightDir[0], sourceToPixel);
+
+	if (beamAlignment > 0.0 && beamAlignment > cos(3.14159268358979/16))
+	{
+		float3 toLight = -sourceToPixel;
+		float spotlightIntensity = dot(input.normal, toLight);
+		if (spotlightIntensity > 0.0)
+		{
+			spotlightIntensity *= beamAlignment * diffuseColor; // TODO proper falloff
+			// TODO distance-based attenuation
+
+			color = saturate(color + spotlightIntensity);
+		}
+	}
 
     // Multiply the texture pixel and the input color to get the textured result.
     color = color * textureColor;

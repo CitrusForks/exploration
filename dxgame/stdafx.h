@@ -51,20 +51,20 @@
 
 #include <xnamath.h>
 
-#include "d3dclass.h"
-#include "LoadedTexture.h"
-#include "WICTextureLoader.h"
-#include "vertex.h"
+
 #include "Chronometer.h"
-#include "Sound.h"
-#include "inputclass.h"
+#include "ComplexMesh.h"
+#include "CompoundMesh.h"
+#include "Errors.h"
 #include "FirstPerson.h"
 #include "IntermediateRenderTarget.h"
-#include "Errors.h"
-#include "SimpleText.h"
-#include "CompoundMesh.h"
-#include "ComplexMesh.h"
+#include "LoadedTexture.h"
 #include "SimpleMesh.h"
-
+#include "SimpleText.h"
+#include "Sound.h"
+#include "WICTextureLoader.h"
+#include "d3dclass.h"
+#include "inputclass.h"
 #include "vanillashaderclass.h"
+#include "vertex.h"
 

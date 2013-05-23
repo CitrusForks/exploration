@@ -37,12 +37,11 @@ private:
     void get_bounding_box (aiVector3D* min, aiVector3D* max);
 
     bool recursive_interleave( ID3D11Device* device, ID3D11DeviceContext *devCtx, const struct aiNode *nd, CompoundMeshNode &node );
+    void apply_material(SimpleMesh::Material *to, aiMaterial *mtl);
     
 public:
     bool load(ID3D11Device* device, ID3D11DeviceContext *devCtx, char *modelFileName);
-    bool Render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, 
-        XMFLOAT3 &lightDirection, float time, FXMVECTOR cameraPosition, 
-        CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix );
+    bool Render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, FXMVECTOR cameraPosition, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix, CompoundMeshNode *node = nullptr );
 
 
     CompoundMesh();

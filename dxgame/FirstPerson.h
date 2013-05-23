@@ -2,8 +2,9 @@
 #define FIRSTPERSON_H
 
 #include <xnamath.h>
-#include <dinput.h>
 #include "inputclass.h"
+#define DIRECTINPUT_VERSION 0x0800
+#include <dinput.h> // actually included already but I like listing all the headers required by a file...
 
 class FirstPerson
 {
@@ -20,7 +21,7 @@ public:
     void perFrameUpdate(double timeElapsed, Input &input);
     XMMATRIX getViewMatrix(); 
     XMVECTOR getPosition();
-    void setPosition(CXMVECTOR to);
+    void setPosition(FXMVECTOR to);
 
     static float movementSpeed;
     static float rotationSpeed;

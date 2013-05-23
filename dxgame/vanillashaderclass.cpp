@@ -195,13 +195,14 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device *device, HWND hwnd, wcha
 
     D3D11_BUFFER_DESC cameraBufferDesc = matrixBufferDesc; // in the interest of brevity, copy all the identical values from a previous buffer_desc
     D3D11_BUFFER_DESC lightBufferDesc = cameraBufferDesc;  // also these need to be copied before the first call to CreateBuffer() because it may do odd things to the data; no, really, this actually happened.
+    D3D11_BUFFER_DESC materialBufferDesc = lightBufferDesc;
 
 
     // Create the constant buffer pointer so we can access the vertex shader constant buffer from within this class.
     result = device->CreateBuffer(&matrixBufferDesc, NULL, &m_matrixBuffer);
     if(FAILED(result))
     {
-        std::cerr << "Could not create constant buffer!" << std::endl;
+        Errors::Cry("Could not create constant buffer!");
 	return false;
     }
 
@@ -212,18 +213,28 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device *device, HWND hwnd, wcha
     result = device->CreateBuffer(&cameraBufferDesc, NULL, &m_cameraBuffer);
     if(FAILED(result))
     {
-        std::cerr << "Could not create constant buffer!" << std::endl;
+        Errors::Cry("Could not create constant buffer!");
 	return false;
     }
 
     // another buffer, for the light data in the pixel shader
     cameraBufferDesc.ByteWidth = sizeof(LightBufferType);
-
+    std::cout << "lbf size: " << sizeof(LightBufferType);
     result = device->CreateBuffer(&lightBufferDesc, NULL, &m_lightBuffer);
     if(FAILED(result))
     {
-        std::cerr << "Could not create constant buffer!" << std::endl;
+        Errors::Cry("Could not create constant buffer!");
 	return false;
+    }
+
+    // and a separate buffer for material properties
+    materialBufferDesc.ByteWidth = sizeof(MaterialBufferType);
+
+    result = device->CreateBuffer(&materialBufferDesc, NULL, &m_materialBuffer);
+    if (FAILED(result))
+    {
+        Errors::Cry("Could not create material constant buffer!");
+        return false;
     }
 
     // Create a texture sampler state description.
@@ -246,7 +257,7 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device *device, HWND hwnd, wcha
 	    return false;
     }
 
-    std::cout << "initialized some shaders";
+    std::cout << "initialized some shaders" << std::endl;
 
     return true;
 }
@@ -287,6 +298,18 @@ void VanillaShaderClass::ShutdownShader()
     {
 	    m_vertexShader->Release();
 	    m_vertexShader = 0;
+    }
+
+    if (m_lightBuffer)
+    {
+        m_lightBuffer->Release();
+        m_lightBuffer = nullptr;
+    }
+
+    if (m_materialBuffer)
+    {
+        m_materialBuffer->Release();
+        m_materialBuffer = nullptr;
     }
 
     return;
@@ -410,14 +433,46 @@ bool VanillaShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext,
 }
 
 // set light values and time
-bool VanillaShaderClass::SetPSConstants( ID3D11DeviceContext *deviceContext, XMFLOAT4 &ambientColor, XMFLOAT4 &diffuseColor, const XMFLOAT3 &lightDirection, float specularPower, XMFLOAT4 &specularColor, float time, FXMVECTOR cameraPos)
+bool VanillaShaderClass::SetPSMaterial( ID3D11DeviceContext *deviceContext, XMFLOAT4 &ambientColor, XMFLOAT4 &diffuseColor, float specularPower, XMFLOAT4 &specularColor)
+{
+    HRESULT result;
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    MaterialBufferType* dataPtr;
+
+    deviceContext->VSSetShader(m_vertexShader, NULL, 0); // TODO change this to an "effect?" or are effects going out of style?
+    deviceContext->PSSetShader(m_pixelShader, NULL, 0);
+
+
+    result = deviceContext->Map(m_materialBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+    if (FAILED(result))
+    {
+        return false;
+    }
+
+    dataPtr = (MaterialBufferType*)mappedResource.pData;
+
+    dataPtr->ambientColor = ambientColor;
+    dataPtr->diffuseColor = diffuseColor;
+    dataPtr->specularPower = specularPower;
+    dataPtr->specularColor = specularColor;
+    dataPtr->padding = XMFLOAT3(0,0,0);
+
+    deviceContext->Unmap(m_materialBuffer, 0);
+
+    deviceContext->PSSetConstantBuffers(0, 1, &m_materialBuffer);
+
+    return true;
+}
+
+
+bool VanillaShaderClass::SetPSLights( ID3D11DeviceContext *deviceContext, const XMFLOAT3 &lightDirection, float time, FXMVECTOR cameraPos, XMFLOAT4 *spotlightPos, XMFLOAT3 *spotlightDir, int numSpotlights )
 {
     HRESULT result;
     D3D11_MAPPED_SUBRESOURCE mappedResource;
     LightBufferType* dataPtr;
 
     deviceContext->VSSetShader(m_vertexShader, NULL, 0); // TODO change this to an "effect?" or are effects going out of style?
-    deviceContext->PSSetShader(m_pixelShader, NULL, 0);
+    deviceContext->PSSetShader(m_pixelShader, NULL, 0);  // XXX make a separate function to set these once?
 
 
     result = deviceContext->Map(m_lightBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
@@ -428,39 +483,51 @@ bool VanillaShaderClass::SetPSConstants( ID3D11DeviceContext *deviceContext, XMF
 
     dataPtr = (LightBufferType*)mappedResource.pData;
 
-    dataPtr->ambientColor = ambientColor;
-    dataPtr->diffuseColor = diffuseColor;
     dataPtr->lightDirection = lightDirection;
-    dataPtr->specularPower = specularPower;
-    dataPtr->specularColor = specularColor;
     dataPtr->time = time;
-    //dataPtr->padding[0] = dataPtr->padding[1] = dataPtr->padding[2] = 0.0f;
-    XMStoreFloat3(&dataPtr->cameraPos, cameraPos);
+    XMStoreFloat4(&dataPtr->cameraPos, cameraPos);
+    
+    // TODO set spotlights?
 
+    for (int i = 0; i < numSpotlights; ++i)
+    {
+        dataPtr->spotlightPos[i] = spotlightPos[i];
+        dataPtr->spotlightDir[i] = spotlightDir[i];
+        dataPtr->spotlightBeamAngle[i] = (float)M_PI * 30.0f/180.f; 
+    }
 
+#if 0
+    for (int i = numSpotlights; i < NUM_SPOTLIGHTS; ++i)
+    {
+        dataPtr->spotlightPos[i] = XMFLOAT4(0,0,0,0);
+        dataPtr->spotlightDir[i] = XMFLOAT3(0,0,0);
+        dataPtr->spotlightBeamAngle[i] = 0.0f;
+    }
 
+#endif    
+    
     deviceContext->Unmap(m_lightBuffer, 0);
 
-    deviceContext->PSSetConstantBuffers(0, 1, &m_lightBuffer);
+    deviceContext->PSSetConstantBuffers(1, 1, &m_lightBuffer); // light buffer is register(cb1) aka slot one
 
     return true;
-}
 
+}
 
 
 void VanillaShaderClass::RenderShader(ID3D11DeviceContext* deviceContext, int indexCount)
 {
-	// Set the vertex input layout.
-	deviceContext->IASetInputLayout(m_layout);
+    // Set the vertex input layout.
+    deviceContext->IASetInputLayout(m_layout);
 
-        deviceContext->VSSetShader(m_vertexShader, NULL, 0); // TODO change this to an "effect?" or are effects going out of style?
-        deviceContext->PSSetShader(m_pixelShader, NULL, 0);
+    deviceContext->VSSetShader(m_vertexShader, NULL, 0); // TODO change this to an "effect?" or are effects going out of style?
+    deviceContext->PSSetShader(m_pixelShader, NULL, 0);
 
-	// Set the sampler state in the pixel shader.
-	deviceContext->PSSetSamplers(0, 1, &m_sampleState);
+    // Set the sampler state in the pixel shader.
+    deviceContext->PSSetSamplers(0, 1, &m_sampleState);
 
-	// Render the triangles
-	deviceContext->DrawIndexed(indexCount, 0, 0);
+    // Render the triangles
+    deviceContext->DrawIndexed(indexCount, 0, 0);
 
-	return;
+    return;
 }

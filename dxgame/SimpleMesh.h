@@ -6,9 +6,9 @@
 #include <d3d11.h>
 #include "vertex.h"
 #include "vanillashaderclass.h"
+#include "LoadedTexture.h"
 
 class CompoundMesh;
-class LoadedTexture;
 
 class SimpleMesh
 {
@@ -22,6 +22,11 @@ protected: // we're going to abuse SimpleMesh as a glorified struct in CompoundM
         LoadedTexture diffuseTexture; // the bog standard texture
         LoadedTexture normalMap;      // wishful thinking? not implemented yet
         LoadedTexture specularMap;    // need this for characters to look correct
+
+        Material() : // I want defaults that are easy to test with...
+            ambient(0.1f, 0.1f, 0.1f, 1.0f), diffuse(0.5f, 0.5f, 0.5f, 1.0f), specular(1.0f, 1.0f, 1.0f, 1.0f), shininess(100)
+        {
+        }
     } m_material;
 
     bool loaded;

@@ -77,10 +77,10 @@ PixelInputType LightVertexShader(VertexInputType input)
     worldPosition = mul(input.position, worldMatrix);
 
     // Determine the viewing direction based on the position of the camera and the position of the vertex in the world.
-    output.viewDirection = cameraPosition.xyz - worldPosition.xyz;
+    output.viewDirection = normalize(cameraPosition.xyz - worldPosition.xyz);
 	
     // Normalize the viewing direction vector.
-    output.viewDirection = normalize(output.viewDirection);
+    // output.viewDirection = normalize(output.viewDirection);
 
     return output;
 }

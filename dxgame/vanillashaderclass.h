@@ -14,6 +14,7 @@
 #include <fstream>
 using namespace std;
 
+#define NUM_SPOTLIGHTS 4
 
 ////////////////////////////////////////////////////////////////////////////////
 // Class name: TextureShaderClass
@@ -33,15 +34,23 @@ private:
         XMFLOAT4 cameraPosition;
     };
 
-    struct LightBufferType
+    struct MaterialBufferType
     {
         XMFLOAT4 ambientColor;
         XMFLOAT4 diffuseColor;
         XMFLOAT4 specularColor;
-        XMFLOAT3 lightDirection;
         float specularPower;
+        XMFLOAT3 padding;
+    };
+
+    struct LightBufferType
+    {
+        XMFLOAT3 lightDirection;
         float time;
-        XMFLOAT3 cameraPos;
+        XMFLOAT4 cameraPos;
+        XMFLOAT4 spotlightPos[NUM_SPOTLIGHTS];
+        XMFLOAT3 spotlightDir[NUM_SPOTLIGHTS];
+        float spotlightBeamAngle[NUM_SPOTLIGHTS];
     };
 
 
@@ -53,7 +62,8 @@ public:
 	void Shutdown();
 	bool Render(ID3D11DeviceContext*, int indexCount, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix, CXMVECTOR cameraPos, ID3D11ShaderResourceView **texture, unsigned resourceViewCount = 1);
         bool InitializeShader(ID3D11Device*, HWND, wchar_t *vsFilename, char *vsFunctionName, wchar_t *psFilename, char *psFunctionName, bool multiStreaming = false);
-        bool SetPSConstants(ID3D11DeviceContext *deviceContext, XMFLOAT4 &ambientColor, XMFLOAT4 &diffuseColor, const XMFLOAT3 &lightDirection, float specularPower, XMFLOAT4 &specularColor, float time, FXMVECTOR cameraPos);
+        bool SetPSMaterial( ID3D11DeviceContext *deviceContext, XMFLOAT4 &ambientColor, XMFLOAT4 &diffuseColor, float specularPower, XMFLOAT4 &specularColor);
+        bool SetPSLights( ID3D11DeviceContext *deviceContext, const XMFLOAT3 &lightDirection, float time, FXMVECTOR cameraPos, XMFLOAT4 *spotlightPos, XMFLOAT3 *spotlightDir, int numSpotlights );
 
 private:
 	void ShutdownShader();
@@ -66,7 +76,7 @@ private:
 	ID3D11VertexShader* m_vertexShader;
 	ID3D11PixelShader* m_pixelShader;
 	ID3D11InputLayout* m_layout;
-	ID3D11Buffer* m_matrixBuffer, *m_cameraBuffer, *m_lightBuffer;
+	ID3D11Buffer *m_matrixBuffer, *m_cameraBuffer, *m_lightBuffer, *m_materialBuffer;
 	ID3D11SamplerState* m_sampleState;
 };
 

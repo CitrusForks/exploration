@@ -137,7 +137,7 @@ int _tmain(int argc, _TCHAR* argv[])
         Input input; input.Initialize(progInstance, window, width, height);
 
         FirstPerson FPCamera;
-
+        //FPCamera.setPosition(XMVectorSet(0,0,-5,1));
 
         Assimp::Importer modelImporter; // this object will own the memory allocated for the models it loads; when it's destroyed, memory is automatically deallocated
 
@@ -186,7 +186,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	
         XMVECTOR axis = XMVectorSet(0.7071067811865475f, 0.7071067811865475f, 0.0f, 0.0f); // normalized 45 degree angle vector
 
-        XMFLOAT3 lightDirection(0.0f, -1.0f, 0.0f);
+        XMFLOAT3 lightDirection(0.0f,  -1.0f, 0.0f); // directional light
 
         float angle = 0.0f;
 	bool done = false;
@@ -213,12 +213,20 @@ int _tmain(int argc, _TCHAR* argv[])
 			done = true;
 		}
 
-                //d3d.BeginScene(0.0f, sinf(angle), sinf(angle+3.141592653589f), 0.0f);
+                //
+                // Rendering
+                // 
+
                 d3d.BeginScene(false); // don't clear back buffer; we're just going to overwrite it completely from the off-screen buffer
                               
-                // populate pixel shader constant buffer
-                // note to self, the buffer is actually kinda global; switching shaders does not switch constant buffers
-                shaders0.SetPSConstants(d3d.GetDeviceContext(), XMFLOAT4(0.2f, 0.1f, 0.1f, 1.0f), XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), 200.0f, XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f), (float)timer.sinceInit(), FPCamera.getPosition());
+                XMFLOAT4 lightPos; 
+                XMStoreFloat4(&lightPos, FPCamera.getPosition());
+                lightPos.y += 1.7f;
+                
+                XMFLOAT3 lightDir;
+                XMStoreFloat3(&lightDir, XMVector3TransformNormal(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), XMMatrixTranspose(FPCamera.getViewMatrix())));
+
+                shaders0.SetPSLights(d3d.GetDeviceContext(), lightDirection, (float)timer.sinceInit(), FPCamera.getPosition(), &lightPos, &lightDir, 1);
 
                 XMMATRIX worldFinal = /* XMMatrixRotationAxis(axis, angle) * */ world;
 
@@ -227,13 +235,13 @@ int _tmain(int argc, _TCHAR* argv[])
                 offScreen.setAsRenderTarget(d3d.GetDeviceContext(), d3d.GetDepthStencilView()); // set the off-screen texture as the render target
                 offScreen.clear(d3d.GetDeviceContext());
 
-                if (!mesh.Render(d3d.GetDeviceContext(), &shaders0, lightDirection, (float)timer.sinceInit(), FPCamera.getPosition(), XMMatrixScaling(0.56f, 0.56f, 0.56f) * worldFinal, view, projection))
+                if (!mesh.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixScaling(0.56f, 0.56f, 0.56f) * worldFinal, view, projection))
                 {
                     Errors::Cry(L"Render error in scene. :|");
                     break;
                 }
 
-                if (!spider.Render(d3d.GetDeviceContext(), &shaders0, lightDirection, (float)timer.sinceInit(), FPCamera.getPosition(), XMMatrixScaling(0.05f, 0.05f, 0.05f) * worldFinal * XMMatrixTranslation(-1.0f, 2.0f, 6.0f), view, projection))
+                if (!spider.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixScaling(0.05f, 0.05f, 0.05f) * worldFinal * XMMatrixTranslation(-1.0f, 2.0f, 6.0f), view, projection))
                 {
                     Errors::Cry(L"Render error in scene. :|");
                     break;

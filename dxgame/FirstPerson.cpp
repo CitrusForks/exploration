@@ -82,7 +82,7 @@ XMVECTOR FirstPerson::getPosition()
 }
 
 // currently unused...
-void FirstPerson::setPosition(CXMVECTOR to)
+void FirstPerson::setPosition(FXMVECTOR to)
 {
     XMStoreFloat4(&m_position, to);
 }

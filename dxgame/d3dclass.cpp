@@ -49,7 +49,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	DXGI_MODE_DESC* displayModeList;
 	DXGI_ADAPTER_DESC adapterDesc;
 	ID3D11Texture2D* backBufferPtr;
-	float fieldOfView, screenAspect;
+	//float fieldOfView, screenAspect;
 
 
 	// Store the vsync setting.
@@ -397,6 +397,8 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	// Create the viewport.
         m_deviceContext->RSSetViewports(1, &viewport);
 
+        // d3dmatrix stuff that I'm not using:
+#if 0
 	// Setup the projection matrix.
 	fieldOfView = (float)D3DX_PI / 4.0f;
 	screenAspect = (float)screenWidth / (float)screenHeight;
@@ -409,6 +411,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 
 	// Create an orthographic projection matrix for 2D rendering.
 	D3DXMatrixOrthoLH(&m_orthoMatrix, (float)screenWidth, (float)screenHeight, screenNear, screenDepth);
+#endif
 
     return true;
 }
