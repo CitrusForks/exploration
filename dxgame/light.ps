@@ -22,8 +22,8 @@ cbuffer LightBuffer : register(b1)
 	float time;            // this isn't strictly light but it's useful for goofy effects
 	float4 cameraPos;
 	float4 spotlightPos[NUM_SPOTLIGHTS];  // spotlights!
-	float3 spotlightDir[NUM_SPOTLIGHTS]; 
-	float spotlightBeamAngle[NUM_SPOTLIGHTS]; // dir + angle = 4 floats so buffer size should be OK
+	float4 spotlightDir[NUM_SPOTLIGHTS];  // need the fourth float for packing alignment :|
+	float spotlightBeamCosAngle[NUM_SPOTLIGHTS];
 };
 // end of globals
 
@@ -48,7 +48,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	float3 lightDir;
 	float lightIntensity;
 	float4 color;
-    float4 specular;
+    float4 specular = 0.0f;
 	uint texNum = input.texNum;
 
 	// XXX this is only used by ComplexMesh which sends multiple disparate meshes as one draw call
@@ -91,6 +91,9 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 		return float4(1.0f, 0.1f, 0.1f, 1.0f); // if discard doesn't work, pixels will show up red
 	}
 
+	// vector from the eye
+	float3 viewDirection = normalize(cameraPos.xyz - input.worldPos.xyz );
+
 	// Set the default output color to the ambient light value for all pixels.
     color = ambientColor;
 
@@ -111,8 +114,6 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	    // Saturate the ambient and diffuse color.
 		color = saturate(color);
 
-		float3 viewDirection = normalize(cameraPos.xyz - input.worldPos.xyz);
-
 		//a graphical representation of the slight difference between the results of interpolating view direction and interpolating world position for recalculating view direction
 		//float3 r = abs(normalize(viewDirection) - input.viewDirection); // actually, this seems broken right now
 		//float3 r = abs(input.normal);
@@ -126,21 +127,29 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
     }
 
 	// spotlight calculations
-	//return float4(0, distance(input.worldPos, cameraPos), sin(time*10), 1);
-
-	float3 sourceToPixel = normalize(input.worldPos.xyz - spotlightPos[0].xyz);
-	float beamAlignment = dot(spotlightDir[0], sourceToPixel);
-
-	if (beamAlignment > 0.0 && beamAlignment > cos(3.14159268358979/16))
+	for (uint i = 0; i < NUM_SPOTLIGHTS; ++i) // once per light...
 	{
-		float3 toLight = -sourceToPixel;
-		float spotlightIntensity = dot(input.normal, toLight);
-		if (spotlightIntensity > 0.0)
-		{
-			spotlightIntensity *= beamAlignment * diffuseColor; // TODO proper falloff
-			// TODO distance-based attenuation
+		if (spotlightPos[i].w == 0.0) break; // out of lights in the scene
+		float3 sourceToPixel = normalize(input.worldPos.xyz - spotlightPos[i].xyz);
+		float beamAlignment = dot(spotlightDir[i], sourceToPixel);
 
-			color = saturate(color + spotlightIntensity);
+		if (beamAlignment > 0.0 && beamAlignment > spotlightBeamCosAngle[i])
+		{
+			float3 toLight = -sourceToPixel;
+			float spotlightIntensity = dot(input.normal, toLight);
+			if (spotlightIntensity > 0.0)
+			{
+				beamAlignment = pow(beamAlignment,100); // XXX this is a stupid way of doing this
+				spotlightIntensity *= beamAlignment * diffuseColor; // TODO proper falloff
+				// TODO distance-based attenuation
+
+				color = saturate(color + spotlightIntensity);
+
+				// calculate half-vector for Blinn-Phong specular model
+				float3 H = normalize(toLight + viewDirection);
+				// calculate specular reflection based on dot product of half-vector and normal vector, along with material data
+				specular += beamAlignment * specularColor * pow(saturate(dot(H, normalize(input.normal))), specularPower);
+			}
 		}
 	}
 

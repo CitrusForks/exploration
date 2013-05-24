@@ -169,6 +169,12 @@ int _tmain(int argc, _TCHAR* argv[])
             return 1;
         }
 
+        CompoundMesh floor;
+        floor.load(d3d.GetDevice(), d3d.GetDeviceContext(), "nonsense.obj");
+
+        CompoundMesh torus;
+        torus.load(d3d.GetDevice(), d3d.GetDeviceContext(), "torus.obj");
+
         SimpleMesh square;
         if (!square.load(L"square.obj", d3d.GetDevice()))
         {
@@ -246,6 +252,19 @@ int _tmain(int argc, _TCHAR* argv[])
                     Errors::Cry(L"Render error in scene. :|");
                     break;
                 }
+
+                if (!floor.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixIdentity(), view, projection))
+                {
+                    Errors::Cry(L"Render error in scene. :|");
+                    break;
+                }
+
+                if (!torus.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixTranslation(0.0f, 1.0f, 3.0f), view, projection))
+                {
+                    Errors::Cry(L"Render error in scene. :|");
+                    break;
+                }
+
 
                 // done rendering scene
 

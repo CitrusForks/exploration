@@ -492,8 +492,11 @@ bool VanillaShaderClass::SetPSLights( ID3D11DeviceContext *deviceContext, const 
     for (int i = 0; i < numSpotlights; ++i)
     {
         dataPtr->spotlightPos[i] = spotlightPos[i];
-        dataPtr->spotlightDir[i] = spotlightDir[i];
-        dataPtr->spotlightBeamAngle[i] = (float)M_PI * 30.0f/180.f; 
+        dataPtr->spotlightDir[i].x = spotlightDir[i].x;
+        dataPtr->spotlightDir[i].y = spotlightDir[i].y;
+        dataPtr->spotlightDir[i].z = spotlightDir[i].z;
+        dataPtr->spotlightDir[i].w = 0.0f;
+        dataPtr->spotlightBeamCosAngle[i] = cosf((float)M_PI * 15.0f/180.f); 
     }
 
 #if 0

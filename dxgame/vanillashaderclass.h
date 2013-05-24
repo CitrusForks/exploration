@@ -49,8 +49,8 @@ private:
         float time;
         XMFLOAT4 cameraPos;
         XMFLOAT4 spotlightPos[NUM_SPOTLIGHTS];
-        XMFLOAT3 spotlightDir[NUM_SPOTLIGHTS];
-        float spotlightBeamAngle[NUM_SPOTLIGHTS];
+        XMFLOAT4 spotlightDir[NUM_SPOTLIGHTS];
+        float spotlightBeamCosAngle[NUM_SPOTLIGHTS];
     };
 
 
