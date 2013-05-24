@@ -10,6 +10,7 @@ class FirstPerson
 {
 private:
     XMFLOAT4 m_position;
+    float m_height;
     float m_heading; // aka yaw, perhaps
     float m_pitch; // looking up at the ceiling, are we?
 
@@ -21,6 +22,7 @@ public:
     void perFrameUpdate(double timeElapsed, Input &input);
     XMMATRIX getViewMatrix(); 
     XMVECTOR getPosition();
+    XMVECTOR getEyePosition();
     void setPosition(FXMVECTOR to);
 
     static float movementSpeed;

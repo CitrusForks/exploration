@@ -53,6 +53,22 @@ IntermediateRenderTarget::IntermediateRenderTarget(ID3D11Device *dev, ID3D11Devi
         m_texture->Release();
         return;
     }
+
+    D3D11_SAMPLER_DESC samplerDesc = {D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_WRAP, 0.0f, 0, D3D11_COMPARISON_ALWAYS };
+    samplerDesc.MinLOD = 0;
+    samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+    rc = dev->CreateSamplerState(&samplerDesc, &m_sampleState);
+    if(FAILED(rc))
+    {
+        Errors::Cry(L"Couldn't create sampler intermediate buffer. :/");
+        m_targetView->Release();
+        m_texture->Release();
+        m_resourceView->Release();
+        return;
+    }
+
+
 }
 
 
@@ -81,8 +97,10 @@ void IntermediateRenderTarget::Shutdown()
     m_targetView->Release();
     m_resourceView->Release();
     m_texture->Release();
+    m_sampleState->Release();
 
     m_targetView = nullptr;
     m_resourceView = nullptr;
     m_texture = nullptr;
+    m_sampleState = nullptr;
 }

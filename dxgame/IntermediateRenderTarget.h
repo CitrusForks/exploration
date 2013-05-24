@@ -9,6 +9,7 @@ private:
     ID3D11Texture2D *m_texture;
     ID3D11ShaderResourceView *m_resourceView;
     ID3D11RenderTargetView *m_targetView;
+    ID3D11SamplerState *m_sampleState;
 
 public:
     IntermediateRenderTarget(ID3D11Device *dev, ID3D11DeviceContext *devCtx, int width, int height);

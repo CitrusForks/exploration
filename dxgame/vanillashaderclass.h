@@ -50,7 +50,7 @@ private:
         XMFLOAT4 cameraPos;
         XMFLOAT4 spotlightPos[NUM_SPOTLIGHTS];
         XMFLOAT4 spotlightDir[NUM_SPOTLIGHTS];
-        float spotlightBeamCosAngle[NUM_SPOTLIGHTS];
+        XMFLOAT4 spotlightEtc[NUM_SPOTLIGHTS]; // arrays are packed into 4-float elements anyway so this is {Cos(angle), constant attenuation, linear attenuation, quadratic attenuation}
     };
 
 

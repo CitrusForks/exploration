@@ -22,8 +22,8 @@ cbuffer LightBuffer : register(b1)
 	float time;            // this isn't strictly light but it's useful for goofy effects
 	float4 cameraPos;
 	float4 spotlightPos[NUM_SPOTLIGHTS];  // spotlights!
-	float4 spotlightDir[NUM_SPOTLIGHTS];  // need the fourth float for packing alignment :|
-	float spotlightBeamCosAngle[NUM_SPOTLIGHTS];
+	float4 spotlightDir[NUM_SPOTLIGHTS];  // float3 would take up 4 floats anyway, might as well make it explicit
+	float4 spotlightEtc[NUM_SPOTLIGHTS];  // arrays are packed into 4-float elements anyway so this is {Cos(angle), constant attenuation, linear, quadratic}
 };
 // end of globals
 
@@ -33,9 +33,10 @@ struct PixelInputType
 	float4 modelPos : MODELPOS;
 	float4 worldPos : WORLDPOS;
     float2 tex : TEXCOORD0;
-	float3 normal : NORMAL;
-	float3 viewDirection : VIEWDIR;
 	nointerpolation uint texNum : TEXINDEX;                    // which texture to use
+	float3 normal : NORMAL;
+	float3 tangent : TANGENT;
+	float3 viewDirection : VIEWDIR;
 };
 
 
@@ -50,6 +51,11 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	float4 color;
     float4 specular = 0.0f;
 	uint texNum = input.texNum;
+	float3 tangent;
+	//tangent = normalize(input.tangent);
+
+	//return float4(0, dot(input.tangent, input.normal), 0, 1)*10; // uncomment for error visualization
+	//return float4(tangent.x, tangent.y, tangent.z, 1); // uncomment for amazing technicolor vomit shader
 
 	// XXX this is only used by ComplexMesh which sends multiple disparate meshes as one draw call
 	// shaderTexture[texNum] doesn't compil so this was the best I could come up with
@@ -88,8 +94,17 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	if (textureColor.a < 0.05f)
 	{
 		clip(-1); // discard transparent pixels
-		return float4(1.0f, 0.1f, 0.1f, 1.0f); // if discard doesn't work, pixels will show up red
+		return float4(1.0f, 0.1f, 0.1f, 1.0f); // if discard doesn't work, pixels will show up red; N.B., it works
 	}
+
+	// make sure tangent is orthonormal (to normal)
+	// essentially subtracts any component of tangent along the direction of the normal [Luna, figure 18.6]
+	tangent = tangent - input.normal * dot(tangent, input.normal);
+	float3 binormal = cross(input.normal, tangent);
+	float3x3 tangentToWorld = float3x3(tangent, binormal, input.normal);
+
+
+
 
 	// vector from the eye
 	float3 viewDirection = normalize(cameraPos.xyz - input.worldPos.xyz );
@@ -130,25 +145,37 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	for (uint i = 0; i < NUM_SPOTLIGHTS; ++i) // once per light...
 	{
 		if (spotlightPos[i].w == 0.0) break; // out of lights in the scene
-		float3 sourceToPixel = normalize(input.worldPos.xyz - spotlightPos[i].xyz);
-		float beamAlignment = dot(spotlightDir[i], sourceToPixel);
+		
+		float3 sourceToPixel = input.worldPos.xyz - spotlightPos[i].xyz;
+		float distToLight = distance(input.worldPos, spotlightPos[i]);
+		sourceToPixel = sourceToPixel / distToLight; // not sure whether the HLSL compiler will optimize distance(), normalize() like so; TODO: check asm output? :/
 
-		if (beamAlignment > 0.0 && beamAlignment > spotlightBeamCosAngle[i])
+		float beamAlignment = dot(spotlightDir[i], sourceToPixel);
+		float beamCosAngle = spotlightEtc[i].x;
+
+		if (beamAlignment > 0.0 && beamAlignment > beamCosAngle)
 		{
 			float3 toLight = -sourceToPixel;
 			float spotlightIntensity = dot(input.normal, toLight);
+
 			if (spotlightIntensity > 0.0)
 			{
-				beamAlignment = pow(beamAlignment,100); // XXX this is a stupid way of doing this
-				spotlightIntensity *= beamAlignment * diffuseColor; // TODO proper falloff
-				// TODO distance-based attenuation
+				float attenuation = 1.0 / (spotlightEtc[i].y + spotlightEtc[i].z * distToLight + spotlightEtc[i].w * pow(distToLight,2));
 
-				color = saturate(color + spotlightIntensity);
+				//return float4(0,1,0,1); // horrid green spotlight debugging
+
+				//beamAlignment = pow(beamAlignment,100); // XXX this seems like stupid way of doing this but the books do it pretty much like this, it turns out
+
+				float fallOff = saturate((beamAlignment*1.0001-beamCosAngle)/(1-beamCosAngle)); // maybe this way is stupid too; 1.0001 was chosen experimentally
+				
+				spotlightIntensity *= fallOff * diffuseColor * attenuation; 
+
+				color = color + spotlightIntensity;
 
 				// calculate half-vector for Blinn-Phong specular model
 				float3 H = normalize(toLight + viewDirection);
 				// calculate specular reflection based on dot product of half-vector and normal vector, along with material data
-				specular += beamAlignment * specularColor * pow(saturate(dot(H, normalize(input.normal))), specularPower);
+				specular += fallOff * specularColor * pow(saturate(dot(H, normalize(input.normal))), specularPower);
 			}
 		}
 	}

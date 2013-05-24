@@ -11,6 +11,7 @@ struct Vertex
 	XMFLOAT2 tex0;   // texture sampler, possibly an array
 	XMFLOAT2 tex1;   // not used, just experimenting
         unsigned int texArray;  // texture to choose from array if using an array of textures
+        XMFLOAT3 tangent;// tangent; binormal is calculated in vertex shader
 
         Vertex() : pos(0.0f, 0.0f, 0.0f), normal(0.0f, 0.0f, 0.0f), tex0(0.0f, 0.0f), tex1(0.0f, 0.0f), texArray(0)
         {
@@ -24,3 +25,4 @@ struct Vertex
 
 
 #endif
+

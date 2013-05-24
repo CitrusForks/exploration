@@ -9,8 +9,9 @@ float FirstPerson::movementSpeed = 2.0f; // in m/s ... 1 unit is 1 meter is the 
 float FirstPerson::rotationSpeed = (float)(140.0/360.0 * M_PI * 2);
 
 
-FirstPerson::FirstPerson(void) : m_pitch(0.0f), m_heading(0.0f), m_position(0.0f, 0.0f, 0.0f, 1.0f)
+FirstPerson::FirstPerson(void) : m_pitch(0.0f), m_heading(0.0f), m_position(0.0f, 0.0f, 0.0f, 1.0f), m_height(1.8f)
 {
+    // 1.8m tall = 5'9"
 }
 
 
@@ -70,16 +71,25 @@ XMMATRIX FirstPerson::getViewMatrix()
 {
     XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
     XMVECTOR forward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
-    XMVECTOR height = XMVectorSet(0.0f, 1.8f, 0.0f, 0.0f); // a 1.8m tall person is OK, perhaps on the tall side
 
-    return XMMatrixLookToLH(XMLoadFloat4(&m_position) + height, XMVector3Rotate(forward, XMQuaternionRotationRollPitchYaw(m_pitch, m_heading, 0.0f)), up);
+    return XMMatrixLookToLH(getEyePosition(), XMVector3Rotate(forward, XMQuaternionRotationRollPitchYaw(m_pitch, m_heading, 0.0f)), up);
 }
 
-// just the position
+// just the position, at foot level
 XMVECTOR FirstPerson::getPosition()
 {
     return XMLoadFloat4(&m_position);
 }
+
+
+// at eye level...
+XMVECTOR FirstPerson::getEyePosition()
+{
+    return XMLoadFloat4(&m_position) + XMVectorSet(0.0f, m_height, 0.0f, 0.0f); 
+;
+}
+
+
 
 // currently unused...
 void FirstPerson::setPosition(FXMVECTOR to)

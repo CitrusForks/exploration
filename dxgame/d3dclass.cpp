@@ -242,7 +242,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	// Don't set the advanced flags.
 	swapChainDesc.Flags = 0;
 
-	// Set the feature level to DirectX 11.
+	// Set the feature level to DirectX 10+.
 	D3D_FEATURE_LEVEL featureLevels[3] = {D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0};
 
 	// Create the swap chain, Direct3D device, and Direct3D device context.

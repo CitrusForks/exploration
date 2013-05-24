@@ -170,7 +170,7 @@ int _tmain(int argc, _TCHAR* argv[])
         }
 
         CompoundMesh floor;
-        floor.load(d3d.GetDevice(), d3d.GetDeviceContext(), "nonsense.obj");
+        floor.load(d3d.GetDevice(), d3d.GetDeviceContext(), "floor.obj");
 
         CompoundMesh torus;
         torus.load(d3d.GetDevice(), d3d.GetDeviceContext(), "torus.obj");
@@ -183,14 +183,14 @@ int _tmain(int argc, _TCHAR* argv[])
 
         XMMATRIX world = XMMatrixTranslation(0.0f, 0.0f, 7.0f);
 
-        XMMATRIX projection = XMMatrixPerspectiveFovLH((float)((60.0/360.0) * M_PI * 2), (float)width / (float)height, 0.9f, 1000.0f);
+        XMMATRIX projection = XMMatrixPerspectiveFovLH((float)((60.0/360.0) * M_PI * 2), (float)width / (float)height, 0.1f, 1000.0f);
 
         XMMATRIX ortho = XMMatrixOrthographicOffCenterLH(0.0f, 1.0f, 0.0f, 1.0f, 0.1f, 1.1f);
 
 	MSG msg;
 	ZeroMemory(&msg, sizeof(MSG)); // clear message structure
 	
-        XMVECTOR axis = XMVectorSet(0.7071067811865475f, 0.7071067811865475f, 0.0f, 0.0f); // normalized 45 degree angle vector
+        XMVECTOR axis45deg = XMVectorSet(-0.7071067811865475f, -0.7071067811865475f, 0.0f, 0.0f); // normalized 45 degree angle vector
 
         XMFLOAT3 lightDirection(0.0f,  -1.0f, 0.0f); // directional light
 
@@ -225,14 +225,17 @@ int _tmain(int argc, _TCHAR* argv[])
 
                 d3d.BeginScene(false); // don't clear back buffer; we're just going to overwrite it completely from the off-screen buffer
                               
-                XMFLOAT4 lightPos; 
-                XMStoreFloat4(&lightPos, FPCamera.getPosition());
-                lightPos.y += 1.7f;
+                XMFLOAT4 lightPos[2]; 
+                XMStoreFloat4(lightPos, FPCamera.getEyePosition());
+                lightPos->y -= 0.1f;
+                lightPos[1] = XMFLOAT4(4.0f, 4.0f, 3.0f, 1.0f);
                 
-                XMFLOAT3 lightDir;
-                XMStoreFloat3(&lightDir, XMVector3TransformNormal(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), XMMatrixTranspose(FPCamera.getViewMatrix())));
+                XMFLOAT3 lightDir[2];
+                XMStoreFloat3(lightDir, XMVector3TransformNormal(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), XMMatrixTranspose(FPCamera.getViewMatrix())));
+                XMStoreFloat3(&(lightDir[1]), axis45deg);
+                
 
-                shaders0.SetPSLights(d3d.GetDeviceContext(), lightDirection, (float)timer.sinceInit(), FPCamera.getPosition(), &lightPos, &lightDir, 1);
+                shaders0.SetPSLights(d3d.GetDeviceContext(), lightDirection, (float)timer.sinceInit(), FPCamera.getPosition(), lightPos, lightDir, 2);
 
                 XMMATRIX worldFinal = /* XMMatrixRotationAxis(axis, angle) * */ world;
 
@@ -252,13 +255,13 @@ int _tmain(int argc, _TCHAR* argv[])
                     Errors::Cry(L"Render error in scene. :|");
                     break;
                 }
-
+#if 1
                 if (!floor.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixIdentity(), view, projection))
                 {
                     Errors::Cry(L"Render error in scene. :|");
                     break;
                 }
-
+#endif
                 if (!torus.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixTranslation(0.0f, 1.0f, 3.0f), view, projection))
                 {
                     Errors::Cry(L"Render error in scene. :|");

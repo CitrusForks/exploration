@@ -1,11 +1,8 @@
-////////////////////////////////////////////////////////////////////////////////
 // Filename: light.vs
-////////////////////////////////////////////////////////////////////////////////
 
-
-/////////////
-// GLOBALS //
-/////////////
+//
+// Globals
+//
 cbuffer MatrixBuffer
 {
 	matrix worldMatrix;
@@ -20,15 +17,16 @@ cbuffer CameraBuffer
 };
 
 
-//////////////
-// TYPEDEFS //
-//////////////
+//
+// Typedefs
+//
 struct VertexInputType
 {
     float4 position : POSITION;
     float2 tex : TEXCOORD0;
-	float3 normal : NORMAL;
 	uint texNum : TEXINDEX;
+	float3 normal : NORMAL;
+	float3 tangent : TANGENT;
 };
 
 struct PixelInputType
@@ -37,15 +35,15 @@ struct PixelInputType
 	float4 modelPos : MODELPOS;
 	float4 worldPos : WORLDPOS;
     float2 tex : TEXCOORD0;
-	float3 normal : NORMAL;
-	float3 viewDirection : VIEWDIR;
 	nointerpolation uint texNum : TEXINDEX;                    // which texture to use
+	float3 normal : NORMAL;
+	float3 tangent : TANGENT;
+	float3 viewDirection : VIEWDIR;
 };
 
-
-////////////////////////////////////////////////////////////////////////////////
+//
 // Vertex Shader
-////////////////////////////////////////////////////////////////////////////////
+//
 PixelInputType LightVertexShader(VertexInputType input)
 {
     PixelInputType output;
@@ -53,7 +51,6 @@ PixelInputType LightVertexShader(VertexInputType input)
 
 	output.modelPos = input.position;
 	output.texNum = input.texNum;
-
 
 	// Change the position vector to be 4 units for proper matrix calculations.
     input.position.w = 1.0f;
@@ -72,6 +69,9 @@ PixelInputType LightVertexShader(VertexInputType input)
 	
     // Normalize the normal vector.
     output.normal = normalize(output.normal);
+
+	// Repeat for tangent vector
+	output.tangent = normalize(mul(input.tangent, (float3x3)worldMatrix));
 
 	// Calculate the position of the vertex in the world.
     worldPosition = mul(input.position, worldMatrix);

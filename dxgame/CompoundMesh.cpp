@@ -167,6 +167,9 @@ void CompoundMesh::apply_material(SimpleMesh::Material *to, aiMaterial *mtl)
 
 bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceContext *devCtx, const struct aiNode *nd, CompoundMeshNode &node )
 {
+    bool uvWarningPrinted = false;
+    bool tangentWarningPrinted = false;
+
     assert(sizeof(XMFLOAT4X4) == sizeof(aiMatrix4x4));
 
     XMMATRIX localTransform = XMLoadFloat4x4((XMFLOAT4X4*) &(nd->mTransformation));
@@ -190,14 +193,13 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
 
         SimpleMesh interleavedMesh;
 
-        unsigned texNum = 0;
-
         // store the material properties
         aiMaterial *mat = m_aiScene->mMaterials[mesh->mMaterialIndex];
         apply_material(&interleavedMesh.m_material, mat);
         
 
         // get the correct diffuse component texture, load it if necessary
+        // TODO: refactor into some kind of separate texture manager?
         aiString texPath;
         aiReturn rc = m_aiScene->mMaterials[mesh->mMaterialIndex]->GetTexture(aiTextureType_DIFFUSE, 0, &texPath); // texPath is in utf8
         if (texPath.length)
@@ -240,6 +242,7 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
 #endif
 
         // copy vertex coordinates, normals, and texture coordinates for every vertex in this mesh
+        // also tangents
         vertices.clear();
         vertices.reserve(mesh->mNumVertices); // allocated required memory ahead of time!
         for (unsigned i = 0; i < mesh->mNumVertices; ++i)
@@ -250,9 +253,30 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
 
             v.pos = reinterpret_cast<XMFLOAT3*>(mesh->mVertices)[i]; // the data in aiVector3D is just three floats, just like XMFLOAT3
             v.normal = reinterpret_cast<XMFLOAT3*>(mesh->mNormals)[i];
-            v.tex0.x = mesh->mTextureCoords[0][i].x; // AssImp always stores texture coordinates in a 3-member vector while we're using 2 floats
-            v.tex0.y = mesh->mTextureCoords[0][i].y;
-            v.texArray = texNum;
+
+            if (nullptr == mesh->mTextureCoords[0]) // try to copy uv texture coordinates
+            {
+                v.tex0.x = v.tex0.y = 0;
+                if (!uvWarningPrinted)
+                {
+                    std::cerr << "Missing texture coordinates... " << std::endl;
+                    uvWarningPrinted = true;
+                }
+            } else
+            {
+                v.tex0.x = mesh->mTextureCoords[0][i].x; // AssImp always stores texture coordinates in a 3-member vector while we're using 2 floats
+                v.tex0.y = mesh->mTextureCoords[0][i].y;
+            }
+
+            if (nullptr == mesh->mTangents)
+            {
+                v.tangent = XMFLOAT3(0,0,0);
+            } else
+            {
+                v.tangent = reinterpret_cast<XMFLOAT3*>(mesh->mTangents)[i];
+            }
+
+            v.texArray = 0;
 
             vertices.push_back(v);
         }
@@ -315,13 +339,13 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
     return true;
 }
 
-#if 0
+#if 1
 // recursively render meshes for all nodes
 bool CompoundMesh::Render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, FXMVECTOR cameraPosition, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix, CompoundMeshNode *node /*= nullptr */ )
 {
     bool rc = true; // return value
 
-    WalkNodes(m_root, [&deviceContext, &shader, &time, &lightDirection, &rc, &cameraPosition, &worldMatrix, &viewMatrix, &projectionMatrix] (CompoundMeshNode &node) // capturing an *XMVECTOR variable is a bad idea, doesn't work
+    WalkNodes(m_root, [&deviceContext, &shader, &rc, &cameraPosition, &worldMatrix, &viewMatrix, &projectionMatrix] (CompoundMeshNode &node) // capturing an *XMVECTOR variable is a bad idea, doesn't work
     {
         // auto deviceContext = in_deviceContext; // C++ lambda wart: can't capture a variable that's only in scope due to being captured by the containing lambda; must make a local copy
         //auto shader = in_shader; // maybe C++ lambdas aren't good :|
