@@ -63,3 +63,16 @@ StdAfx.h, StdAfx.cpp
 
 art notes:
 http://insurrectionx.deviantart.com/art/damask-wallpaper-85958835
+
+TODO:
+Refactor texture minder.
+Normal maps.
+Specular maps?
+Shadow maps!
+Actor, Scene
+Game state
+Lua control of actors?
+Level generator?
+3D sound... actually make use of FMOD
+Use bulletphysics library?
+Do the things.
