@@ -5,11 +5,11 @@
 #include <iostream>
 
 
-float FirstPerson::movementSpeed = 2.0f; // in m/s ... 1 unit is 1 meter is the convention in this project; 2.0m/s is quite a hurried walk
+float FirstPerson::movementSpeed = 2.0f; // in m/s ... 1 unit is 1 meter is the convention in this project; 2.0m/s is quite a hurried walk... but walking feels slow
 float FirstPerson::rotationSpeed = (float)(140.0/360.0 * M_PI * 2);
 
 
-FirstPerson::FirstPerson(void) : m_pitch(0.0f), m_heading(0.0f), m_position(0.0f, 0.0f, 0.0f, 1.0f), m_height(1.8f)
+FirstPerson::FirstPerson(void) : m_pitch(0.0f), m_heading(0.0f), m_position(0.0f, 0.0f, 0.0f, 1.0f), m_height(1.8f), m_mouse_x(-1), m_mouse_y(-1)
 {
     // 1.8m tall = 5'9"
 }
@@ -63,6 +63,23 @@ void FirstPerson::perFrameUpdate(double timeElapsed, Input &input)
             XMLoadFloat4(&m_position) + XMVector3Rotate(forward, XMQuaternionRotationRollPitchYaw(0.0f, m_heading + (float)M_PI_2, 0.0f)) * (float)(movementSpeed * timeElapsed * sign) 
            );
     }
+
+    // mouse stuff?
+    int x, y;
+    input.GetMouseLocation(x, y);
+    if (m_mouse_x == -1 && m_mouse_y == -1)
+    {
+        // first frame, don't go wild with crazy mouse inputs
+    } else
+    {
+        m_heading += (float) (timeElapsed * (x - m_mouse_x) * rotationSpeed / 4.0f); // x movement rotates; TODO: mouse sensitivity setting instead of /4
+        
+        m_pitch += (float) (timeElapsed * (y - m_mouse_y) / 4.0f); // y movement looks up and down
+        if (m_pitch < -M_PI_4) m_pitch = (float) -M_PI_4; // clamp pitch
+        if (m_pitch > M_PI_4) m_pitch = (float) M_PI_4; 
+    }
+    m_mouse_x = x;
+    m_mouse_y = y;
 }
 
 

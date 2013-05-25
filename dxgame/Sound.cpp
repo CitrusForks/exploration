@@ -4,13 +4,13 @@
 
 #pragma comment(lib, "fmodex_vc.lib")
 
-
+using namespace std;
 
 static void ERRCHECK(FMOD_RESULT rc)
 {
     if (rc != FMOD_OK)
     {
-        std::cerr << "FMOD error. :(" << std::endl;
+        Errors::Cry("FMOD error. :(");
     }
 }
 
@@ -113,7 +113,7 @@ int Sound::loadSound(char *path)
     
     if (system->createSound(path, FMOD_DEFAULT, 0, &s) != FMOD_OK)
     {
-        std::cerr << "Could not load: " << path << std::endl;
+        cerr << "Could not load: " << path << endl;
         return -1;
     }
 
@@ -126,12 +126,12 @@ void Sound::play(int sound, FMOD::Channel **channel)
 {
     if (sound < 0 || (unsigned)sound >= samples.size())
     {
-        std::cerr << "There is no sound numbered " << sound << std::endl;
+        cerr << "There is no sound numbered " << sound << endl;
         return;
     }
 
     if (system->playSound(FMOD_CHANNEL_FREE, samples[sound], false, channel) != FMOD_OK)
     {
-        std::cerr << "Error playing a sound. :(" << std::endl;
+        cerr << "Error playing a sound. :(" << endl;
     }
 }

@@ -37,7 +37,7 @@ ComplexMesh::~ComplexMesh(void)
 
     if (m_aiScene) aiReleaseImport(m_aiScene);
 
-    for (auto i = m_textures.begin(); i != m_textures.end(); ++i) (*i).Shutdown();
+    for (auto i = m_textures.begin(); i != m_textures.end(); ++i) (*i).shutdown();
     m_textures.clear();
     m_resourceViews.clear();
 }
@@ -198,13 +198,13 @@ void ComplexMesh::recursive_interleave(ID3D11Device *device, ID3D11DeviceContext
                 std::cout << "Loading new texture: " << c_path << std::endl;
                 // texture not found, load it
                 LoadedTexture newTex;
-                if (!newTex.Initialize(device, devCtx, wPath.get()))
+                if (!newTex.initialize(device, devCtx, wPath.get()))
                 {
                     Errors::Cry("Failed to load texture", c_path);
                 } else
                 {
                     texNum = m_textureReference[path] = m_textures.size();
-                    m_resourceViews.push_back(*(newTex.GetTexture()));
+                    m_resourceViews.push_back(*(newTex.getTexture()));
                     m_textures.push_back(newTex);
                 }
             } else

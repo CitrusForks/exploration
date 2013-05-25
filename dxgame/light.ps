@@ -1,7 +1,8 @@
 // Filename: light.ps
 
 // globals:
-Texture2D shaderTexture[15] : register(t0);
+Texture2D diffuseTexture[15] : register(t0);
+Texture2D normalMap : register(t1);
 SamplerState SampleType;
 
 // this buffer needs to be split up into separate lights and material buffers:
@@ -11,7 +12,8 @@ cbuffer MaterialBuffer : register(b0)
 	float4 diffuseColor;
     float4 specularColor;
     float specularPower;
-	float3 padding;
+	bool useNormalMap;
+	float2 padding;
 }
 
 #define NUM_SPOTLIGHTS 4
@@ -40,6 +42,8 @@ struct PixelInputType
 };
 
 
+static const float PI = 3.14159265358979;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Pixel Shader
 ////////////////////////////////////////////////////////////////////////////////
@@ -51,45 +55,49 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	float4 color;
     float4 specular = 0.0f;
 	uint texNum = input.texNum;
-	float3 tangent;
+	float3 tangent = input.tangent;
 	//tangent = normalize(input.tangent);
 
 	//return float4(0, dot(input.tangent, input.normal), 0, 1)*10; // uncomment for error visualization
 	//return float4(tangent.x, tangent.y, tangent.z, 1); // uncomment for amazing technicolor vomit shader
 
+	textureColor = diffuseTexture[0].Sample(SampleType, input.tex);
+
+#if 0
 	// XXX this is only used by ComplexMesh which sends multiple disparate meshes as one draw call
-	// shaderTexture[texNum] doesn't compil so this was the best I could come up with
+	// diffuseTexture[texNum] doesn't compil so this was the best I could come up with
 	// anyway, it's not actually being used by anything in practice now
 	// CompoundMesh sends meshes separately
 	if (texNum == 0)
 	{
-		textureColor = shaderTexture[0].Sample(SampleType, input.tex);
+		textureColor = diffuseTexture[0].Sample(SampleType, input.tex);
 	} else if (texNum == 1)
 	{
-		textureColor = shaderTexture[1].Sample(SampleType, input.tex);
+		textureColor = diffuseTexture[1].Sample(SampleType, input.tex);
 	} else if (texNum == 2)
 	{
-		textureColor = shaderTexture[2].Sample(SampleType, input.tex);
+		textureColor = diffuseTexture[2].Sample(SampleType, input.tex);
 	} else if (texNum == 3)
 	{
-		textureColor = shaderTexture[3].Sample(SampleType, input.tex);
+		textureColor = diffuseTexture[3].Sample(SampleType, input.tex);
 	} else if (texNum == 4)
 	{
-		textureColor = shaderTexture[4].Sample(SampleType, input.tex);
+		textureColor = diffuseTexture[4].Sample(SampleType, input.tex);
 	} else if (texNum == 5)
 	{
-		textureColor = shaderTexture[5].Sample(SampleType, input.tex);
+		textureColor = diffuseTexture[5].Sample(SampleType, input.tex);
 	} else if (texNum == 6)
 	{
-		textureColor = shaderTexture[6].Sample(SampleType, input.tex);
+		textureColor = diffuseTexture[6].Sample(SampleType, input.tex);
 	} else if (texNum == 7)
 	{
-		textureColor = shaderTexture[7].Sample(SampleType, input.tex);
+		textureColor = diffuseTexture[7].Sample(SampleType, input.tex);
 	} else if (texNum == 8)
 	{
-		textureColor = shaderTexture[8].Sample(SampleType, input.tex);
+		textureColor = diffuseTexture[8].Sample(SampleType, input.tex);
 	}
 	// end nonsense
+#endif
 
 	if (textureColor.a < 0.05f)
 	{
@@ -97,14 +105,26 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 		return float4(1.0f, 0.1f, 0.1f, 1.0f); // if discard doesn't work, pixels will show up red; N.B., it works
 	}
 
+	float3 normal;
+
 	// make sure tangent is orthonormal (to normal)
 	// essentially subtracts any component of tangent along the direction of the normal [Luna, figure 18.6]
-	tangent = tangent - input.normal * dot(tangent, input.normal);
-	float3 binormal = cross(input.normal, tangent);
-	float3x3 tangentToWorld = float3x3(tangent, binormal, input.normal);
+	if (useNormalMap)
+	{
+		//normal = normalize(input.normal);
+		//tangent = normalize(input.tangent);
+		tangent = tangent - input.normal * dot(tangent, input.normal);
+		float3 binormal = cross(input.normal, tangent);
+		float3x3 tangentToWorld = float3x3(tangent, binormal, input.normal);
 
-
-
+		float3 mapped_normal = normalMap.Sample(SampleType, input.tex).xyz;
+		//return mapped_normal;
+	
+		normal = mul(normalize(mapped_normal), tangentToWorld);
+	} else
+	{
+		normal = input.normal;
+	}
 
 	// vector from the eye
 	float3 viewDirection = normalize(cameraPos.xyz - input.worldPos.xyz );
@@ -119,7 +139,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
     lightDir = -lightDirection;
 
     // Calculate the amount of light on this pixel.
-    lightIntensity = saturate(dot(input.normal, lightDir));
+    lightIntensity = saturate(dot(normal, lightDir));
 
 	if(lightIntensity > 0.0f)
     {
@@ -131,14 +151,14 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 
 		//a graphical representation of the slight difference between the results of interpolating view direction and interpolating world position for recalculating view direction
 		//float3 r = abs(normalize(viewDirection) - input.viewDirection); // actually, this seems broken right now
-		//float3 r = abs(input.normal);
+		//float3 r = abs(normal);
 		//float4 rr = {r.x, r.y, r.z, 1.0f};
 		//return rr;
 
 		// calculate half-vector for Blinn-Phong specular model
 		float3 H = normalize(-lightDirection + viewDirection);
 		// calculate specular reflection based on dot product of half-vector and normal vector, along with material data
-		specular = specularColor * pow(saturate(dot(H, normalize(input.normal))), specularPower);
+		specular = specularColor * pow(saturate(dot(H, normalize(normal))), specularPower);
     }
 
 	// spotlight calculations
@@ -156,7 +176,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 		if (beamAlignment > 0.0 && beamAlignment > beamCosAngle)
 		{
 			float3 toLight = -sourceToPixel;
-			float spotlightIntensity = dot(input.normal, toLight);
+			float spotlightIntensity = dot(normal, toLight);
 
 			if (spotlightIntensity > 0.0)
 			{
@@ -166,7 +186,8 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 
 				//beamAlignment = pow(beamAlignment,100); // XXX this seems like stupid way of doing this but the books do it pretty much like this, it turns out
 
-				float fallOff = saturate((beamAlignment*1.0001-beamCosAngle)/(1-beamCosAngle)); // maybe this way is stupid too; 1.0001 was chosen experimentally
+				//float fallOff = saturate((beamAlignment*1.00001-beamCosAngle)/(1-beamCosAngle)); // maybe this way is stupid too; 1.0001 was chosen experimentally
+				float fallOff = sin(PI/1.3 * (beamAlignment-beamCosAngle)/(1-beamCosAngle)); // maybe this way is stupid too; 1.0001 was chosen experimentally
 				
 				spotlightIntensity *= fallOff * diffuseColor * attenuation; 
 
@@ -175,7 +196,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 				// calculate half-vector for Blinn-Phong specular model
 				float3 H = normalize(toLight + viewDirection);
 				// calculate specular reflection based on dot product of half-vector and normal vector, along with material data
-				specular += fallOff * specularColor * pow(saturate(dot(H, normalize(input.normal))), specularPower);
+				specular += fallOff * specularColor * pow(saturate(dot(H, normalize(normal))), specularPower);
 			}
 		}
 	}

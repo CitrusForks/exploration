@@ -278,8 +278,8 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	const DXGI_FORMAT depthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT; // for more z precision, switch to DXGI_FORMAT_D32_FLOAT (w/o stencil) or DXGI_FORMAT_D32_FLOAT_S8X24_UINT (w/ 8-bit stencil and wasted 24 bits??)
 
 	// Set up the description of the depth buffer.
-	depthBufferDesc.Width = screenWidth;
-	depthBufferDesc.Height = screenHeight;
+	depthBufferDesc.Width = screenWidth * 2;
+	depthBufferDesc.Height = screenHeight * 2;
 	depthBufferDesc.MipLevels = 1;
 	depthBufferDesc.ArraySize = 1;
 	depthBufferDesc.Format = depthStencilFormat;
@@ -387,8 +387,8 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	
 	// Setup the viewport for rendering.
 	D3D11_VIEWPORT viewport;
-        viewport.Width = (float)screenWidth;
-        viewport.Height = (float)screenHeight;
+        viewport.Width = (float)screenWidth*2;
+        viewport.Height = (float)screenHeight*2;
         viewport.MinDepth = 0.0f;
         viewport.MaxDepth = 1.0f;
         viewport.TopLeftX = 0.0f;

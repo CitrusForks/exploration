@@ -25,7 +25,7 @@
 //#include "ComplexMesh.h"
 #include "CompoundMesh.h"
 #include "Sound.h"
-#include "inputclass.h"
+#include "Input.h"
 #include "FirstPerson.h"
 #include "SimpleText.h"
 
@@ -37,6 +37,9 @@
 #pragma comment(lib, "lua52.lib")
 #pragma comment(lib, "FW1FontWrapper.lib")
 #pragma comment(lib, "assimp.lib")
+
+
+using namespace std;
 
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
@@ -69,7 +72,7 @@ void reportError(const char *prefix)
 	int error = GetLastError();
 	char errorStr[256];
 	FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, error, 0, errorStr, 255, nullptr);
-	std::cout << prefix << errorStr << std::endl;
+	cout << prefix << errorStr << endl;
 }
 
 
@@ -77,8 +80,8 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	int width = 1024, height = 768;
 
-	std::wcout << L"Unicode test: проверка Unicode" << std::endl; // unlikely to work! need to manually set codepage in terminal
-	std::cout << std::endl; // because the above is unlikely to work
+	wcout << L"Unicode test: проверка Unicode" << endl; // unlikely to work! need to manually set codepage in terminal
+	cout << endl; // because the above is unlikely to work
 
 	HMODULE progInstance = GetModuleHandle(nullptr);
 	WNDCLASSEX wc;
@@ -101,7 +104,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	ATOM wcAtom = RegisterClassEx(&wc); // register for class, do not waitlist. 
 	if (!wcAtom)
 	{
-		std::cout << "Error in RegisterClassEx()" << std::endl;
+		cout << "Error in RegisterClassEx()" << endl;
 	}
 
 	HWND window = CreateWindowEx(WS_EX_APPWINDOW, L"MainClass", L"TODO: come up with title", WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP, 25, 25, width, height, HWND_DESKTOP, 0, progInstance, 0);
@@ -125,7 +128,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	d3d.Initialize(width, height, true, window, false, 32, 1.0f);
 
         IntermediateRenderTarget offScreen(d3d.GetDevice(), d3d.GetDeviceContext(), width, height);
-        if (!offScreen.getResourceView())
+        if (!offScreen.getResourceView(d3d.GetDeviceContext()))
         {
             return 1;
         }
@@ -157,23 +160,28 @@ int _tmain(int argc, _TCHAR* argv[])
 
         int beepverb = soundSystem.loadSound("beepverb.wav");
 
+        TextureManager textures;
+
         CompoundMesh mesh;
-        if (!mesh.load(d3d.GetDevice(), d3d.GetDeviceContext(), /* "duck.obj" */ "Chekov.obj"))
+        if (!mesh.load(d3d.GetDevice(), d3d.GetDeviceContext(), &textures, "Chekov.obj"))
         {
             return 1;
         }
 
         CompoundMesh spider;
-        if (!spider.load(d3d.GetDevice(), d3d.GetDeviceContext(), "spider.obj"))
+        if (!spider.load(d3d.GetDevice(), d3d.GetDeviceContext(), &textures, "duck.obj"))
         {
             return 1;
         }
 
         CompoundMesh floor;
-        floor.load(d3d.GetDevice(), d3d.GetDeviceContext(), "floor.obj");
+        floor.load(d3d.GetDevice(), d3d.GetDeviceContext(), &textures, "floor.obj");
 
         CompoundMesh torus;
-        torus.load(d3d.GetDevice(), d3d.GetDeviceContext(), "torus.obj");
+        torus.load(d3d.GetDevice(), d3d.GetDeviceContext(), &textures, "torus.obj");
+
+        CompoundMesh building;
+        building.load(d3d.GetDevice(), d3d.GetDeviceContext(), &textures, "LPBuildX13r_3ds.3ds");
 
         SimpleMesh square;
         if (!square.load(L"square.obj", d3d.GetDevice()))
@@ -224,18 +232,24 @@ int _tmain(int argc, _TCHAR* argv[])
                 // 
 
                 d3d.BeginScene(false); // don't clear back buffer; we're just going to overwrite it completely from the off-screen buffer
-                              
+
+                //
+                //      SPOTLIGHTS! TODO: move them
+                // 
                 XMFLOAT4 lightPos[2]; 
                 XMStoreFloat4(lightPos, FPCamera.getEyePosition());
-                lightPos->y -= 0.1f;
+                lightPos->y += 0.2f;
                 lightPos[1] = XMFLOAT4(4.0f, 4.0f, 3.0f, 1.0f);
                 
                 XMFLOAT3 lightDir[2];
-                XMStoreFloat3(lightDir, XMVector3TransformNormal(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), XMMatrixTranspose(FPCamera.getViewMatrix())));
+                XMStoreFloat3(lightDir, XMVector3TransformNormal(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), XMMatrixRotationAxis(XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f), 10.0f/180 * (float)M_PI) * XMMatrixTranspose(FPCamera.getViewMatrix())));
                 XMStoreFloat3(&(lightDir[1]), axis45deg);
                 
+                XMFLOAT4 lightParams[2];
+                lightParams[0] = XMFLOAT4(cosf((float)M_PI * 20.0f/180.f), 0.75f, 0, 0.01f);
+                lightParams[0] = XMFLOAT4(cosf((float)M_PI * 30.0f/180.f), 0.75f, 0.1f, 0);
 
-                shaders0.SetPSLights(d3d.GetDeviceContext(), lightDirection, (float)timer.sinceInit(), FPCamera.getPosition(), lightPos, lightDir, 2);
+                shaders0.SetPSLights(d3d.GetDeviceContext(), lightDirection, (float)timer.sinceInit(), FPCamera.getPosition(), lightPos, lightDir, nullptr, 2);
 
                 XMMATRIX worldFinal = /* XMMatrixRotationAxis(axis, angle) * */ world;
 
@@ -244,13 +258,14 @@ int _tmain(int argc, _TCHAR* argv[])
                 offScreen.setAsRenderTarget(d3d.GetDeviceContext(), d3d.GetDepthStencilView()); // set the off-screen texture as the render target
                 offScreen.clear(d3d.GetDeviceContext());
 
-                if (!mesh.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixScaling(0.56f, 0.56f, 0.56f) * worldFinal, view, projection))
+                if (!mesh.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixScaling(0.53f, 0.53f, 0.53f) * worldFinal, view, projection))
                 {
                     Errors::Cry(L"Render error in scene. :|");
                     break;
                 }
 
-                if (!spider.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixScaling(0.05f, 0.05f, 0.05f) * worldFinal * XMMatrixTranslation(-1.0f, 2.0f, 6.0f), view, projection))
+                //if (!spider.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixScaling(0.05f, 0.05f, 0.05f) * worldFinal * XMMatrixTranslation(-1.0f, 2.0f, 6.0f), view, projection))
+                if (!spider.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), worldFinal * XMMatrixTranslation(-1.0f, 0.0f, 3.0f), view, projection))
                 {
                     Errors::Cry(L"Render error in scene. :|");
                     break;
@@ -268,6 +283,11 @@ int _tmain(int argc, _TCHAR* argv[])
                     break;
                 }
 
+                if (!building.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixRotationAxis(XMVectorSet(1.0f,0,0,0), (float)M_PI_2) * XMMatrixScaling(0.15f, 0.15f, 0.15f) * XMMatrixTranslation(-10.0f, 4.5001f, 15.0f), view, projection))
+                {
+                    Errors::Cry(L"Render error in scene. :|");
+                    break;
+                }
 
                 // done rendering scene
 
@@ -276,7 +296,7 @@ int _tmain(int argc, _TCHAR* argv[])
                 d3d.depthOff(); // disable depth test
 
                 square.setBuffers(d3d.GetDeviceContext()); // use the two triangles to render off-screen texture to swap chain, through a shader
-                if (!postProcess.Render(d3d.GetDeviceContext(), square.getIndexCount(), XMMatrixIdentity(), XMMatrixIdentity(), ortho, XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), offScreen.getResourceView()))
+                if (!postProcess.Render(d3d.GetDeviceContext(), square.getIndexCount(), XMMatrixIdentity(), XMMatrixIdentity(), ortho * XMMatrixTranslation(-1.0f,1.0f,0.0f) * XMMatrixScaling(0.5f,0.5f,0.5f), XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), nullptr, offScreen.getResourceView(d3d.GetDeviceContext()), 1, false))
                 {
                     Errors::Cry(L"Error rendering off-screen texture to display. :/");
                     break;

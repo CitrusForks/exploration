@@ -26,11 +26,23 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+using namespace std;
 
-// this demonstrates the use of for_each(), lambda, and std::function<> ... but doesn't justify it
+// from the net somewhere, modified
+BOOL FileExistsW(wchar_t *path)
+{
+    DWORD dwAttrib = GetFileAttributesW(path);
+
+    return (dwAttrib != INVALID_FILE_ATTRIBUTES && 
+        !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+}
+
+
+
+// this demonstrates the use of for_each(), lambda, and function<> ... but doesn't justify it
 // the lambda is the part that looks like: [capturedvars] (params) { statements; }
-// probably don't write this:
-void CompoundMesh::WalkNodes(CompoundMeshNode &node, std::function<void (CompoundMeshNode &)> f)
+// maybe don't write this:
+void CompoundMesh::WalkNodes(CompoundMeshNode &node, function<void (CompoundMeshNode &)> f)
 {
     f(node); // apply f() to node
     for_each(node.children.begin(), node.children.end(), [this, f] (CompoundMeshNode &n) { WalkNodes(n, f); } ); // recurse for all children
@@ -56,17 +68,14 @@ CompoundMesh::~CompoundMesh(void)
             mesh.Release();
         });
     });
-
-    for (auto i = m_textureReference.begin(); i != m_textureReference.end(); ++i) (*i).second.Shutdown();
-    // writing the above loop with for_each() makes it more verbose and less readable :/
-
-    m_textureReference.clear();
 }
 
 
 // load a modle via libassimp and store separate meshes in a tree structure that mirros aiScene
-bool CompoundMesh::load(ID3D11Device* device, ID3D11DeviceContext *devCtx, char *modelFileName)
+bool CompoundMesh::load(ID3D11Device* device, ID3D11DeviceContext *devCtx, TextureManager *texman, char *modelFileName)
 {
+    assert(texman);
+    m_textureManager = texman;
     m_aiScene = aiImportFile(modelFileName, aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_ConvertToLeftHanded); // load meshes and make sure they're suitable for drawing
     // for a production release, it would be best to ensure the meshes are correct on disk and avoid massaging them into shape here; impact on load time is uncertain but could be dire
 
@@ -86,7 +95,7 @@ bool CompoundMesh::load(ID3D11Device* device, ID3D11DeviceContext *devCtx, char 
         for (auto i = l_node.meshes.begin(); i != l_node.meshes.end(); ++i) indexCount += i->getIndexCount();
     });
 
-    std::cout << modelFileName << " loaded with " << indexCount << " total indices." << std::endl;
+    cout << modelFileName << " loaded with " << indexCount << " total indices." << endl;
 
     return true;
 }
@@ -176,15 +185,15 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
 
     // update transform
     // TODO XXX
-    // probably calls for a separate stream with a local-space transformation quaternion per vertex
+    // probably calls for a separate stream with a local-space transformation quaternion per vertex? also for more reading...
 #if 0
     aiTransposeMatrix4(&m);
     glPushMatrix();
     glMultMatrixf((float*)&m);
 #endif
 
-    std::vector<Vertex> vertices;  // declared here to avoid reallocating them for each mesh; it's easy enough to reuse them
-    std::vector<unsigned> indices;
+    vector<Vertex> vertices;  // declared here to avoid reallocating them for each mesh; it's easy enough to reuse them
+    vector<unsigned> indices;
 
     // iterate over meshes in current node
     for (unsigned n = 0; n < nd->mNumMeshes; ++n) 
@@ -199,38 +208,33 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
         
 
         // get the correct diffuse component texture, load it if necessary
-        // TODO: refactor into some kind of separate texture manager?
         aiString texPath;
         aiReturn rc = m_aiScene->mMaterials[mesh->mMaterialIndex]->GetTexture(aiTextureType_DIFFUSE, 0, &texPath); // texPath is in utf8
         if (texPath.length)
+        {   
+            // there's a texture! retrieve it via the texture manager
+            interleavedMesh.m_material.diffuseTexture = m_textureManager->getTextureUTF8(device, devCtx, (char*)texPath.C_Str(), texPath.length);
+        }
+
+        // same method gets us a normal map
+        aiString normalPath;
+        rc = m_aiScene->mMaterials[mesh->mMaterialIndex]->GetTexture(aiTextureType_DISPLACEMENT, 0, &normalPath); // texPath is in utf8
+        if (!normalPath.length)
         {
-            char *c_path = (char*)texPath.C_Str(); 
-            int c_len = texPath.length;  // not including terminating \0
-            while (*c_path == '\\' || *c_path == '/' || *c_path == '.') { ++c_path; --c_len; } // cut off any path stuff
-            int length = MultiByteToWideChar(CP_UTF8, 0, c_path, c_len + 1, 0, 0);  // get length of wchar_t result
-            std::unique_ptr<wchar_t>wPath(new wchar_t[length]);  // allocate buffer
-            MultiByteToWideChar(CP_UTF8, 0, c_path, c_len + 1, wPath.get(), length); // get the path in wchar_t
-            wstring path(wPath.get());  // and wstring
-
-            auto reference = m_textureReference.find(path);  // have we loaded it already?
-
-            if (reference == m_textureReference.end())
+            // normal map not specified... try searching for it blindly, due to bad .mtl/.dae files with Chekov?
+            char *w = strstr((char*)texPath.C_Str(), "_D");
+            if (w)
             {
-                // texture not found, load it
-                std::cout << "Loading new texture: " << c_path << std::endl;
-
-                LoadedTexture newTex;
-                if (!newTex.Initialize(device, devCtx, wPath.get()))
+                w[1] = 'N';
+                wstring path = m_textureManager->utf8ToWstring((char*)texPath.C_Str(), texPath.length);
+                if (FileExistsW((wchar_t*)path.c_str()))
                 {
-                    Errors::Cry("Failed to load texture", c_path);
-                } else
-                {
-                    interleavedMesh.m_material.diffuseTexture = m_textureReference[path] = newTex; // success
+                    interleavedMesh.m_material.normalMap = m_textureManager->getTexture(path, device, devCtx);
                 }
-            } else
-            {
-                interleavedMesh.m_material.diffuseTexture = reference->second; // already loaded! 
             }
+        } else
+        {   
+            interleavedMesh.m_material.normalMap = m_textureManager->getTextureUTF8(device, devCtx, (char*)texPath.C_Str(), texPath.length);
         }
 
 #if 0
@@ -259,7 +263,7 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
                 v.tex0.x = v.tex0.y = 0;
                 if (!uvWarningPrinted)
                 {
-                    std::cerr << "Missing texture coordinates... " << std::endl;
+                    cerr << "Missing texture coordinates... " << endl;
                     uvWarningPrinted = true;
                 }
             } else
@@ -353,15 +357,16 @@ bool CompoundMesh::Render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
         {
             if (mesh->m_indexBuffer == nullptr || mesh->m_vertexBuffer == nullptr)
             {
-                std::cerr << "strange, empty mesh";
+                cerr << "strange, empty mesh";
                 continue;
             }
 
             mesh->setBuffers(deviceContext);
 
             SimpleMesh::Material &mat = mesh->m_material;
-            if (!shader->SetPSMaterial(deviceContext, mat.ambient, mat.diffuse, mat.shininess, mat.specular) ||
-                !shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, XMVectorZero(), mesh->m_material.diffuseTexture.GetTexture()))
+            bool useNormalMap = mat.normalMap.getTexture() ? true : false;
+            if (!shader->SetPSMaterial(deviceContext, mat.ambient, mat.diffuse, mat.shininess, mat.specular, useNormalMap) ||
+                !shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, XMVectorZero(), mesh->m_material.normalMap.getTexture(), mesh->m_material.diffuseTexture.getTexture()))
             {
                 rc = false;
                 break;
@@ -385,19 +390,21 @@ bool CompoundMesh::Render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
     {
         if (mesh->m_indexBuffer == nullptr || mesh->m_vertexBuffer == nullptr || !mesh->getIndexCount())
         {
-            std::cerr << "strange, empty mesh";
+            cerr << "strange, empty mesh";
             continue;
         }
 
         mesh->setBuffers(deviceContext); // point the GPU at the right geometry data
 
         SimpleMesh::Material &mat = mesh->m_material;
+        SimpleMesh::Material &mat = mesh->m_material;
+        bool useNormalMap = mat.normalMap.getTexture() ? true : false;
         if (!shader->SetPSMaterial(deviceContext, mat.ambient, mat.diffuse, mat.shininess, mat.specular))
         {
             return false;
         }
 
-        if (!shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, cameraPosition, mesh->m_material.diffuseTexture.GetTexture()))
+        if (!shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, XMVectorZero(), mesh->m_material.normalMap.getTexture(), mesh->m_material.diffuseTexture.getTexture()))
         {
             return false;
         }

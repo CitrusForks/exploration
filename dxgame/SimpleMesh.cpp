@@ -6,17 +6,19 @@
 #include "vboindexer.hpp"
 #include <vector>
 
+using namespace std;
+
 // load an obj file using a half-baked loader routine; not good for much besides testing and loading monolithic meshes without materials
 // CompoundMesh should be a better alternative
 bool SimpleMesh::load(wchar_t *objFileName, ID3D11Device* device, XMFLOAT2 texture_scaler)
 {
 	if (loaded) return false;
-        std::vector<Vertex> temp_verts;   // potentially unindexed vertex data ends up here
+        vector<Vertex> temp_verts;   // potentially unindexed vertex data ends up here
 	loadOBJ(objFileName, temp_verts); 
         printf("From %d verts loaded, ", temp_verts.size());
 
-        std::vector<unsigned int> indices; // indexes end up here
-        std::vector<Vertex> vertices;        // unique vertices end up here
+        vector<unsigned int> indices; // indexes end up here
+        vector<Vertex> vertices;        // unique vertices end up here
         indexVBO(temp_verts, indices, vertices);
 	printf("%d indices, %d vertices\n", indices.size(), vertices.size());
 

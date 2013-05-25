@@ -2,13 +2,13 @@
 #include "IntermediateRenderTarget.h"
 #include <iostream>
 
-IntermediateRenderTarget::IntermediateRenderTarget(ID3D11Device *dev, ID3D11DeviceContext *devCtx, int width, int height) : m_texture(nullptr), m_targetView(nullptr), m_resourceView(nullptr)
+IntermediateRenderTarget::IntermediateRenderTarget(ID3D11Device *dev, ID3D11DeviceContext *devCtx, int width, int height) : m_texture(nullptr), m_targetView(nullptr), m_resourceView(nullptr), m_width(width), m_height(height)
 {
     D3D11_TEXTURE2D_DESC tdesc;
     const DXGI_FORMAT format = DXGI_FORMAT_R16G16B16A16_FLOAT; // some weird format with some extra precision?
 
-    tdesc.Width = width;
-    tdesc.Height = height;
+    tdesc.Width = width * 2;
+    tdesc.Height = height * 2;
     tdesc.MipLevels = 1; // no mipmap please
     tdesc.ArraySize = 1;
     tdesc.Format = format; 
@@ -76,22 +76,37 @@ IntermediateRenderTarget::~IntermediateRenderTarget(void)
 {
 }
 
+// after this call, render calls will draw to our off-screen buffer
 void IntermediateRenderTarget::setAsRenderTarget(ID3D11DeviceContext *devCtx, ID3D11DepthStencilView *realDepthBuffer)
 {
-    devCtx->OMSetRenderTargets(1, &m_targetView, realDepthBuffer);
+    // Set up the viewport for rendering at x2 resolution to back buffer
+    D3D11_VIEWPORT viewport = { (float)m_width*2, (float)m_height*2, 0.0f, 1.0f, 0.0f, 0.0f };
+    //devCtx->RSSetViewports(1, &viewport);
+
+    devCtx->OMSetRenderTargets(1, &m_targetView, realDepthBuffer); // set our texture as target and that's it!
 }
 
-ID3D11ShaderResourceView **IntermediateRenderTarget::getResourceView()
+// return resource view and do some configuration for rendering from buffer to swap chain
+ID3D11ShaderResourceView ** IntermediateRenderTarget::getResourceView( ID3D11DeviceContext *devCtx )
 {
+    // Set up the viewport for rendering at screen resolution
+    D3D11_VIEWPORT viewport = { (float)m_width, (float)m_height, 0.0f, 1.0f, 0.0f, 0.0f };
+    //devCtx->RSSetViewports(1, &viewport);
+
+    // turn off anisotropic filtering
+    devCtx->PSSetSamplers(0, 1, &m_sampleState);
+
     return &m_resourceView;
 }
 
+// erase!
 void IntermediateRenderTarget::clear(ID3D11DeviceContext *devCtx)
 {
     float const blank[4] = {0.0f, 0.0f, 0.0f, 0.0f};
     devCtx->ClearRenderTargetView(m_targetView, blank);
 }
 
+// release all the things? 
 void IntermediateRenderTarget::Shutdown()
 {
     m_targetView->Release();

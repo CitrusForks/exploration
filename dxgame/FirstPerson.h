@@ -2,7 +2,7 @@
 #define FIRSTPERSON_H
 
 #include <xnamath.h>
-#include "inputclass.h"
+#include "Input.h"
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h> // actually included already but I like listing all the headers required by a file...
 
@@ -14,7 +14,7 @@ private:
     float m_heading; // aka yaw, perhaps
     float m_pitch; // looking up at the ceiling, are we?
 
-
+    int m_mouse_x, m_mouse_y;
 public:
     FirstPerson(void);
     ~FirstPerson(void);

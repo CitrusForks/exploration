@@ -1,17 +1,21 @@
 Texture2D shaderTexture;
 SamplerState SampleType;
 
-cbuffer LightBuffer
-{
-	float4 ambientColor;
-	float4 diffuseColor;
-    float4 specularColor;
-    float3 lightDirection;
-    float specularPower;
-	float time;            // this isn't strictly light but it's useful for goofy effects
-	float3 cameraPos;
-};
+//
+// Globals -- shared with main shader for C++ code reuse but we probably only use time here
+//
+#define NUM_SPOTLIGHTS 4
 
+cbuffer LightBuffer : register(b1)
+{
+    float3 lightDirection; // directional light; one is enough for now?
+	float time;            // this isn't strictly light but it's useful for goofy effects
+	float4 cameraPos;
+	float4 spotlightPos[NUM_SPOTLIGHTS];  // spotlights!
+	float4 spotlightDir[NUM_SPOTLIGHTS];  // float3 would take up 4 floats anyway, might as well make it explicit
+	float4 spotlightEtc[NUM_SPOTLIGHTS];  // arrays are packed into 4-float elements anyway so this is {Cos(angle), constant attenuation, linear, quadratic}
+};
+// end of globals
 
 struct PixelInputType
 {
@@ -47,13 +51,15 @@ float4 PostProcPixelShader(PixelInputType input) : SV_TARGET
 
 #if 0
 	// wavy ghost image effect
-	ghostImageOffset = baseOffset * 0.01;
-	ghostImageOffset.x += 0.01 * cos(ghostImageOffset.x * 1000 + time*7);
-	ghostImageOffset.y += 0.01 * cos(ghostImageOffset.y * 1000 + time*11);
-
-	ghost2 = baseOffset * 0.03 * sin(time*3.5);
-
 	float4 textureColor = shaderTexture.Sample(SampleType, tex);
+	float darkness = 1.0 - saturate(distance(textureColor, float4(0,0,0,0))/1.5);
+
+	ghostImageOffset = baseOffset * 0.01;
+	ghostImageOffset.x += 0.01 * cos(ghostImageOffset.x * 1000 + time*7) * darkness;
+	ghostImageOffset.y += 0.01 * cos(ghostImageOffset.y * 1000 + time*11) * darkness;
+
+	//ghost2 = baseOffset * 0.03 * sin(time*3.5);
+	
 	textureColor += shaderTexture.Sample(SampleType, saturate(tex + ghostImageOffset));
 	//textureColor += shaderTexture.Sample(SampleType, saturate(tex + ghost2));
 	textureColor /= 2;
@@ -67,7 +73,7 @@ float4 PostProcPixelShader(PixelInputType input) : SV_TARGET
 	textureColor -= shaderTexture.Sample(SampleType, tex);
 #endif
 
-#if 1
+#if 0
 	// chromatic aberration
 	float4 textureColor;
 	textureColor.x = shaderTexture.Sample(SampleType, tex - baseOffset * 0.01).x; // red is smudged outward
@@ -105,6 +111,10 @@ float4 PostProcPixelShader(PixelInputType input) : SV_TARGET
 	textureColor /= 4;
 #endif
 
+#if 1
+	// effects off
+	float4 textureColor = shaderTexture.Sample(SampleType, tex); 
+#endif
 
 	return textureColor;
 }

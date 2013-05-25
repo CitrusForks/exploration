@@ -1,14 +1,11 @@
 // DirectInput wrapper mostly copied from rastertek.com
 
 #include "stdafx.h"
-#include "inputclass.h"
+#include "Input.h"
 
 
-Input::Input()
+Input::Input() : m_directInput(0), m_keyboard(0), m_mouse(0), m_clampMouse(false)
 {
-	m_directInput = 0;
-	m_keyboard = 0;
-	m_mouse = 0;
 }
 
 
@@ -211,12 +208,15 @@ void Input::ProcessInput()
 	m_mouseX += m_mouseState.lX;
 	m_mouseY += m_mouseState.lY;
 
-	// Ensure the mouse location doesn't exceed the screen width or height.
-	if(m_mouseX < 0)  { m_mouseX = 0; }
-	if(m_mouseY < 0)  { m_mouseY = 0; }
+        if (m_clampMouse)
+        {
+	    // Ensure the mouse location doesn't exceed the screen width or height.
+	    if(m_mouseX < 0)  { m_mouseX = 0; }
+	    if(m_mouseY < 0)  { m_mouseY = 0; }
 	
-	if(m_mouseX > m_screenWidth)  { m_mouseX = m_screenWidth; }
-	if(m_mouseY > m_screenHeight) { m_mouseY = m_screenHeight; }
+	    if(m_mouseX > m_screenWidth)  { m_mouseX = m_screenWidth; }
+	    if(m_mouseY > m_screenHeight) { m_mouseY = m_screenHeight; }
+        }
 	
 	return;
 }

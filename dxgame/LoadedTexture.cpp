@@ -22,7 +22,7 @@ LoadedTexture::~LoadedTexture()
 }
 
 
-bool LoadedTexture::Initialize(ID3D11Device* device, ID3D11DeviceContext* ctx, wchar_t* filename)
+bool LoadedTexture::initialize(ID3D11Device* device, ID3D11DeviceContext* ctx, wchar_t* filename)
 {
 	HRESULT result;
 
@@ -40,7 +40,7 @@ bool LoadedTexture::Initialize(ID3D11Device* device, ID3D11DeviceContext* ctx, w
 }
 
 
-void LoadedTexture::Shutdown()
+void LoadedTexture::shutdown()
 {
 	// Release the texture resource.
 	if(m_texture)
@@ -53,7 +53,13 @@ void LoadedTexture::Shutdown()
 }
 
 
-ID3D11ShaderResourceView **LoadedTexture::GetTexture()
+ID3D11ShaderResourceView **LoadedTexture::getTexture()
 {
+    if (m_texture)
+    {
 	return &m_texture;
+    } else
+    {
+        return nullptr;
+    }
 }

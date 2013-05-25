@@ -11,6 +11,8 @@ private:
     ID3D11RenderTargetView *m_targetView;
     ID3D11SamplerState *m_sampleState;
 
+    int m_width, m_height;
+
 public:
     IntermediateRenderTarget(ID3D11Device *dev, ID3D11DeviceContext *devCtx, int width, int height);
     ~IntermediateRenderTarget(void);
@@ -19,7 +21,7 @@ public:
     void setAsRenderTarget(ID3D11DeviceContext *devCtx, ID3D11DepthStencilView *realDepthBuffer);
 
     // returns m_resourceView for use as a texture source
-    ID3D11ShaderResourceView **getResourceView();
+    ID3D11ShaderResourceView **getResourceView(ID3D11DeviceContext *devCtx);
 
     // clear the buffer with 0x00000000
     void clear(ID3D11DeviceContext *devCtx);

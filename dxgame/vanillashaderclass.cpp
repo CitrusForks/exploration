@@ -8,6 +8,8 @@
 
 #include <iostream>
 
+using namespace std;
+
 VanillaShaderClass::VanillaShaderClass()
 {
 	m_vertexShader = 0;
@@ -39,21 +41,21 @@ void VanillaShaderClass::Shutdown()
 }
 
 
-bool VanillaShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCount, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, 
-								CXMMATRIX projectionMatrix, CXMVECTOR cameraPos, ID3D11ShaderResourceView **texture, unsigned resourceViewCount)
+bool VanillaShaderClass::Render(ID3D11DeviceContext *deviceContext, int indexCount, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix, CXMVECTOR cameraPos, 
+                                ID3D11ShaderResourceView** normalMap, ID3D11ShaderResourceView** texture, unsigned resourceViewCount /*= 1*/, bool setSampler /*= true*/ )
 {
 	bool result;
 
 
 	// Set the shader parameters that it will use for rendering.
-	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, cameraPos, texture, resourceViewCount);
+	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, cameraPos, normalMap, texture, resourceViewCount);
 	if(!result)
 	{
 		return false;
 	}
 
 	// Now render the prepared buffers with the shader.
-	RenderShader(deviceContext, indexCount);
+	RenderShader(deviceContext, indexCount, setSampler);
 
 	return true;
 }
@@ -227,7 +229,7 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device *device, HWND hwnd, wcha
 
     // another buffer, for the light data in the pixel shader
     cameraBufferDesc.ByteWidth = sizeof(LightBufferType);
-    std::cout << "lbf size: " << sizeof(LightBufferType);
+    cout << "lbf size: " << sizeof(LightBufferType);
     result = device->CreateBuffer(&lightBufferDesc, NULL, &m_lightBuffer);
     if(FAILED(result))
     {
@@ -265,7 +267,7 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device *device, HWND hwnd, wcha
 	    return false;
     }
 
-    std::cout << "initialized some shaders" << std::endl;
+    cout << "initialized some shaders" << endl;
 
     return true;
 }
@@ -340,16 +342,16 @@ void VanillaShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND
 	// Open a file to write the error message to.
 	fout.open("shader-error.txt");
 
-	std::cerr << "Error compiling shader:";
+	cerr << "Error compiling shader:";
 
 	// Write out the error message.
 	for(i=0; i<bufferSize; i++)
 	{
 		fout << compileErrors[i];
-		std::cerr << compileErrors[i];
+		cerr << compileErrors[i];
 	}
 
-        std::cerr << std::endl;
+        cerr << endl;
 
 	// Close the file.
 	fout.close();
@@ -364,9 +366,9 @@ void VanillaShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND
 	return;
 }
 
-
+// thie method mainly sets matrices and textures
 bool VanillaShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, 
-											 CXMMATRIX projectionMatrix, CXMVECTOR cameraPos, ID3D11ShaderResourceView** texture, unsigned numViews)
+											 CXMMATRIX projectionMatrix, CXMVECTOR cameraPos, ID3D11ShaderResourceView **normalMap, ID3D11ShaderResourceView **texture, unsigned numViews)
 {
     HRESULT result;
     D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -437,11 +439,14 @@ bool VanillaShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext,
     // Set shader texture resource in the pixel shader.
     deviceContext->PSSetShaderResources(0, numViews, texture);
 
+    // same for normal map, if present
+    if (normalMap && *normalMap) deviceContext->PSSetShaderResources(1, 1, normalMap);
+
     return true;
 }
 
-// set light values and time
-bool VanillaShaderClass::SetPSMaterial( ID3D11DeviceContext *deviceContext, XMFLOAT4 &ambientColor, XMFLOAT4 &diffuseColor, float specularPower, XMFLOAT4 &specularColor)
+// set material values; these are conventional parameters
+bool VanillaShaderClass::SetPSMaterial( ID3D11DeviceContext *deviceContext, XMFLOAT4 &ambientColor, XMFLOAT4 &diffuseColor, float specularPower, XMFLOAT4 &specularColor, bool useNormalMap )
 {
     HRESULT result;
     D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -463,7 +468,8 @@ bool VanillaShaderClass::SetPSMaterial( ID3D11DeviceContext *deviceContext, XMFL
     dataPtr->diffuseColor = diffuseColor;
     dataPtr->specularPower = specularPower;
     dataPtr->specularColor = specularColor;
-    dataPtr->padding = XMFLOAT3(0,0,0);
+    dataPtr->useNormalMap = useNormalMap;
+    dataPtr->padding = XMFLOAT2(0,0);
 
     deviceContext->Unmap(m_materialBuffer, 0);
 
@@ -472,15 +478,24 @@ bool VanillaShaderClass::SetPSMaterial( ID3D11DeviceContext *deviceContext, XMFL
     return true;
 }
 
-
-bool VanillaShaderClass::SetPSLights( ID3D11DeviceContext *deviceContext, const XMFLOAT3 &lightDirection, float time, FXMVECTOR cameraPos, XMFLOAT4 *spotlightPos, XMFLOAT3 *spotlightDir, int numSpotlights )
+// This method writes lighting data into a pixel shader constant buffer.
+// lightDirection is for the solitary directional light (e.g., sunlight)
+// time is the output Chronometer::sinceInit(), for time-dependent special effects
+// cameraPos is the location of the eye in worldspace; comes from FirstPerson
+// spotlightPos is an array of spotlight positions
+// spotlightDir is an array of spotlight directions
+// spotlightParams is an array mapping to spotlightEtc in the constant buffer
+//      x = Cos(beamAngle), y = constant attenuation, z = linear attenuation, w = quadrating attenuation
+// numSpotlights is the number of elements in the arrays above; valid range is [0..NUM_SPOTLIGHTS) 
+//      NOTE Perhaps the arrays should be vector instead?
+bool VanillaShaderClass::SetPSLights( ID3D11DeviceContext *deviceContext, const XMFLOAT3 &lightDirection, float time, FXMVECTOR cameraPos, XMFLOAT4 *spotlightPos, XMFLOAT3 *spotlightDir, XMFLOAT4 *spotlightParams, int numSpotlights )
 {
     HRESULT result;
     D3D11_MAPPED_SUBRESOURCE mappedResource;
     LightBufferType* dataPtr;
 
     deviceContext->VSSetShader(m_vertexShader, NULL, 0); // TODO change this to an "effect?" or are effects going out of style?
-    deviceContext->PSSetShader(m_pixelShader, NULL, 0);  // XXX make a separate function to set these once?
+    deviceContext->PSSetShader(m_pixelShader, NULL, 0);  // XXX Will this be a hit on performance? Perhaps make a separate function to set these once?
 
 
     result = deviceContext->Map(m_lightBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
@@ -495,16 +510,20 @@ bool VanillaShaderClass::SetPSLights( ID3D11DeviceContext *deviceContext, const 
     dataPtr->time = time;
     XMStoreFloat4(&dataPtr->cameraPos, cameraPos);
     
-    // TODO set spotlights?
-
     for (int i = 0; i < numSpotlights; ++i)
     {
         dataPtr->spotlightPos[i] = spotlightPos[i];
         dataPtr->spotlightDir[i] = XMFLOAT4(spotlightDir[i].x, spotlightDir[i].y, spotlightDir[i].z, 0);
-        dataPtr->spotlightEtc[i].x = cosf((float)M_PI * 15.0f/180.f); // angle from axis to lateral surface (or "generatrix" if you want to look up some terms for cone parts)
-        dataPtr->spotlightEtc[i].y = 0.5f; // constant attenuation
-        dataPtr->spotlightEtc[i].z = 0.0f; // linear
-        dataPtr->spotlightEtc[i].w = 0.01f; // d^2 
+        if (!spotlightParams)
+        {
+            dataPtr->spotlightEtc[i].x = cosf((float)M_PI * 15.0f/180.f); // angle from axis to lateral surface (or "generatrix" if you want to look up some terms for cone parts)
+            dataPtr->spotlightEtc[i].y = 0.75f; // constant attenuation 
+            dataPtr->spotlightEtc[i].z = 0.0f; // linear
+            dataPtr->spotlightEtc[i].w = 0.01f; // d^2 
+        } else
+        {
+            dataPtr->spotlightEtc[i] = spotlightParams[i];
+        }
     }
 
     for (int i = numSpotlights; i < NUM_SPOTLIGHTS; ++i)
@@ -523,7 +542,7 @@ bool VanillaShaderClass::SetPSLights( ID3D11DeviceContext *deviceContext, const 
 }
 
 
-void VanillaShaderClass::RenderShader(ID3D11DeviceContext* deviceContext, int indexCount)
+void VanillaShaderClass::RenderShader( ID3D11DeviceContext *deviceContext, int indexCount, bool setSampler /*= true*/ )
 {
     // Set the vertex input layout.
     deviceContext->IASetInputLayout(m_layout);
@@ -532,7 +551,7 @@ void VanillaShaderClass::RenderShader(ID3D11DeviceContext* deviceContext, int in
     deviceContext->PSSetShader(m_pixelShader, NULL, 0);
 
     // Set the sampler state in the pixel shader.
-    deviceContext->PSSetSamplers(0, 1, &m_sampleState);
+    if (setSampler) deviceContext->PSSetSamplers(0, 1, &m_sampleState);
 
     // Render the triangles
     deviceContext->DrawIndexed(indexCount, 0, 0);

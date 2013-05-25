@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include "vertex.h"
 #include "SimpleMesh.h"
+#include "TextureManager.h"
 
 #include "vanillashaderclass.h"
 
@@ -29,7 +30,7 @@ private:
 
     const aiScene *m_aiScene;
 
-    std::unordered_map<wstring, LoadedTexture> m_textureReference;
+    TextureManager *m_textureManager;
 
     void WalkNodes(CompoundMesh::CompoundMeshNode &node, std::function<void (CompoundMesh::CompoundMeshNode &)> f);
 
@@ -40,7 +41,7 @@ private:
     void apply_material(SimpleMesh::Material *to, aiMaterial *mtl);
     
 public:
-    bool load(ID3D11Device* device, ID3D11DeviceContext *devCtx, char *modelFileName);
+    bool load(ID3D11Device* device, ID3D11DeviceContext *devCtx, TextureManager *texman, char *modelFileName);
     bool Render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, FXMVECTOR cameraPosition, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix, CompoundMeshNode *node = nullptr );
 
 
