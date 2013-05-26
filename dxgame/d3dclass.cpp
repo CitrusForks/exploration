@@ -287,13 +287,13 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	const DXGI_FORMAT depthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT; // for more z precision, switch to DXGI_FORMAT_D32_FLOAT (w/o stencil) or DXGI_FORMAT_D32_FLOAT_S8X24_UINT (w/ 8-bit stencil and wasted 24 bits??)
 
 	// Set up the description of the depth buffer.
-	depthBufferDesc.Width = screenWidth * 2;
-	depthBufferDesc.Height = screenHeight * 2;
+	depthBufferDesc.Width = screenWidth; // * 2; // x 2 for supersampling test
+	depthBufferDesc.Height = screenHeight; // * 2;
 	depthBufferDesc.MipLevels = 1;
 	depthBufferDesc.ArraySize = 1;
 	depthBufferDesc.Format = depthStencilFormat;
 	depthBufferDesc.SampleDesc.Count = 8;
-	depthBufferDesc.SampleDesc.Quality = 1;
+	depthBufferDesc.SampleDesc.Quality = 15;
 	depthBufferDesc.Usage = D3D11_USAGE_DEFAULT;
 	depthBufferDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 	depthBufferDesc.CPUAccessFlags = 0;
@@ -369,7 +369,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	}
 
 	// Bind the render target view and depth stencil buffer to the output render pipeline.
-	m_deviceContext->OMSetRenderTargets(1, &m_renderTargetView, m_depthStencilView);
+	m_deviceContext->OMSetRenderTargets(1, &m_renderTargetView, nullptr /*m_depthStencilView*/);
 
 	// Setup the raster description which will determine how and what polygons will be drawn.
 	D3D11_RASTERIZER_DESC rasterDesc;
@@ -396,8 +396,8 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	
 	// Setup the viewport for rendering.
 	D3D11_VIEWPORT viewport;
-        viewport.Width = (float)screenWidth*2;
-        viewport.Height = (float)screenHeight*2;
+        viewport.Width = (float)screenWidth; // * 2; // x2 for supersampling test
+        viewport.Height = (float)screenHeight; // * 2;
         viewport.MinDepth = 0.0f;
         viewport.MaxDepth = 1.0f;
         viewport.TopLeftX = 0.0f;
@@ -565,10 +565,10 @@ ID3D11DepthStencilView * D3DClass::GetDepthStencilView()
 }
 
 
-void D3DClass::setAsRenderTarget()
+void D3DClass::setAsRenderTarget( bool depthEnable )
 {
     // Bind the render target view and depth stencil buffer to the output render pipeline.
-    m_deviceContext->OMSetRenderTargets(1, &m_renderTargetView, m_depthStencilView);
+    m_deviceContext->OMSetRenderTargets(1, &m_renderTargetView, depthEnable ? m_depthStencilView : nullptr);
 }
 
 

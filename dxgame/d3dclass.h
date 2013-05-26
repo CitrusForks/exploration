@@ -51,7 +51,7 @@ public:
 	void GetVideoCardInfo(char*, int&);
 
         ID3D11DepthStencilView *GetDepthStencilView();
-        void setAsRenderTarget();
+        void setAsRenderTarget(bool depthEnable);
 
         void depthOn();
         void depthOff();

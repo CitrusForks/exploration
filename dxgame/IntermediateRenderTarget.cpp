@@ -7,12 +7,12 @@ IntermediateRenderTarget::IntermediateRenderTarget(ID3D11Device *dev, ID3D11Devi
     D3D11_TEXTURE2D_DESC tdesc;
     const DXGI_FORMAT format = DXGI_FORMAT_B8G8R8A8_UNORM; // some weird format with some extra precision?
 
-    tdesc.Width = width * 2;
-    tdesc.Height = height * 2;
-    tdesc.MipLevels = 2; // no mipmap please
+    tdesc.Width = width; //  * 2; // x2 for supersampling test
+    tdesc.Height = height; //  * 2;
+    tdesc.MipLevels = 1; // no mipmap please
     tdesc.ArraySize = 1;
     tdesc.Format = format; 
-    DXGI_SAMPLE_DESC sampleDesc = {1, 0}; // Count, Quality
+    DXGI_SAMPLE_DESC sampleDesc = {8, 15}; // Count, Quality
     tdesc.SampleDesc = sampleDesc;
     tdesc.Usage = D3D11_USAGE_DEFAULT;
     tdesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE; // the GPU needs to render to the texture and then pass the texture on to a shader
@@ -28,7 +28,7 @@ IntermediateRenderTarget::IntermediateRenderTarget(ID3D11Device *dev, ID3D11Devi
 
     D3D11_RENDER_TARGET_VIEW_DESC targetDesc;
     targetDesc.Format = format;
-    targetDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+    targetDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
     targetDesc.Texture2D.MipSlice = 0; // the documentation on this is completely unhelpful but 0 is probably what's needed here
 
     rc = dev->CreateRenderTargetView(m_texture, &targetDesc, &m_targetView);
@@ -41,7 +41,7 @@ IntermediateRenderTarget::IntermediateRenderTarget(ID3D11Device *dev, ID3D11Devi
 
     D3D11_SHADER_RESOURCE_VIEW_DESC resourceDesc;
     resourceDesc.Format = format; // the formats must match or the call will fail; which raises the question, why force us to specify it multiple times then?
-    resourceDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    resourceDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DMS;
     resourceDesc.Texture2D.MostDetailedMip = 0; // not sure about this
     resourceDesc.Texture2D.MipLevels = -1; // or this    
 

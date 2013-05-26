@@ -292,12 +292,13 @@ int _tmain(int argc, _TCHAR* argv[])
 
                 // done rendering scene
 
-                d3d.setAsRenderTarget(); // set a swap chain buffer as render target again
-                
                 d3d.depthOff(); // disable depth test
 
+                d3d.setAsRenderTarget(false); // set a swap chain buffer as render target again
+
                 square.setBuffers(d3d.GetDeviceContext()); // use the two triangles to render off-screen texture to swap chain, through a shader
-                if (!postProcess.Render(d3d.GetDeviceContext(), square.getIndexCount(), XMMatrixIdentity(), XMMatrixIdentity(), ortho * XMMatrixTranslation(-1.0f,1.0f,0.0f) * XMMatrixScaling(0.5f,0.5f,0.5f), XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), nullptr, offScreen.getResourceView(d3d.GetDeviceContext()), 1, false))
+                if (!postProcess.Render(d3d.GetDeviceContext(), square.getIndexCount(), XMMatrixIdentity(), XMMatrixIdentity(), ortho /* * XMMatrixTranslation(-1.0f,1.0f,0.0f) * XMMatrixScaling(0.5f,0.5f,0.5f)*/, XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), nullptr, offScreen.getResourceView(d3d.GetDeviceContext()), 1, false))
+                    // commented out translate and scaling is to reposition poly for supersampling
                 {
                     Errors::Cry(L"Error rendering off-screen texture to display. :/");
                     break;
