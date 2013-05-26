@@ -1,7 +1,7 @@
 #ifndef VBOINDEXER_HPP
 #define VBOINDEXER_HPP
 
-#include <xnamath.h>
+#include <directxmath.h>
 #include "vertex.h"
 
 void indexVBO(

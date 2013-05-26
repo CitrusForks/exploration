@@ -15,6 +15,8 @@
 
 // from http://www.rastertek.com/dx11tut03.html
 
+using namespace std;
+using namespace DirectX;
 
 D3DClass::D3DClass()
 {
@@ -65,7 +67,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	// Use the factory to create an adapter for the primary graphics interface (video card).
 
 	IDXGIAdapter* adapter;
-	std::vector<IDXGIAdapter*> adapters;
+	vector<IDXGIAdapter*> adapters;
 
 	unsigned int i = 0;
 	while (factory->EnumAdapters(i, &adapter) != DXGI_ERROR_NOT_FOUND)
@@ -75,12 +77,12 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 
 		DXGI_ADAPTER_DESC desc;
 		adapter->GetDesc(&desc);
-		std::wstring_convert<std::codecvt_utf8<wchar_t>> conv1;
-		std::string u8str = conv1.to_bytes(desc.Description);
+		wstring_convert<codecvt_utf8<wchar_t>> conv1;
+		string u8str = conv1.to_bytes(desc.Description);
 
 		if (i == 0) strncpy_s(m_videoCardDescription, u8str.size(), u8str.c_str(), 127);
 
-		std::cout << u8str << std::endl;
+		cout << u8str << endl;
 	}
 
 	if (i == 0)
@@ -93,7 +95,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	// Enumerate the primary adapter output (monitor).
 
 	IDXGIOutput* adapterOutput;
-	std::vector<IDXGIOutput*> adapterOutputs;
+	vector<IDXGIOutput*> adapterOutputs;
 
 	i = 0;
 	while (adapter->EnumOutputs(i, &adapterOutput) != DXGI_ERROR_NOT_FOUND)
@@ -103,10 +105,10 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 
 		DXGI_OUTPUT_DESC desc;
 		adapterOutput->GetDesc(&desc);
-		std::wstring_convert<std::codecvt_utf8<wchar_t>> conv1;
-		std::string u8str = conv1.to_bytes(desc.DeviceName);
+		wstring_convert<codecvt_utf8<wchar_t>> conv1;
+		string u8str = conv1.to_bytes(desc.DeviceName);
 	
-		std::cout << u8str << std::endl;
+		cout << u8str << endl;
 	}
 
 	if(i == 0)
@@ -141,7 +143,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	// When a match is found store the numerator and denominator of the refresh rate for that monitor.
         for(i = 0; i < numModes; ++i)
         {
-            std::cout << "Mode " << i << ": " << displayModeList[i].Width << "x" << displayModeList[i].Height << std::endl;
+            cout << "Mode " << i << ": " << displayModeList[i].Width << "x" << displayModeList[i].Height << endl;
         }
 
 	for(i=0; i<numModes; i++)
@@ -245,12 +247,19 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	// Set the feature level to DirectX 10+.
 	D3D_FEATURE_LEVEL featureLevels[3] = {D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0};
 
+        unsigned creationFlags = 0;
+#if defined(_DEBUG)
+        // If the project is in a debug build, enable the debug layer.
+        creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+
 	// Create the swap chain, Direct3D device, and Direct3D device context.
-	result = D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, 0, featureLevels, 3, 
+	result = D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, creationFlags, featureLevels, 3, 
 						D3D11_SDK_VERSION, &swapChainDesc, &m_swapChain, &m_device, NULL, &m_deviceContext);
 	if(FAILED(result))
-	{
-		return false;
+	{   
+            Errors::Cry("Could not initialize device! Crashing now?");
+            return false;
 	}
 
 	// Get the pointer to the back buffer.
@@ -283,8 +292,8 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	depthBufferDesc.MipLevels = 1;
 	depthBufferDesc.ArraySize = 1;
 	depthBufferDesc.Format = depthStencilFormat;
-	depthBufferDesc.SampleDesc.Count = 1;
-	depthBufferDesc.SampleDesc.Quality = 0;
+	depthBufferDesc.SampleDesc.Count = 8;
+	depthBufferDesc.SampleDesc.Quality = 1;
 	depthBufferDesc.Usage = D3D11_USAGE_DEFAULT;
 	depthBufferDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 	depthBufferDesc.CPUAccessFlags = 0;
@@ -314,7 +323,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	depthStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
 	depthStencilDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
 	depthStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	depthStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS; // effectively doesn't use stencil buffer actually
+	depthStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS; // effectively doesn't use stencil buffer
 
 	// Stencil operations if pixel is back-facing.
 	depthStencilDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
@@ -349,7 +358,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 
 	// Set up the depth stencil view description.
 	depthStencilViewDesc.Format = depthStencilFormat;
-	depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS; // D3D11_DSV_DIMENSION_TEXTURE2D;
 	depthStencilViewDesc.Texture2D.MipSlice = 0;
 
 	// Create the depth stencil view.
@@ -371,7 +380,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	rasterDesc.DepthClipEnable = true;
 	rasterDesc.FillMode = D3D11_FILL_SOLID;
 	rasterDesc.FrontCounterClockwise = false;
-	rasterDesc.MultisampleEnable = false;
+	rasterDesc.MultisampleEnable = true;
 	rasterDesc.ScissorEnable = false;
 	rasterDesc.SlopeScaledDepthBias = 0.0f;
 
@@ -527,23 +536,16 @@ ID3D11DeviceContext* D3DClass::GetDeviceContext()
 }
 
 
-void D3DClass::GetProjectionMatrix(D3DXMATRIX& projectionMatrix)
+void D3DClass::GetProjectionMatrix(XMMATRIX& projectionMatrix)
 {
-	projectionMatrix = m_projectionMatrix;
+	projectionMatrix = XMLoadFloat4x4(&m_projectionMatrix);
 	return;
 }
 
 
-void D3DClass::GetWorldMatrix(D3DXMATRIX& worldMatrix)
+void D3DClass::GetOrthoMatrix(XMMATRIX& orthoMatrix)
 {
-	worldMatrix = m_worldMatrix;
-	return;
-}
-
-
-void D3DClass::GetOrthoMatrix(D3DXMATRIX& orthoMatrix)
-{
-	orthoMatrix = m_orthoMatrix;
+	orthoMatrix = XMLoadFloat4x4(&m_orthoMatrix);
 	return;
 }
 

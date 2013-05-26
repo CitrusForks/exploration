@@ -7,6 +7,7 @@
 #include <vector>
 
 using namespace std;
+using namespace DirectX;
 
 // load an obj file using a half-baked loader routine; not good for much besides testing and loading monolithic meshes without materials
 // CompoundMesh should be a better alternative

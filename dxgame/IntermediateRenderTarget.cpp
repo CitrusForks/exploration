@@ -5,11 +5,11 @@
 IntermediateRenderTarget::IntermediateRenderTarget(ID3D11Device *dev, ID3D11DeviceContext *devCtx, int width, int height) : m_texture(nullptr), m_targetView(nullptr), m_resourceView(nullptr), m_width(width), m_height(height)
 {
     D3D11_TEXTURE2D_DESC tdesc;
-    const DXGI_FORMAT format = DXGI_FORMAT_R16G16B16A16_FLOAT; // some weird format with some extra precision?
+    const DXGI_FORMAT format = DXGI_FORMAT_B8G8R8A8_UNORM; // some weird format with some extra precision?
 
     tdesc.Width = width * 2;
     tdesc.Height = height * 2;
-    tdesc.MipLevels = 1; // no mipmap please
+    tdesc.MipLevels = 2; // no mipmap please
     tdesc.ArraySize = 1;
     tdesc.Format = format; 
     DXGI_SAMPLE_DESC sampleDesc = {1, 0}; // Count, Quality
@@ -81,7 +81,7 @@ void IntermediateRenderTarget::setAsRenderTarget(ID3D11DeviceContext *devCtx, ID
 {
     // Set up the viewport for rendering at x2 resolution to back buffer
     D3D11_VIEWPORT viewport = { (float)m_width*2, (float)m_height*2, 0.0f, 1.0f, 0.0f, 0.0f };
-    //devCtx->RSSetViewports(1, &viewport);
+    //devCtx->RSSetViewports(1, &viewport); // XXX XXX XXX This would be super-convenient but it *just does not work*! WHY??
 
     devCtx->OMSetRenderTargets(1, &m_targetView, realDepthBuffer); // set our texture as target and that's it!
 }

@@ -44,12 +44,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-// mm, obsolete D3DX11 library stuff...
-#include <d3dx10math.h>
-#include <d3dx11async.h>
-//#include <d3dx11Effect.h>
-
-#include <xnamath.h>
+#include <directxmath.h>
 
 
 #include "Chronometer.h"

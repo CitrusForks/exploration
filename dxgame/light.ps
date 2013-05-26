@@ -114,16 +114,16 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 		//normal = normalize(input.normal);
 		//tangent = normalize(input.tangent);
 		tangent = tangent - input.normal * dot(tangent, input.normal);
-		float3 binormal = cross(input.normal, tangent);
+		float3 binormal = normalize(cross(input.normal, tangent));
 		float3x3 tangentToWorld = float3x3(tangent, binormal, input.normal);
 
-		float3 mapped_normal = normalMap.Sample(SampleType, input.tex).xyz;
+		float3 mapped_normal = normalMap.Sample(SampleType, input.tex).xyz*2 - float3(1,1,1); // rescale the values to [-1,+1] range
 		//return mapped_normal;
 	
-		normal = mul(normalize(mapped_normal), tangentToWorld);
+		normal = normalize(mul(mapped_normal, tangentToWorld));
 	} else
 	{
-		normal = input.normal;
+		normal = normalize(input.normal);
 	}
 
 	// vector from the eye
@@ -158,7 +158,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 		// calculate half-vector for Blinn-Phong specular model
 		float3 H = normalize(-lightDirection + viewDirection);
 		// calculate specular reflection based on dot product of half-vector and normal vector, along with material data
-		specular = specularColor * pow(saturate(dot(H, normalize(normal))), specularPower);
+		specular = specularColor * pow(saturate(dot(H, normal)), specularPower);
     }
 
 	// spotlight calculations

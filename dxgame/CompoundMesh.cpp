@@ -27,6 +27,7 @@
 #include <assimp/postprocess.h>
 
 using namespace std;
+using namespace DirectX;
 
 // from the net somewhere, modified
 BOOL FileExistsW(wchar_t *path)
@@ -213,7 +214,7 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
         if (texPath.length)
         {   
             // there's a texture! retrieve it via the texture manager
-            interleavedMesh.m_material.diffuseTexture = m_textureManager->getTextureUTF8(device, devCtx, (char*)texPath.C_Str(), texPath.length);
+            if (!m_textureManager->getTextureUTF8(device, devCtx, (char*)texPath.C_Str(), texPath.length, interleavedMesh.m_material.diffuseTexture)) return false;
         }
 
         // same method gets us a normal map
@@ -229,12 +230,12 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
                 wstring path = m_textureManager->utf8ToWstring((char*)texPath.C_Str(), texPath.length);
                 if (FileExistsW((wchar_t*)path.c_str()))
                 {
-                    interleavedMesh.m_material.normalMap = m_textureManager->getTexture(path, device, devCtx);
+                    if (!m_textureManager->getTexture(path, device, devCtx, interleavedMesh.m_material.normalMap)) return false;
                 }
             }
         } else
         {   
-            interleavedMesh.m_material.normalMap = m_textureManager->getTextureUTF8(device, devCtx, (char*)texPath.C_Str(), texPath.length);
+            if (!m_textureManager->getTextureUTF8(device, devCtx, (char*)texPath.C_Str(), texPath.length, interleavedMesh.m_material.normalMap)) return false;
         }
 
 #if 0

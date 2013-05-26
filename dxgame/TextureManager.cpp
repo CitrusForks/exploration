@@ -31,17 +31,17 @@ TextureManager::~TextureManager(void)
     m_textureReference.clear();
 }
 
-LoadedTexture TextureManager::getTextureUTF8(ID3D11Device *device, ID3D11DeviceContext *devCtx, char *c_path, int c_len)
+bool TextureManager::getTextureUTF8( ID3D11Device *device, ID3D11DeviceContext *devCtx, char *c_path, int c_len, LoadedTexture &out )
 {
     while (*c_path == '\\' || *c_path == '/' || *c_path == '.') { ++c_path; --c_len; } // cut off any path stuff
     wstring path = utf8ToWstring(c_path, c_len);
 
 
-    return getTexture(path, device, devCtx);
+    return getTexture(path, device, devCtx, out);
 
 }
 
-LoadedTexture TextureManager::getTexture( wstring path, ID3D11Device * device, ID3D11DeviceContext * devCtx )
+bool TextureManager::getTexture( wstring path, ID3D11Device * device, ID3D11DeviceContext * devCtx, LoadedTexture &out )
 {
     auto reference = m_textureReference.find(path);  // have we loaded it already?
 
@@ -53,19 +53,19 @@ LoadedTexture TextureManager::getTexture( wstring path, ID3D11Device * device, I
 
         cout << "Loading new texture: " << u8path << endl;
 
-        LoadedTexture newTex;
-        if (!newTex.initialize(device, devCtx, (wchar_t*)path.c_str()))
+        if (!out.initialize(device, devCtx, (wchar_t*)path.c_str()))
         {
             Errors::Cry("Failed to load texture, ", (char*)u8path.c_str());
-            return newTex;
+            return false;
         } else
         {
-            m_textureReference[path] = newTex;
-            return newTex; // success!
+            m_textureReference[path] = out;
+            return true; // success!
         }
     } else
     {
-        return reference->second; // already loaded! 
+        out = reference->second; // already loaded! 
+        return true;
     }
 }
 

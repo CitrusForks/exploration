@@ -3,12 +3,14 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "stdafx.h"
 #include "vanillashaderclass.h"
-#include <xnamath.h>
+#include <directxmath.h>
+#include <d3dcompiler.h>
 
 
 #include <iostream>
 
 using namespace std;
+using namespace DirectX;
 
 VanillaShaderClass::VanillaShaderClass()
 {
@@ -69,8 +71,10 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device *device, HWND hwnd, wcha
     ID3D10Blob* vertexShaderBuffer = nullptr;
 
     // Compile the vertex shader code.
-    result = D3DX11CompileFromFile(vsFilename, NULL, NULL, vsFunctionName, "vs_4_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, NULL, 
-								&vertexShaderBuffer, &errorMessage, NULL); // XXX D3DX11 is deprecated, replace this with CompileFromFile()
+    //result = D3DX11CompileFromFile(vsFilename, NULL, NULL, vsFunctionName, "vs_4_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, NULL, 
+								//&vertexShaderBuffer, &errorMessage, NULL); // XXX D3DX11 is deprecated, replace this with CompileFromFile()
+
+    result = D3DCompileFromFile(vsFilename, nullptr, nullptr, vsFunctionName, "vs_4_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &vertexShaderBuffer, &errorMessage);
     if(FAILED(result))
     {
 	    // If the shader failed to compile it should have writen something to the error message.
@@ -91,8 +95,7 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device *device, HWND hwnd, wcha
     ID3D10Blob* pixelShaderBuffer = nullptr;
 
     // Compile the pixel shader code.
-    result = D3DX11CompileFromFile(psFilename, NULL, NULL, psFunctionName, "ps_4_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, NULL, 
-								&pixelShaderBuffer, &errorMessage, NULL); // XXX replace with CompileFromFile()
+    result = D3DCompileFromFile(psFilename, NULL, NULL, psFunctionName, "ps_4_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &pixelShaderBuffer, &errorMessage); 
     if(FAILED(result))
     {
 	    // If the shader failed to compile it should have writen something to the error message.

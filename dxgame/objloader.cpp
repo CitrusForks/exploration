@@ -8,25 +8,28 @@
 #include <cstring>
 #include <iostream>
 
-#include <xnamath.h>
+#include <directxmath.h>
 
 #include "objloader.hpp"
 #include "vertex.h"
 
+using namespace std;
+using namespace DirectX;
+
 bool loadOBJ(const wchar_t * path, 
-    std::vector<Vertex> & out_vertices)
+    vector<Vertex> & out_vertices)
 {
     printf("Loading OBJ file %s...\n", path);
 
-    std::vector<unsigned int> vertexIndices, uvIndices, normalIndices;
-    std::vector<XMFLOAT3> temp_vertices; 
-    std::vector<XMFLOAT2> temp_uvs;
-    std::vector<XMFLOAT3> temp_normals;
+    vector<unsigned int> vertexIndices, uvIndices, normalIndices;
+    vector<DirectX::XMFLOAT3> temp_vertices; 
+    vector<DirectX::XMFLOAT2> temp_uvs;
+    vector<DirectX::XMFLOAT3> temp_normals;
 
     FILE *file = nullptr;
     errno_t rc = _wfopen_s(&file, path, L"r");
     if( rc || file == NULL ){
-        std::wcout << L"Could not open file: " << path << std::endl;
+        wcout << L"Could not open file: " << path << endl;
         return false;
     }
 
@@ -45,20 +48,20 @@ bool loadOBJ(const wchar_t * path,
         // else : parse lineHeader
         
         if ( strcmp( lineHeader, "v" ) == 0 ){
-            XMFLOAT3 vertex;
+            DirectX::XMFLOAT3 vertex;
             fscanf(file, "%f %f %f\n", &vertex.x, &vertex.y, &vertex.z );
             temp_vertices.push_back(vertex);
         }else if ( strcmp( lineHeader, "vt" ) == 0 ){
-            XMFLOAT2 uv;
+            DirectX::XMFLOAT2 uv;
             fscanf(file, "%f %f\n", &uv.x, &uv.y );
             uv.y = -uv.y; // Invert V coordinate since we will only use DDS texture, which are inverted. Remove if you want to use TGA or BMP loaders.
             temp_uvs.push_back(uv);
         }else if ( strcmp( lineHeader, "vn" ) == 0 ){
-            XMFLOAT3 normal;
+            DirectX::XMFLOAT3 normal;
             fscanf(file, "%f %f %f\n", &normal.x, &normal.y, &normal.z );
             temp_normals.push_back(normal);
         }else if ( strcmp( lineHeader, "f" ) == 0 ){
-            //std::string vertex1, vertex2, vertex3;
+            //string vertex1, vertex2, vertex3;
             unsigned int vertexIndex[3], uvIndex[3], normalIndex[3];
             int matches = fscanf(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n", &vertexIndex[0], &uvIndex[0], &normalIndex[0], &vertexIndex[1], &uvIndex[1], &normalIndex[1], &vertexIndex[2], &uvIndex[2], &normalIndex[2] );
             if (matches != 9){
@@ -94,9 +97,9 @@ bool loadOBJ(const wchar_t * path,
         unsigned int normalIndex = normalIndices[i];
         
         // Get the attributes thanks to the index
-        XMFLOAT3 vertex = temp_vertices[ vertexIndex-1 ];
-        XMFLOAT2 uv = temp_uvs[ uvIndex-1 ];
-        XMFLOAT3 normal = temp_normals[ normalIndex-1 ];
+        DirectX::XMFLOAT3 vertex = temp_vertices[ vertexIndex-1 ];
+        DirectX::XMFLOAT2 uv = temp_uvs[ uvIndex-1 ];
+        DirectX::XMFLOAT3 normal = temp_normals[ normalIndex-1 ];
 
         // pack into DirectX-friendly Vertex structure
         Vertex v;

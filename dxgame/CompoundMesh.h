@@ -17,6 +17,8 @@
 
 #include "vanillashaderclass.h"
 
+#include <DirectXMath.h>
+
 class CompoundMesh
 {
 private:
@@ -42,7 +44,7 @@ private:
     
 public:
     bool load(ID3D11Device* device, ID3D11DeviceContext *devCtx, TextureManager *texman, char *modelFileName);
-    bool Render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, FXMVECTOR cameraPosition, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix, CompoundMeshNode *node = nullptr );
+    bool Render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, DirectX::FXMVECTOR cameraPosition, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, CompoundMeshNode *node = nullptr );
 
 
     CompoundMesh();

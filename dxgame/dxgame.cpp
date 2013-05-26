@@ -30,8 +30,8 @@
 #include "SimpleText.h"
 
 #pragma comment(lib, "d3d11.lib")
-#pragma comment(lib, "d3dx11.lib")
 #pragma comment(lib, "dxgi.lib")
+#pragma comment(lib, "d3dcompiler.lib")
 
 // extra dependencies:
 #pragma comment(lib, "lua52.lib")
@@ -40,6 +40,7 @@
 
 
 using namespace std;
+using namespace DirectX;
 
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)

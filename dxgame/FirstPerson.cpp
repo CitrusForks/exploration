@@ -4,6 +4,8 @@
 #include <math.h>
 #include <iostream>
 
+using namespace std;
+using namespace DirectX;
 
 float FirstPerson::movementSpeed = 2.0f; // in m/s ... 1 unit is 1 meter is the convention in this project; 2.0m/s is quite a hurried walk... but walking feels slow
 float FirstPerson::rotationSpeed = (float)(140.0/360.0 * M_PI * 2);
@@ -34,7 +36,7 @@ void FirstPerson::perFrameUpdate(double timeElapsed, Input &input)
 #ifdef DEBUG_SPAM
         XMFLOAT4 tmp;
         XMStoreFloat4(&tmp, XMVector3Rotate(forward, XMQuaternionRotationRollPitchYaw(0.0f, m_heading, 0.0f)));
-        std::cout << m_heading << ", [" << tmp.x << ", " << tmp.y << ", " << tmp.z << ", " << tmp.w << "]" << std::endl;
+        cout << m_heading << ", [" << tmp.x << ", " << tmp.y << ", " << tmp.z << ", " << tmp.w << "]" << endl;
 #endif
 
     } else if (input.IsPressed(DIK_LEFT) || input.IsPressed(DIK_LEFTARROW))
