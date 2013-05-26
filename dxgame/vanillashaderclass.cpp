@@ -42,15 +42,28 @@ void VanillaShaderClass::Shutdown()
 	return;
 }
 
-
-bool VanillaShaderClass::Render(ID3D11DeviceContext *deviceContext, int indexCount, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix, CXMVECTOR cameraPos, 
+// Render() will set vertex constant buffers and draw geometry; kind of the heart of the graphics engine?
+// Vertex and index buffers must be set elsewhere before this method is called.
+// 
+// @deviceContext   Just get this from d3dclass.
+// @indexCount      How many indexes from your index buffer do you want drawn?
+// @worldMatrix     model coordinates -> world coordinates; aka Model, the M in MVP
+// @viewMatrix      world -> view coordinates
+// @projection      view -> screen 
+// @normalMap       points to a resource view, may be nullptr
+// @texture         points to one or more texture resource views; one variant is to send 
+//                  all vertexes and textures for a model at once and specify textures 
+//                  at every vertex... it's even implemented but ugh? See ComplexMesh.cpp
+// @numViews        the number of textures sent; defaults to 1, probably best to leave it that way
+// @setSampler      leave true for normal rendering; it's set false when rendering off-screen buffer to screen,
+//                  since the intermediate target class sets its own (simpler) sampler
+bool VanillaShaderClass::Render(ID3D11DeviceContext *deviceContext, int indexCount, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix,
                                 ID3D11ShaderResourceView** normalMap, ID3D11ShaderResourceView** texture, unsigned resourceViewCount /*= 1*/, bool setSampler /*= true*/ )
 {
 	bool result;
 
-
 	// Set the shader parameters that it will use for rendering.
-	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, cameraPos, normalMap, texture, resourceViewCount);
+	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, normalMap, texture, resourceViewCount);
 	if(!result)
 	{
 		return false;
@@ -369,14 +382,13 @@ void VanillaShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND
 	return;
 }
 
-// thie method mainly sets matrices and textures
-bool VanillaShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, 
-											 CXMMATRIX projectionMatrix, CXMVECTOR cameraPos, ID3D11ShaderResourceView **normalMap, ID3D11ShaderResourceView **texture, unsigned numViews)
+// this method mainly sets matrices and textures for the Render method; private
+bool VanillaShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix,
+    ID3D11ShaderResourceView **normalMap, ID3D11ShaderResourceView **texture, unsigned numViews)
 {
     HRESULT result;
     D3D11_MAPPED_SUBRESOURCE mappedResource;
     MatrixBufferType* dataPtr;
-    CameraBufferType* cDataPtr;
     unsigned int bufferNumber;
     //XMFLOAT4X4 worldF4X4, viewF4X4, projectionF4X4;    
 
@@ -418,26 +430,9 @@ bool VanillaShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext,
     // Now set the constant buffer in the vertex shader with the updated values.
     deviceContext->VSSetConstantBuffers(bufferNumber, 1, &m_matrixBuffer);
 
-    //
-    // camera constant buffer!
-    //
-    result = deviceContext->Map(m_cameraBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
-    if(FAILED(result))
-    {
-	 return false;
-    }
+    //if (!setVSCameraBuffer(deviceContext, cameraPos, 0.0f, 0)) return false;
 
-    // Get a pointer to the data in the constant buffer.
-    cDataPtr = (CameraBufferType*)mappedResource.pData;
-    
-    XMStoreFloat4(&cDataPtr->cameraPosition, cameraPos);
     //cDataPtr->padding = 0.0f;
-
-    deviceContext->Unmap(m_cameraBuffer, 0);
-
-    ++bufferNumber;
-    deviceContext->VSSetConstantBuffers(bufferNumber, 1, &m_cameraBuffer);
-
 
     // Set shader texture resource in the pixel shader.
     deviceContext->PSSetShaderResources(0, numViews, texture);
@@ -560,4 +555,33 @@ void VanillaShaderClass::RenderShader( ID3D11DeviceContext *deviceContext, int i
     deviceContext->DrawIndexed(indexCount, 0, 0);
 
     return;
+}
+
+bool VanillaShaderClass::setVSCameraBuffer( ID3D11DeviceContext* deviceContext, DirectX::CXMVECTOR cameraPos, float time, unsigned effect )
+{
+    HRESULT result;
+    CameraBufferType *cDataPtr;
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+
+    //
+    // camera constant buffer!
+    //
+    result = deviceContext->Map(m_cameraBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+    if(FAILED(result))
+    {
+        return false;
+    }
+
+    // Get a pointer to the data in the constant buffer.
+    cDataPtr = (CameraBufferType*)mappedResource.pData;
+
+    XMStoreFloat4(&cDataPtr->cameraPosition, cameraPos);
+    cDataPtr->time = time;
+    cDataPtr->effect = effect;
+
+    deviceContext->Unmap(m_cameraBuffer, 0);
+
+    deviceContext->VSSetConstantBuffers(1, 1, &m_cameraBuffer); // camera buffer is second in shader
+
+    return true;
 }

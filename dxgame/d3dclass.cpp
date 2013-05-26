@@ -219,8 +219,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	// Set the handle for the window to render to.
         swapChainDesc.OutputWindow = hwnd;
 
-	// Turn multisampling off. 
-        // TODO: turn it on and get stuff to actually display >:|
+	// Turn multisampling off for swap chaing; we're doign it when rendering to off-screen target. 
         swapChainDesc.SampleDesc.Count = 1;
         swapChainDesc.SampleDesc.Quality = 0;
 
@@ -292,8 +291,8 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	depthBufferDesc.MipLevels = 1;
 	depthBufferDesc.ArraySize = 1;
 	depthBufferDesc.Format = depthStencilFormat;
-	depthBufferDesc.SampleDesc.Count = 8;
-	depthBufferDesc.SampleDesc.Quality = 15;
+	depthBufferDesc.SampleDesc.Count = Options::intOptions["MSAACount"];
+	depthBufferDesc.SampleDesc.Quality = Options::intOptions["MSAAQuality"];
 	depthBufferDesc.Usage = D3D11_USAGE_DEFAULT;
 	depthBufferDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 	depthBufferDesc.CPUAccessFlags = 0;

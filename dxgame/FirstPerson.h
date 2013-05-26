@@ -25,6 +25,8 @@ public:
     DirectX::XMVECTOR getEyePosition();
     void setPosition(DirectX::FXMVECTOR to);
 
+    float getMoveSpeed(Input &input); // with modifiers
+
     static float movementSpeed;
     static float rotationSpeed;
 };

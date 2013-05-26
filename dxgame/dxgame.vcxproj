@@ -95,7 +95,9 @@
     <ClInclude Include="FirstPerson.h" />
     <ClInclude Include="input.h" />
     <ClInclude Include="IntermediateRenderTarget.h" />
+    <ClInclude Include="ModelManager.h" />
     <ClInclude Include="objloader.hpp" />
+    <ClInclude Include="Options.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SimpleMesh.h" />
     <ClInclude Include="SimpleText.h" />
@@ -118,7 +120,9 @@
     <ClCompile Include="FirstPerson.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="IntermediateRenderTarget.cpp" />
+    <ClCompile Include="ModelManager.cpp" />
     <ClCompile Include="objloader.cpp" />
+    <ClCompile Include="Options.cpp" />
     <ClCompile Include="SimpleMesh.cpp" />
     <ClCompile Include="SimpleText.cpp" />
     <ClCompile Include="Sound.cpp" />

@@ -79,7 +79,8 @@ void reportError(const char *prefix)
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	int width = 1024, height = 768;
+        Options::setDefaults();
+	int width = Options::intOptions["Width"], height = Options::intOptions["Height"];
 
 	wcout << L"Unicode test: проверка Unicode" << endl; // unlikely to work! need to manually set codepage in terminal
 	cout << endl; // because the above is unlikely to work
@@ -161,28 +162,19 @@ int _tmain(int argc, _TCHAR* argv[])
 
         int beepverb = soundSystem.loadSound("beepverb.wav");
 
-        TextureManager textures;
+        ModelManager models(d3d.GetDevice(), d3d.GetDeviceContext());
 
-        CompoundMesh mesh;
-        if (!mesh.load(d3d.GetDevice(), d3d.GetDeviceContext(), &textures, "Chekov.obj"))
-        {
-            return 1;
-        }
+        CompoundMesh *mesh = models["Chekov.obj"];
 
-        CompoundMesh spider;
-        if (!spider.load(d3d.GetDevice(), d3d.GetDeviceContext(), &textures, "duck.obj"))
-        {
-            return 1;
-        }
+        CompoundMesh *duck = models["duck.obj"];
 
-        CompoundMesh floor;
-        floor.load(d3d.GetDevice(), d3d.GetDeviceContext(), &textures, "floor.obj");
+        CompoundMesh *floor = models["floor.obj"];
 
-        CompoundMesh torus;
-        torus.load(d3d.GetDevice(), d3d.GetDeviceContext(), &textures, "torus.obj");
+        CompoundMesh *torus = models["torus.obj"];
 
-        CompoundMesh building;
-        building.load(d3d.GetDevice(), d3d.GetDeviceContext(), &textures, "LPBuildX13r_3ds.3ds");
+        CompoundMesh *building = models["LPBuildX13r_3ds.3ds"];
+
+        if (!mesh || !duck || !floor || !torus || !building) return -1;
 
         SimpleMesh square;
         if (!square.load(L"square.obj", d3d.GetDevice()))
@@ -247,10 +239,11 @@ int _tmain(int argc, _TCHAR* argv[])
                 XMStoreFloat3(&(lightDir[1]), axis45deg);
                 
                 XMFLOAT4 lightParams[2];
-                lightParams[0] = XMFLOAT4(cosf((float)M_PI * 20.0f/180.f), 0.75f, 0, 0.01f);
-                lightParams[0] = XMFLOAT4(cosf((float)M_PI * 30.0f/180.f), 0.75f, 0.1f, 0);
+                lightParams[0] = XMFLOAT4(cosf((float)M_PI * 15.0f/180.f), 0.75f, 0, 0.05f); // player flashlight
+                lightParams[1] = XMFLOAT4(cosf((float)M_PI * 25.0f/180.f), 0.75f, 0.1f, 0);  // fixed floating light
 
-                shaders0.SetPSLights(d3d.GetDeviceContext(), lightDirection, (float)timer.sinceInit(), FPCamera.getPosition(), lightPos, lightDir, nullptr, 2);
+
+                shaders0.SetPSLights(d3d.GetDeviceContext(), lightDirection, (float)timer.sinceInit(), FPCamera.getPosition(), lightPos, lightDir, lightParams, 2);
 
                 XMMATRIX worldFinal = /* XMMatrixRotationAxis(axis, angle) * */ world;
 
@@ -259,32 +252,37 @@ int _tmain(int argc, _TCHAR* argv[])
                 offScreen.setAsRenderTarget(d3d.GetDeviceContext(), d3d.GetDepthStencilView()); // set the off-screen texture as the render target
                 offScreen.clear(d3d.GetDeviceContext());
 
-                if (!mesh.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixScaling(0.53f, 0.53f, 0.53f) * worldFinal, view, projection))
+                shaders0.setVSCameraBuffer(d3d.GetDeviceContext(), FPCamera.getEyePosition(), (float)timer.sinceInit(), 0);
+
+                if (!models["Chekov.obj"]->render(d3d.GetDeviceContext(), &shaders0, XMMatrixScaling(0.53f, 0.53f, 0.53f) * worldFinal, view, projection))
                 {
                     Errors::Cry(L"Render error in scene. :|");
                     break;
                 }
 
                 //if (!spider.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixScaling(0.05f, 0.05f, 0.05f) * worldFinal * XMMatrixTranslation(-1.0f, 2.0f, 6.0f), view, projection))
-                if (!spider.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), worldFinal * XMMatrixTranslation(-1.0f, 0.0f, 3.0f), view, projection))
+                if (!models["duck.obj"]->render(d3d.GetDeviceContext(), &shaders0, worldFinal * XMMatrixTranslation(-1.0f, 0.0f, 3.0f), view, projection))
                 {
                     Errors::Cry(L"Render error in scene. :|");
                     break;
                 }
 #if 1
-                if (!floor.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixIdentity(), view, projection))
+                if (!models["floor.obj"]->render(d3d.GetDeviceContext(), &shaders0, XMMatrixIdentity(), view, projection))
                 {
                     Errors::Cry(L"Render error in scene. :|");
                     break;
                 }
 #endif
-                if (!torus.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixTranslation(0.0f, 1.0f, 3.0f), view, projection))
+                //shaders0.setVSCameraBuffer(d3d.GetDeviceContext(), FPCamera.getEyePosition(), timer.sinceInit(), 1);
+
+                if (!models["torus.obj"]->render(d3d.GetDeviceContext(), &shaders0, XMMatrixTranslation(0.0f, 1.0f, 3.0f), view, projection))
                 {
                     Errors::Cry(L"Render error in scene. :|");
                     break;
                 }
 
-                if (!building.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixRotationAxis(XMVectorSet(1.0f,0,0,0), (float)M_PI_2) * XMMatrixScaling(0.15f, 0.15f, 0.15f) * XMMatrixTranslation(-10.0f, 4.5001f, 15.0f), view, projection))
+                //shaders0.setVSCameraBuffer(d3d.GetDeviceContext(), FPCamera.getEyePosition(), timer.sinceInit(), 0);
+                if (!models["LPBuildX13r_3ds.3ds"]->render(d3d.GetDeviceContext(), &shaders0, XMMatrixRotationAxis(XMVectorSet(1.0f,0,0,0), (float)M_PI_2) * XMMatrixScaling(0.15f, 0.15f, 0.15f) * XMMatrixTranslation(-10.0f, 4.5001f, 15.0f), view, projection))
                 {
                     Errors::Cry(L"Render error in scene. :|");
                     break;
@@ -297,7 +295,7 @@ int _tmain(int argc, _TCHAR* argv[])
                 d3d.setAsRenderTarget(false); // set a swap chain buffer as render target again
 
                 square.setBuffers(d3d.GetDeviceContext()); // use the two triangles to render off-screen texture to swap chain, through a shader
-                if (!postProcess.Render(d3d.GetDeviceContext(), square.getIndexCount(), XMMatrixIdentity(), XMMatrixIdentity(), ortho /* * XMMatrixTranslation(-1.0f,1.0f,0.0f) * XMMatrixScaling(0.5f,0.5f,0.5f)*/, XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), nullptr, offScreen.getResourceView(d3d.GetDeviceContext()), 1, false))
+                if (!postProcess.Render(d3d.GetDeviceContext(), square.getIndexCount(), XMMatrixIdentity(), XMMatrixIdentity(), ortho /* * XMMatrixTranslation(-1.0f,1.0f,0.0f) * XMMatrixScaling(0.5f,0.5f,0.5f)*/, nullptr, offScreen.getResourceView(d3d.GetDeviceContext()), 1, false))
                     // commented out translate and scaling is to reposition poly for supersampling
                 {
                     Errors::Cry(L"Error rendering off-screen texture to display. :/");

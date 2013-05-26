@@ -58,6 +58,8 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	float3 tangent = input.tangent;
 	//tangent = normalize(input.tangent);
 
+	//return 1.0-pow(input.position.zzzz,2); // ghostly distance-visualization world
+
 	//return float4(0, dot(input.tangent, input.normal), 0, 1)*10; // uncomment for error visualization
 	//return float4(tangent.x, tangent.y, tangent.z, 1); // uncomment for amazing technicolor vomit shader
 
@@ -182,8 +184,6 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 			{
 				float attenuation = 1.0 / (spotlightEtc[i].y + spotlightEtc[i].z * distToLight + spotlightEtc[i].w * pow(distToLight,2));
 
-				//return float4(0,1,0,1); // horrid green spotlight debugging
-
 				//beamAlignment = pow(beamAlignment,100); // XXX this seems like stupid way of doing this but the books do it pretty much like this, it turns out
 
 				//float fallOff = saturate((beamAlignment*1.00001-beamCosAngle)/(1-beamCosAngle)); // maybe this way is stupid too; 1.0001 was chosen experimentally
@@ -200,6 +200,9 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 			}
 		}
 	}
+
+	//return saturate(color + specular); // pure light value visualization
+	//return saturate(float4(0, color.r, specular.g, 1)); // separate ambient vs. specular visual
 
     // Multiply the texture pixel and the input color to get the textured result.
     color = color * textureColor;

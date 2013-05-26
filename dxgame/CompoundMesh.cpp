@@ -59,6 +59,12 @@ CompoundMesh::CompoundMesh(void) : m_aiScene(nullptr)
 
 CompoundMesh::~CompoundMesh(void)
 {
+}
+
+
+
+void CompoundMesh::release()
+{
     if (m_aiScene) aiReleaseImport(m_aiScene);
 
     WalkNodes(m_root, [] (CompoundMeshNode &node)
@@ -70,6 +76,7 @@ CompoundMesh::~CompoundMesh(void)
         });
     });
 }
+
 
 
 // load a modle via libassimp and store separate meshes in a tree structure that mirros aiScene
@@ -344,13 +351,13 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
     return true;
 }
 
-#if 1
+#if 0
 // recursively render meshes for all nodes
-bool CompoundMesh::Render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, FXMVECTOR cameraPosition, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix, CompoundMeshNode *node /*= nullptr */ )
+bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix, CompoundMeshNode *node /*= nullptr */ )
 {
     bool rc = true; // return value
 
-    WalkNodes(m_root, [&deviceContext, &shader, &rc, &cameraPosition, &worldMatrix, &viewMatrix, &projectionMatrix] (CompoundMeshNode &node) // capturing an *XMVECTOR variable is a bad idea, doesn't work
+    WalkNodes(m_root, [&deviceContext, &shader, &rc, &worldMatrix, &viewMatrix, &projectionMatrix] (CompoundMeshNode &node) // capturing an *XMVECTOR variable is a bad idea, doesn't work
     {
         // auto deviceContext = in_deviceContext; // C++ lambda wart: can't capture a variable that's only in scope due to being captured by the containing lambda; must make a local copy
         //auto shader = in_shader; // maybe C++ lambdas aren't good :|
@@ -367,7 +374,7 @@ bool CompoundMesh::Render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
             SimpleMesh::Material &mat = mesh->m_material;
             bool useNormalMap = mat.normalMap.getTexture() ? true : false;
             if (!shader->SetPSMaterial(deviceContext, mat.ambient, mat.diffuse, mat.shininess, mat.specular, useNormalMap) ||
-                !shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, XMVectorZero(), mesh->m_material.normalMap.getTexture(), mesh->m_material.diffuseTexture.getTexture()))
+                !shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, mesh->m_material.normalMap.getTexture(), mesh->m_material.diffuseTexture.getTexture()))
             {
                 rc = false;
                 break;
@@ -381,8 +388,7 @@ bool CompoundMesh::Render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 
 // recursively render meshes for all nodes
 // lambda-free version
-bool CompoundMesh::Render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, 
-    FXMVECTOR cameraPosition, 
+bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, 
     CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix, CompoundMeshNode *node /* = nullptr */ )
 {
     if (!node) node = &m_root;
@@ -398,14 +404,13 @@ bool CompoundMesh::Render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
         mesh->setBuffers(deviceContext); // point the GPU at the right geometry data
 
         SimpleMesh::Material &mat = mesh->m_material;
-        SimpleMesh::Material &mat = mesh->m_material;
         bool useNormalMap = mat.normalMap.getTexture() ? true : false;
-        if (!shader->SetPSMaterial(deviceContext, mat.ambient, mat.diffuse, mat.shininess, mat.specular))
+        if (!shader->SetPSMaterial(deviceContext, mat.ambient, mat.diffuse, mat.shininess, mat.specular, useNormalMap))
         {
             return false;
         }
 
-        if (!shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, XMVectorZero(), mesh->m_material.normalMap.getTexture(), mesh->m_material.diffuseTexture.getTexture()))
+        if (!shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, mesh->m_material.normalMap.getTexture(), mesh->m_material.diffuseTexture.getTexture()))
         {
             return false;
         }
@@ -413,9 +418,10 @@ bool CompoundMesh::Render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 
     for (auto i = node->children.begin(); i != node->children.end(); ++i)
     {
-        if (!Render(deviceContext, shader, cameraPosition, worldMatrix, viewMatrix, projectionMatrix, &(*i))) return false;
+        if (!render(deviceContext, shader, worldMatrix, viewMatrix, projectionMatrix, &(*i))) return false;
     }
 
     return true;
 }
+
 #endif

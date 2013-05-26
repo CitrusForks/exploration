@@ -22,11 +22,29 @@ FirstPerson::~FirstPerson(void)
 }
 
 
+float FirstPerson::getMoveSpeed( Input &input )
+{
+    float speed = movementSpeed;
+
+    if (input.IsPressed(DIK_LSHIFT) || input.IsPressed(DIK_RSHIFT))
+    {
+        speed *= 3; // running
+    }
+
+    if (input.IsPressed(DIK_LCONTROL))
+    {
+        speed /= 2; // crouching
+    }
+
+    return speed;
+}
+
+
 // move based on input
 void FirstPerson::perFrameUpdate(double timeElapsed, Input &input)
 {
     XMVECTOR forward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
-
+    XMVECTOR offset = XMVectorZero();
 
     // turn with arrow keys like it's 1995
     // joystick turning can be added here though
@@ -44,15 +62,15 @@ void FirstPerson::perFrameUpdate(double timeElapsed, Input &input)
         m_heading -= (float) (rotationSpeed * timeElapsed);
     }
 
+    bool moving = false; // because we can't do comparisons on XMVECTOR values directly; this is less verbose than digging through the vector
 
     // back and forward walk
     if (input.IsPressed(DIK_UP) || input.IsPressed(DIK_UPARROW) || input.IsPressed(DIK_W) || input.IsPressed(DIK_S) || input.IsPressed(DIK_DOWN) || input.IsPressed(DIK_DOWNARROW))
     {
         int sign = (input.IsPressed(DIK_S) || input.IsPressed(DIK_DOWN) || input.IsPressed(DIK_DOWNARROW)) ? -1 : 1; // XXX refactor me
+        moving = true;
 
-        XMStoreFloat4(&m_position, 
-            XMLoadFloat4(&m_position) + XMVector3Rotate(forward, XMQuaternionRotationRollPitchYaw(0.0f, m_heading, 0.0f)) * (float)(movementSpeed * timeElapsed * sign) 
-           );
+        offset += XMVector3Rotate(forward, XMQuaternionRotationRollPitchYaw(0.0f, m_heading, 0.0f)) * (float)sign;
 
     }
 
@@ -60,10 +78,18 @@ void FirstPerson::perFrameUpdate(double timeElapsed, Input &input)
     if (input.IsPressed(DIK_A) || input.IsPressed(DIK_D))
     {
         int sign = input.IsPressed(DIK_A) ? -1 : 1;
+        moving = true;
 
+        offset += XMVector3Rotate(forward, XMQuaternionRotationRollPitchYaw(0.0f, m_heading + (float)M_PI_2, 0.0f)) * (float)sign;
+
+    }
+
+    if (moving)
+    {
+        // normalize offset to avoid going faster when hitting forward+strafe :P
         XMStoreFloat4(&m_position, 
-            XMLoadFloat4(&m_position) + XMVector3Rotate(forward, XMQuaternionRotationRollPitchYaw(0.0f, m_heading + (float)M_PI_2, 0.0f)) * (float)(movementSpeed * timeElapsed * sign) 
-           );
+            XMLoadFloat4(&m_position) + XMVector3Normalize(offset)*(float)(getMoveSpeed(input) * timeElapsed)
+            );
     }
 
     // mouse stuff?
@@ -74,11 +100,11 @@ void FirstPerson::perFrameUpdate(double timeElapsed, Input &input)
         // first frame, don't go wild with crazy mouse inputs
     } else
     {
-        m_heading += (float) (timeElapsed * (x - m_mouse_x) * rotationSpeed / 4.0f); // x movement rotates; TODO: mouse sensitivity setting instead of /4
+        m_heading += (float) (timeElapsed * (x - m_mouse_x) * rotationSpeed * (Options::intOptions["MouseSensitivy"] / 32.0f)); // x movement rotates
         
-        m_pitch += (float) (timeElapsed * (y - m_mouse_y) / 4.0f); // y movement looks up and down
+        m_pitch += (float) (timeElapsed * (y - m_mouse_y) * (Options::intOptions["MouseSensitivy"] / 32.0f)); // y movement looks up and down
         if (m_pitch < -M_PI_4) m_pitch = (float) -M_PI_4; // clamp pitch
-        if (m_pitch > M_PI_4) m_pitch = (float) M_PI_4; 
+        if (m_pitch > M_PI_2) m_pitch = (float) M_PI_2; 
     }
     m_mouse_x = x;
     m_mouse_y = y;
@@ -115,3 +141,4 @@ void FirstPerson::setPosition(FXMVECTOR to)
 {
     XMStoreFloat4(&m_position, to);
 }
+

@@ -1,18 +1,19 @@
 #include "StdAfx.h"
 #include "IntermediateRenderTarget.h"
+#include "Options.h"
 #include <iostream>
 
 IntermediateRenderTarget::IntermediateRenderTarget(ID3D11Device *dev, ID3D11DeviceContext *devCtx, int width, int height) : m_texture(nullptr), m_targetView(nullptr), m_resourceView(nullptr), m_width(width), m_height(height)
 {
     D3D11_TEXTURE2D_DESC tdesc;
-    const DXGI_FORMAT format = DXGI_FORMAT_B8G8R8A8_UNORM; // some weird format with some extra precision?
+    const DXGI_FORMAT format = DXGI_FORMAT_R16G16B16A16_FLOAT; // some weird format with some extra precision?
 
     tdesc.Width = width; //  * 2; // x2 for supersampling test
     tdesc.Height = height; //  * 2;
     tdesc.MipLevels = 1; // no mipmap please
     tdesc.ArraySize = 1;
     tdesc.Format = format; 
-    DXGI_SAMPLE_DESC sampleDesc = {8, 15}; // Count, Quality
+    DXGI_SAMPLE_DESC sampleDesc = {Options::intOptions["MSAACount"], Options::intOptions["MSAAQuality"]}; // Count, Quality
     tdesc.SampleDesc = sampleDesc;
     tdesc.Usage = D3D11_USAGE_DEFAULT;
     tdesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE; // the GPU needs to render to the texture and then pass the texture on to a shader
@@ -54,14 +55,14 @@ IntermediateRenderTarget::IntermediateRenderTarget(ID3D11Device *dev, ID3D11Devi
         return;
     }
 
-    D3D11_SAMPLER_DESC samplerDesc = {D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_WRAP, 0.0f, 0, D3D11_COMPARISON_ALWAYS };
+    D3D11_SAMPLER_DESC samplerDesc = {D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_WRAP, 0.0f, 8, D3D11_COMPARISON_ALWAYS };
     samplerDesc.MinLOD = 0;
     samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
     rc = dev->CreateSamplerState(&samplerDesc, &m_sampleState);
     if(FAILED(rc))
     {
-        Errors::Cry(L"Couldn't create sampler intermediate buffer. :/");
+        Errors::Cry(L"Couldn't create sampler for intermediate buffer. :/");
         m_targetView->Release();
         m_texture->Release();
         m_resourceView->Release();
