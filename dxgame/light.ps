@@ -177,14 +177,13 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 			// check for shadow, though
 			float shadowZ = sampleShadowMap(float2(0.5 * input.shadowUV[i].x / input.shadowUV[i].w + 0.5, -0.5 * input.shadowUV[i].y / input.shadowUV[i].w + 0.5), i);
 
-			if (shadowZ < 3) shadowZ -= 0.015;
+			shadowZ -= 0.015;
 
 			shadowZ = 2000.0 / (10001.0 - 9999.0 * shadowZ); // http://www.wolframalpha.com/input/?i=%28z*f+%2B+z*n+-+2+*+f+*+n%29+%2F+%28z+*+%28f+-+n%29%29+%3D+x+solve+for+z+where+f%3D1000%2Cn%3D0.1
+			//shadowZ = 1000.0 / (10000.0 - 9999.0 * shadowZ); // http://www.wolframalpha.com/input/?i=f+%2F+%28f+-+n%29+-+%28n+*+f%29+%2F+%28%28f+-+n%29+*+z%29+%3D+x+solve+for+z+where+f%3D1000%2Cn%3D0.1
 
-			//shadowZ = (shadowZ / input.shadowUV[i].w - 1) / 1.0001;
-
-			//return distToLight * (-1.0 * 1000 * 0.1)/(1000-0.1);
-			if (shadowZ < distToLight) continue; // 1000 should be the max depth of the light's frustum
+			//if (shadowZ < ((distToLight * 1.0001 - 1)-0.10001) / input.shadowUV[i].w ) continue; 
+			if (shadowZ < distToLight) continue;
 
 			float3 toLight = -sourceToPixel;
 			float spotlightIntensity = dot(normal, toLight);

@@ -103,8 +103,8 @@ void FirstPerson::perFrameUpdate(double timeElapsed, Input &input)
         m_heading += (float) (timeElapsed * (x - m_mouse_x) * rotationSpeed * (Options::intOptions["MouseSensitivy"] / 32.0f)); // x movement rotates
         
         m_pitch += (float) (timeElapsed * (y - m_mouse_y) * (Options::intOptions["MouseSensitivy"] / 32.0f)); // y movement looks up and down
-        if (m_pitch < -M_PI_4) m_pitch = (float) -M_PI_4; // clamp pitch
-        if (m_pitch > M_PI_2) m_pitch = (float) M_PI_2; 
+        if (m_pitch < -M_PI_2+0.001) m_pitch = (float) -M_PI_2+0.001; // clamp pitch
+        if (m_pitch > M_PI_2-0.001) m_pitch = (float) M_PI_2-0.001; 
     }
     m_mouse_x = x;
     m_mouse_y = y;
