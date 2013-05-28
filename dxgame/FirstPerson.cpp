@@ -11,7 +11,7 @@ float FirstPerson::movementSpeed = 2.0f; // in m/s ... 1 unit is 1 meter is the 
 float FirstPerson::rotationSpeed = (float)(140.0/360.0 * M_PI * 2);
 
 
-FirstPerson::FirstPerson(void) : m_pitch(0.0f), m_heading(0.0f), m_position(0.0f, 0.0f, 0.0f, 1.0f), m_height(1.8f), m_mouse_x(-1), m_mouse_y(-1)
+FirstPerson::FirstPerson(void) : m_pitch(0.0f), m_heading(0.0f), m_position(0.0f, 0.0f, 0.0f, 1.0f), m_height(1.8f), m_mouse_x(-1), m_mouse_y(-1), m_crouching(false)
 {
     // 1.8m tall = 5'9"
 }
@@ -31,10 +31,7 @@ float FirstPerson::getMoveSpeed( Input &input )
         speed *= 3; // running
     }
 
-    if (input.IsPressed(DIK_LCONTROL))
-    {
-        speed /= 2; // crouching
-    }
+    if (m_crouching) speed /= 2;
 
     return speed;
 }
@@ -45,6 +42,9 @@ void FirstPerson::perFrameUpdate(double timeElapsed, Input &input)
 {
     XMVECTOR forward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
     XMVECTOR offset = XMVectorZero();
+
+    m_crouching = input.IsPressed(DIK_LCONTROL);
+
 
     // turn with arrow keys like it's 1995
     // joystick turning can be added here though
@@ -130,7 +130,7 @@ XMVECTOR FirstPerson::getPosition()
 // at eye level...
 XMVECTOR FirstPerson::getEyePosition()
 {
-    return XMLoadFloat4(&m_position) + XMVectorSet(0.0f, m_height, 0.0f, 0.0f); 
+    return XMLoadFloat4(&m_position) + XMVectorSet(0.0f, m_crouching ? m_height/1.5f : m_height, 0.0f, 0.0f); 
 ;
 }
 

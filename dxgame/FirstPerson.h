@@ -14,6 +14,8 @@ private:
     float m_heading; // aka yaw, perhaps
     float m_pitch; // looking up at the ceiling, are we?
 
+    bool m_crouching; // need to cache this
+
     int m_mouse_x, m_mouse_y;
 public:
     FirstPerson(void);

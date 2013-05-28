@@ -1,6 +1,8 @@
 // Filename: light.vs
 // Originally from rastertek.com tutorials, heavily modified
 
+#define NUM_SPOTLIGHTS 4
+
 //
 // Globals
 //
@@ -9,6 +11,8 @@ cbuffer MatrixBuffer
 	matrix worldMatrix;
 	matrix viewMatrix;
 	matrix projectionMatrix;
+	matrix lightVP[NUM_SPOTLIGHTS+1]; // world coordinates -> light shadow map coordinates
+	uint numLights;
 };
 
 cbuffer CameraBuffer
@@ -41,6 +45,7 @@ struct PixelInputType
 	float3 normal : NORMAL;
 	float3 tangent : TANGENT;
 	float3 viewDirection : VIEWDIR;
+	float4 shadowUV[NUM_SPOTLIGHTS+1] : SHADOWUV;
 };
 
 
@@ -87,8 +92,7 @@ PixelInputType LightVertexShader(VertexInputType input)
 
 	// Calculate the position of the vertex in world, view, and screen coordinates
 	// by using the appropriate matrices
-    output.position = mul(localPosition, worldMatrix);
-	output.worldPos = worldPosition = output.position;
+    output.worldPos = worldPosition = output.position = mul(localPosition, worldMatrix);
     output.position = mul(output.position, viewMatrix);
     output.position = mul(output.position, projectionMatrix);
     
@@ -107,5 +111,10 @@ PixelInputType LightVertexShader(VertexInputType input)
     // Determine the viewing direction based on the position of the camera and the position of the vertex in the world.
     output.viewDirection = normalize(cameraPosition.xyz - worldPosition.xyz);
 	
+	for (uint i = 0; i < numLights; ++i)
+	{
+		output.shadowUV[i] = mul(worldPosition, lightVP[i]);
+	}
+
     return output;
 }

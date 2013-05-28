@@ -20,7 +20,9 @@ VanillaShaderClass::VanillaShaderClass()
 	m_matrixBuffer = 0;
         m_lightBuffer = 0;
         m_cameraBuffer = 0;
-	m_sampleState = 0;
+	m_sampleState[0] = 0;
+        m_sampleState[1] = 0;
+        m_sampleState[2] = 0;
 }
 
 
@@ -58,12 +60,12 @@ void VanillaShaderClass::Shutdown()
 // @setSampler      leave true for normal rendering; it's set false when rendering off-screen buffer to screen,
 //                  since the intermediate target class sets its own (simpler) sampler
 bool VanillaShaderClass::Render(ID3D11DeviceContext *deviceContext, int indexCount, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix,
-                                ID3D11ShaderResourceView** normalMap, ID3D11ShaderResourceView** texture, unsigned resourceViewCount /*= 1*/, bool setSampler /*= true*/ )
+                                ID3D11ShaderResourceView** normalMap, XMFLOAT4X4 *lightProjections, int numShadows, ID3D11ShaderResourceView** texture, unsigned resourceViewCount /*= 1*/, bool setSampler /*= true*/ )
 {
 	bool result;
 
 	// Set the shader parameters that it will use for rendering.
-	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, normalMap, texture, resourceViewCount);
+	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, normalMap, lightProjections, numShadows, texture, resourceViewCount);
 	if(!result)
 	{
 		return false;
@@ -75,7 +77,7 @@ bool VanillaShaderClass::Render(ID3D11DeviceContext *deviceContext, int indexCou
 	return true;
 }
 
-
+// This method actually compiles shader programs, via the compiler dll. N.B., that's not allowed in the Windows App Store but is that a thing that's actually relevant to anyone's life?
 bool VanillaShaderClass::InitializeShader( ID3D11Device *device, HWND hwnd, wchar_t *vsFilename, char *vsFunctionName, wchar_t *psFilename, char *psFunctionName, bool multiStreaming /*= false*/ )
 {
     HRESULT result;
@@ -245,7 +247,7 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device *device, HWND hwnd, wcha
 
     // another buffer, for the light data in the pixel shader
     cameraBufferDesc.ByteWidth = sizeof(LightBufferType);
-    cout << "lbf size: " << sizeof(LightBufferType);
+    cout << "lbf size: " << sizeof(LightBufferType) << endl;
     result = device->CreateBuffer(&lightBufferDesc, NULL, &m_lightBuffer);
     if(FAILED(result))
     {
@@ -277,10 +279,21 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device *device, HWND hwnd, wcha
     samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
     // Create the texture sampler state.
-    result = device->CreateSamplerState(&samplerDesc, &m_sampleState);
+    result = device->CreateSamplerState(&samplerDesc, m_sampleState);
     if(FAILED(result))
     {
 	    return false;
+    }
+
+    D3D11_SAMPLER_DESC samplerDesc2 = {D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_WRAP, 0.0f, 8, D3D11_COMPARISON_ALWAYS };
+    samplerDesc2.MinLOD = 0;
+    samplerDesc2.MaxLOD = D3D11_FLOAT32_MAX;
+
+    result = device->CreateSamplerState(&samplerDesc2, m_sampleState + 1);
+    if(FAILED(result))
+    {
+        Errors::Cry(L"Couldn't create sampler for intermediate buffer. :/");
+        return false;
     }
 
     cout << "initialized some shaders" << endl;
@@ -294,8 +307,10 @@ void VanillaShaderClass::ShutdownShader()
     // Release the sampler state.
     if(m_sampleState)
     {
-	    m_sampleState->Release();
-	    m_sampleState = 0;
+	    m_sampleState[0]->Release();
+	    m_sampleState[0] = 0;
+            m_sampleState[1]->Release();
+            m_sampleState[1] = 0;
     }
 
     // Release the matrix constant buffer.
@@ -384,7 +399,7 @@ void VanillaShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND
 
 // this method mainly sets matrices and textures for the Render method; private
 bool VanillaShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix,
-    ID3D11ShaderResourceView **normalMap, ID3D11ShaderResourceView **texture, unsigned numViews)
+    ID3D11ShaderResourceView **normalMap, XMFLOAT4X4* lightProjections, unsigned numLights, ID3D11ShaderResourceView **texture, unsigned numViews)
 {
     HRESULT result;
     D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -416,6 +431,14 @@ bool VanillaShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext,
     XMStoreFloat4x4(&dataPtr->world, XMMatrixTranspose(worldMatrix));
     XMStoreFloat4x4(&dataPtr->view, XMMatrixTranspose(viewMatrix));
     XMStoreFloat4x4(&dataPtr->projection, XMMatrixTranspose(projectionMatrix));
+
+    ZeroMemory(dataPtr->lightViewProjection, sizeof(dataPtr->lightViewProjection));
+
+    for (unsigned i = 0; i < numLights; ++i)
+    {
+        XMStoreFloat4x4(&(dataPtr->lightViewProjection[i]), XMMatrixTranspose(XMLoadFloat4x4(lightProjections+i)));
+    }
+    dataPtr->numLights = numLights;
 
     //dataPtr->world = worldMatrix;
     //dataPtr->view = viewMatrix;
@@ -549,7 +572,7 @@ void VanillaShaderClass::RenderShader( ID3D11DeviceContext *deviceContext, int i
     deviceContext->PSSetShader(m_pixelShader, NULL, 0);
 
     // Set the sampler state in the pixel shader.
-    if (setSampler) deviceContext->PSSetSamplers(0, 1, &m_sampleState);
+    if (setSampler) deviceContext->PSSetSamplers(0, 2, m_sampleState);
 
     // Render the triangles
     deviceContext->DrawIndexed(indexCount, 0, 0);

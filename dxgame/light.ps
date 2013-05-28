@@ -1,9 +1,25 @@
 // Filename: light.ps
 
+#define NUM_SPOTLIGHTS 4
+
+
 // globals:
-Texture2D diffuseTexture[15] : register(t0);
-Texture2D normalMap : register(t1);
-SamplerState SampleType;
+
+//Texture2D diffuseTexture[15] : register(t0); // uggggh. nah.
+
+Texture2D diffuseTexture : register(t0); // aka the texture map
+Texture2D normalMap : register(t1); // yep, normals
+
+// shadow maps:
+Texture2D shadowMap[NUM_SPOTLIGHTS+1] : register(t2); 
+// this would be way nicer as a Texture2DArray but we can't use a Texture2DArray as a DepthStencilBuffer target... 
+// copying a bunch of shadowmaps from individual texture would be a lot of extra work for the GPU just to make this shader code a little prettier
+// so for now, this is what's happening.
+
+// anisotropic filtering sampler:
+SamplerState SampleType : register(s0);
+// unfiltered sampler:
+SamplerState SampleUnfiltered : register(s1);
 
 // this buffer needs to be split up into separate lights and material buffers:
 cbuffer MaterialBuffer : register(b0)
@@ -16,8 +32,6 @@ cbuffer MaterialBuffer : register(b0)
 	float2 padding;
 }
 
-#define NUM_SPOTLIGHTS 4
-
 cbuffer LightBuffer : register(b1)
 {
     float3 lightDirection; // directional light; one is enough for now?
@@ -26,6 +40,7 @@ cbuffer LightBuffer : register(b1)
 	float4 spotlightPos[NUM_SPOTLIGHTS];  // spotlights!
 	float4 spotlightDir[NUM_SPOTLIGHTS];  // float3 would take up 4 floats anyway, might as well make it explicit
 	float4 spotlightEtc[NUM_SPOTLIGHTS];  // arrays are packed into 4-float elements anyway so this is {Cos(angle), constant attenuation, linear, quadratic}
+	uint numLights;
 };
 // end of globals
 
@@ -39,10 +54,26 @@ struct PixelInputType
 	float3 normal : NORMAL;
 	float3 tangent : TANGENT;
 	float3 viewDirection : VIEWDIR;
+	float4 shadowUV[NUM_SPOTLIGHTS+1] : SHADOWUV;
 };
 
 
 static const float PI = 3.14159265358979;
+
+float sampleShadowMap(float2 uv, uint which)
+{
+// because we can't use a texture array with a depth buffer, we live with this:
+#define SAMPLESHADOWMAP(i) if (i == which) return shadowMap[i].Sample(SampleUnfiltered, uv).r;
+SAMPLESHADOWMAP(0)
+SAMPLESHADOWMAP(1)
+SAMPLESHADOWMAP(2)
+SAMPLESHADOWMAP(3)
+SAMPLESHADOWMAP(4)
+//SAMPLESHADOWMAP(5)
+#undef SAMPLESHADOWMAP
+// :|
+return 0.0; 
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Pixel Shader
@@ -63,49 +94,12 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	//return float4(0, dot(input.tangent, input.normal), 0, 1)*10; // uncomment for error visualization
 	//return float4(tangent.x, tangent.y, tangent.z, 1); // uncomment for amazing technicolor vomit shader
 
-	textureColor = diffuseTexture[0].Sample(SampleType, input.tex);
+	//return pow(sampleShadowMap(saturate(input.shadowUV[0]), 0),100);
+	//return float4(input.shadowUV[0], 0, 0);
 
-#if 0
-	// XXX this is only used by ComplexMesh which sends multiple disparate meshes as one draw call
-	// diffuseTexture[texNum] doesn't compil so this was the best I could come up with
-	// anyway, it's not actually being used by anything in practice now
-	// CompoundMesh sends meshes separately
-	if (texNum == 0)
-	{
-		textureColor = diffuseTexture[0].Sample(SampleType, input.tex);
-	} else if (texNum == 1)
-	{
-		textureColor = diffuseTexture[1].Sample(SampleType, input.tex);
-	} else if (texNum == 2)
-	{
-		textureColor = diffuseTexture[2].Sample(SampleType, input.tex);
-	} else if (texNum == 3)
-	{
-		textureColor = diffuseTexture[3].Sample(SampleType, input.tex);
-	} else if (texNum == 4)
-	{
-		textureColor = diffuseTexture[4].Sample(SampleType, input.tex);
-	} else if (texNum == 5)
-	{
-		textureColor = diffuseTexture[5].Sample(SampleType, input.tex);
-	} else if (texNum == 6)
-	{
-		textureColor = diffuseTexture[6].Sample(SampleType, input.tex);
-	} else if (texNum == 7)
-	{
-		textureColor = diffuseTexture[7].Sample(SampleType, input.tex);
-	} else if (texNum == 8)
-	{
-		textureColor = diffuseTexture[8].Sample(SampleType, input.tex);
-	}
-	// end nonsense
-#endif
+	textureColor = diffuseTexture.Sample(SampleType, input.tex);
 
-	if (textureColor.a < 0.05f)
-	{
-		clip(-1); // discard transparent pixels
-		return float4(1.0f, 0.1f, 0.1f, 1.0f); // if discard doesn't work, pixels will show up red; N.B., it works
-	}
+	clip(textureColor.a - 0.95); // discard transparent pixels
 
 	float3 normal;
 
@@ -145,6 +139,8 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 
 	if(lightIntensity > 0.0f)
     {
+		////////////////////////////// TODO: Shadow for directional light! Just need to cobble together the orthogonal projection and whatnot
+
         // Determine the final diffuse color based on the diffuse color and the amount of light intensity.
         color += (diffuseColor * lightIntensity);
 
@@ -164,7 +160,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
     }
 
 	// spotlight calculations
-	for (uint i = 0; i < NUM_SPOTLIGHTS; ++i) // once per light...
+	for (uint i = 0; i < 2; ++i) // once per light...
 	{
 		if (spotlightPos[i].w == 0.0) break; // out of lights in the scene
 		
@@ -177,6 +173,19 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 
 		if (beamAlignment > 0.0 && beamAlignment > beamCosAngle)
 		{
+			// well, a spotlight could be hitting this pixel
+			// check for shadow, though
+			float shadowZ = sampleShadowMap(float2(0.5 * input.shadowUV[i].x / input.shadowUV[i].w + 0.5, -0.5 * input.shadowUV[i].y / input.shadowUV[i].w + 0.5), i);
+
+			if (shadowZ < 3) shadowZ -= 0.015;
+
+			shadowZ = 2000.0 / (10001.0 - 9999.0 * shadowZ); // http://www.wolframalpha.com/input/?i=%28z*f+%2B+z*n+-+2+*+f+*+n%29+%2F+%28z+*+%28f+-+n%29%29+%3D+x+solve+for+z+where+f%3D1000%2Cn%3D0.1
+
+			//shadowZ = (shadowZ / input.shadowUV[i].w - 1) / 1.0001;
+
+			//return distToLight * (-1.0 * 1000 * 0.1)/(1000-0.1);
+			if (shadowZ < distToLight) continue; // 1000 should be the max depth of the light's frustum
+
 			float3 toLight = -sourceToPixel;
 			float spotlightIntensity = dot(normal, toLight);
 

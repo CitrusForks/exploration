@@ -13,6 +13,7 @@
 #include <iomanip>
 #include <vector>
 
+
 // from http://www.rastertek.com/dx11tut03.html
 
 using namespace std;
@@ -368,6 +369,8 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	}
 
 	// Bind the render target view and depth stencil buffer to the output render pipeline.
+        // Update: don't bother binding the depth buffer here; we're going to use it with the off-screen buffer
+        // NOTE Maybe I should put it in the IntermediateRenderTarget class then? Who knows.
 	m_deviceContext->OMSetRenderTargets(1, &m_renderTargetView, nullptr /*m_depthStencilView*/);
 
 	// Setup the raster description which will determine how and what polygons will be drawn.
@@ -392,11 +395,32 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 
 	// Now set the rasterizer state.
 	m_deviceContext->RSSetState(m_rasterState);
-	
+
+        // Create a rasterizer state with depth bias for drawing shadow maps
+        rasterDesc.AntialiasedLineEnable = false;
+        rasterDesc.CullMode = D3D11_CULL_BACK;
+        rasterDesc.DepthBias = 0; // XXX need a good value here
+        rasterDesc.DepthBiasClamp = 0.01f; // here too
+        rasterDesc.DepthClipEnable = true;
+        rasterDesc.FillMode = D3D11_FILL_SOLID;
+        rasterDesc.FrontCounterClockwise = false;
+        rasterDesc.MultisampleEnable = false;
+        rasterDesc.ScissorEnable = false;
+        rasterDesc.SlopeScaledDepthBias = 0.00f; // also here!
+
+        // really create it
+        result = m_device->CreateRasterizerState(&rasterDesc, &m_biasRasterState);
+        if(FAILED(result))
+        {
+            return false;
+        }
+        
+
+
 	// Setup the viewport for rendering.
 	D3D11_VIEWPORT viewport;
-        viewport.Width = (float)screenWidth; // * 2; // x2 for supersampling test
-        viewport.Height = (float)screenHeight; // * 2;
+        viewport.Width = (float)1024; //screenWidth; // * 2; // x2 for supersampling test
+        viewport.Height = (float)1024; //screenHeight; // * 2;
         viewport.MinDepth = 0.0f;
         viewport.MaxDepth = 1.0f;
         viewport.TopLeftX = 0.0f;
@@ -549,9 +573,9 @@ void D3DClass::GetOrthoMatrix(XMMATRIX& orthoMatrix)
 }
 
 
-void D3DClass::GetVideoCardInfo(char* cardName, int& memory)
+void D3DClass::GetVideoCardInfo( std::string cardName, int &memory )
 {
-	strcpy_s(cardName, 128, m_videoCardDescription);
+	cardName = string(m_videoCardDescription);
 	memory = m_videoCardMemory;
 	return;
 }
@@ -582,6 +606,13 @@ void D3DClass::depthOn()
 void D3DClass::depthOff()
 {
     m_deviceContext->OMSetDepthStencilState(m_depthStencilDisabledState, 0);
+}
+
+
+// set rasterizer state to one of two choices based on parameter
+void D3DClass::setDepthBias( bool onOrOffOrWhatever )
+{
+    m_deviceContext->RSSetState(onOrOffOrWhatever ? m_biasRasterState : m_rasterState);
 }
 
 

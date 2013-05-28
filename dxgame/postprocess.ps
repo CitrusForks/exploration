@@ -1,5 +1,5 @@
 Texture2D shaderTexture;
-SamplerState SampleType;
+SamplerState SampleType : register(s1); // register one contains the non-filtering sampler
 
 //
 // Globals -- shared with main shader for C++ code reuse but we probably only use time here

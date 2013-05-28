@@ -353,7 +353,7 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
 
 #if 0
 // recursively render meshes for all nodes
-bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix, CompoundMeshNode *node /*= nullptr */ )
+bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, DirectX::XMFLOAT4X4 *lightProjections, unsigned numShadows, CompoundMeshNode *node /*= nullptr */ )
 {
     bool rc = true; // return value
 
@@ -388,8 +388,8 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 
 // recursively render meshes for all nodes
 // lambda-free version
-bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, 
-    CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix, CompoundMeshNode *node /* = nullptr */ )
+bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, 
+    DirectX::CXMMATRIX projectionMatrix, DirectX::XMFLOAT4X4 *lightProjections, unsigned numShadows, CompoundMeshNode *node /*= nullptr */ )
 {
     if (!node) node = &m_root;
 
@@ -410,7 +410,7 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
             return false;
         }
 
-        if (!shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, mesh->m_material.normalMap.getTexture(), mesh->m_material.diffuseTexture.getTexture()))
+        if (!shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, mesh->m_material.normalMap.getTexture(), lightProjections, numShadows, mesh->m_material.diffuseTexture.getTexture()))
         {
             return false;
         }
@@ -418,7 +418,7 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 
     for (auto i = node->children.begin(); i != node->children.end(); ++i)
     {
-        if (!render(deviceContext, shader, worldMatrix, viewMatrix, projectionMatrix, &(*i))) return false;
+        if (!render(deviceContext, shader, worldMatrix, viewMatrix, projectionMatrix, lightProjections, numShadows, &(*i))) return false;
     }
 
     return true;
