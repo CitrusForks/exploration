@@ -9,9 +9,10 @@
 
 Texture2D diffuseTexture : register(t0); // aka the texture map
 Texture2D normalMap : register(t1); // yep, normals
+Texture2D specularMap : register(t2); // per-pixel specular values
 
 // shadow maps:
-Texture2D shadowMap[NUM_SPOTLIGHTS+1] : register(t2); 
+Texture2D shadowMap[NUM_SPOTLIGHTS+1] : register(t3); 
 // this would be way nicer as a Texture2DArray but we can't use a Texture2DArray as a DepthStencilBuffer target... 
 // copying a bunch of shadowmaps from individual texture would be a lot of extra work for the GPU just to make this shader code a little prettier
 // so for now, this is what's happening.
@@ -29,7 +30,8 @@ cbuffer MaterialBuffer : register(b0)
     float4 specularColor;
     float specularPower;
 	bool useNormalMap;
-	float2 padding;
+	bool useSpecularMap;
+	float padding;
 }
 
 cbuffer LightBuffer : register(b1)
@@ -49,7 +51,7 @@ struct PixelInputType
     float4 position : SV_POSITION;
 	float4 modelPos : MODELPOS;
 	float4 worldPos : WORLDPOS;
-    float2 tex : TEXCOORD0;
+        float2 tex : TEXCOORD0;
 	nointerpolation uint texNum : TEXINDEX;                    // which texture to use
 	float3 normal : NORMAL;
 	float3 tangent : TANGENT;
@@ -75,6 +77,21 @@ SAMPLESHADOWMAP(4)
 return 0.0; 
 }
 
+
+float isSpotlightShadow(float4 lightClipSpaceCoordinates, uint whichShadow, float2 jitter)
+{
+    float shadowSample = sampleShadowMap(
+        saturate(float2(
+            jitter.x + 0.5 * lightClipSpaceCoordinates.x / lightClipSpaceCoordinates.w + 0.5, 
+            jitter.y + -0.5 * lightClipSpaceCoordinates.y / lightClipSpaceCoordinates.w + 0.5)),  // clip -> NDC -> viewport transforms
+        whichShadow
+    );
+
+    if (shadowSample < lightClipSpaceCoordinates.z / lightClipSpaceCoordinates.w) return true; // clip -> NDC via divide by w and this matches the data in the data in the map buffer
+    else return false;
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Pixel Shader
 ////////////////////////////////////////////////////////////////////////////////
@@ -84,7 +101,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	float3 lightDir;
 	float lightIntensity;
 	float4 color;
-    float4 specular = 0.0f;
+        float4 specular = 0.0f;
 	uint texNum = input.texNum;
 	float3 tangent = input.tangent;
 	//tangent = normalize(input.tangent);
@@ -100,6 +117,15 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	textureColor = diffuseTexture.Sample(SampleType, input.tex);
 
 	clip(textureColor.a - 0.95); // discard transparent pixels
+
+	float specularMultiplier = 1.0f;
+
+	// check the specular map
+	if (useSpecularMap)
+	{
+		specularMultiplier = specularMap.Sample(SampleType, input.tex).r;
+	}
+
 
 	float3 normal;
 
@@ -126,23 +152,23 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	float3 viewDirection = normalize(cameraPos.xyz - input.worldPos.xyz );
 
 	// Set the default output color to the ambient light value for all pixels.
-    color = ambientColor;
+        color = ambientColor;
 
 	// Initialize the specular color.
 	specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
 
 	// Invert the light direction for calculations.
-    lightDir = -lightDirection;
+        lightDir = -lightDirection;
 
-    // Calculate the amount of light on this pixel.
-    lightIntensity = saturate(dot(normal, lightDir));
+        // Calculate the amount of light on this pixel.
+        lightIntensity = saturate(dot(normal, lightDir));
 
 	if(lightIntensity > 0.0f)
-    {
+        {
 		////////////////////////////// TODO: Shadow for directional light! Just need to cobble together the orthogonal projection and whatnot
 
-        // Determine the final diffuse color based on the diffuse color and the amount of light intensity.
-        color += (diffuseColor * lightIntensity);
+            // Determine the final diffuse color based on the diffuse color and the amount of light intensity.
+            color += (diffuseColor * lightIntensity);
 
 	    // Saturate the ambient and diffuse color.
 		color = saturate(color);
@@ -153,11 +179,14 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 		//float4 rr = {r.x, r.y, r.z, 1.0f};
 		//return rr;
 
-		// calculate half-vector for Blinn-Phong specular model
-		float3 H = normalize(-lightDirection + viewDirection);
-		// calculate specular reflection based on dot product of half-vector and normal vector, along with material data
-		specular = specularColor * pow(saturate(dot(H, normal)), specularPower);
-    }
+		if (specularMultiplier > 0.0000001f)
+		{
+			// calculate half-vector for Blinn-Phong specular model
+			float3 H = normalize(-lightDirection + viewDirection);
+			// calculate specular reflection based on dot product of half-vector and normal vector, along with material data
+			specular = specularMultiplier * specularColor * pow(saturate(dot(H, normal)), specularPower);
+		}
+        }
 
 	// spotlight calculations
 	for (uint i = 0; i < 2; ++i) // once per light...
@@ -175,15 +204,14 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 		{
 			// well, a spotlight could be hitting this pixel
 			// check for shadow, though
-			float shadowZ = sampleShadowMap(float2(0.5 * input.shadowUV[i].x / input.shadowUV[i].w + 0.5, -0.5 * input.shadowUV[i].y / input.shadowUV[i].w + 0.5), i);
+                        uint shadowTotal = 0;
+                        if (isSpotlightShadow(input.shadowUV[i], i, float2(0,0))) continue; //shadowTotal++;
+                        //if (isSpotlightShadow(input.shadowUV[i], i, float2((0.0011), 0))) shadowTotal++;
+                        //if (isSpotlightShadow(input.shadowUV[i], i, float2((0.0011),0))) shadowTotal++;
+                        //if (isSpotlightShadow(input.shadowUV[i], i, float2(0, (0.0011)))) shadowTotal++;
+                        //if (isSpotlightShadow(input.shadowUV[i], i, float2(0, (0.0011)))) shadowTotal++;
 
-			shadowZ -= 0.015;
-
-			shadowZ = 2000.0 / (10001.0 - 9999.0 * shadowZ); // http://www.wolframalpha.com/input/?i=%28z*f+%2B+z*n+-+2+*+f+*+n%29+%2F+%28z+*+%28f+-+n%29%29+%3D+x+solve+for+z+where+f%3D1000%2Cn%3D0.1
-			//shadowZ = 1000.0 / (10000.0 - 9999.0 * shadowZ); // http://www.wolframalpha.com/input/?i=f+%2F+%28f+-+n%29+-+%28n+*+f%29+%2F+%28%28f+-+n%29+*+z%29+%3D+x+solve+for+z+where+f%3D1000%2Cn%3D0.1
-
-			//if (shadowZ < ((distToLight * 1.0001 - 1)-0.10001) / input.shadowUV[i].w ) continue; 
-			if (shadowZ < distToLight) continue;
+                        //if (shadowTotal == 5) continue;
 
 			float3 toLight = -sourceToPixel;
 			float spotlightIntensity = dot(normal, toLight);
@@ -191,6 +219,8 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 			if (spotlightIntensity > 0.0)
 			{
 				float attenuation = 1.0 / (spotlightEtc[i].y + spotlightEtc[i].z * distToLight + spotlightEtc[i].w * pow(distToLight,2));
+
+                                attenuation *= 1-(shadowTotal/5.0); // modify attenuation by shadow factor because it's convenient
 
 				//beamAlignment = pow(beamAlignment,100); // XXX this seems like stupid way of doing this but the books do it pretty much like this, it turns out
 
@@ -201,10 +231,13 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 
 				color = color + spotlightIntensity;
 
-				// calculate half-vector for Blinn-Phong specular model
-				float3 H = normalize(toLight + viewDirection);
-				// calculate specular reflection based on dot product of half-vector and normal vector, along with material data
-				specular += fallOff * specularColor * pow(saturate(dot(H, normalize(normal))), specularPower);
+				if (specularMultiplier > 0.0000001f)
+				{
+					// calculate half-vector for Blinn-Phong specular model
+					float3 H = normalize(toLight + viewDirection);
+					// calculate specular reflection based on dot product of half-vector and normal vector, along with material data
+					specular += specularMultiplier * attenuation * fallOff * specularColor * pow(saturate(dot(H, normalize(normal))), specularPower);
+				}
 			}
 		}
 	}
@@ -212,11 +245,11 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	//return saturate(color + specular); // pure light value visualization
 	//return saturate(float4(0, color.r, specular.g, 1)); // separate ambient vs. specular visual
 
-    // Multiply the texture pixel and the input color to get the textured result.
-    color = color * textureColor;
+        // Multiply the texture pixel and the input color to get the textured result.
+        color = color * textureColor;
 
 	// Add the specular component last to the output color.
-    color = saturate(color + specular);
+        color = saturate(color + specular);
 
-    return color;
+       return color;
 }

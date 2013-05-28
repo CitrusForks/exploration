@@ -79,7 +79,7 @@ void CompoundMesh::release()
 
 
 
-// load a modle via libassimp and store separate meshes in a tree structure that mirros aiScene
+// load a model via libassimp and store separate meshes in a tree structure that mirrors aiScene
 bool CompoundMesh::load(ID3D11Device* device, ID3D11DeviceContext *devCtx, TextureManager *texman, char *modelFileName)
 {
     assert(texman);
@@ -239,11 +239,38 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
                 {
                     if (!m_textureManager->getTexture(path, device, devCtx, interleavedMesh.m_material.normalMap)) return false;
                 }
+				w[1] = 'D';
             }
         } else
         {   
             if (!m_textureManager->getTextureUTF8(device, devCtx, (char*)texPath.C_Str(), texPath.length, interleavedMesh.m_material.normalMap)) return false;
         }
+
+		// repeat for a specular map
+		aiString specularPath;
+		rc = m_aiScene->mMaterials[mesh->mMaterialIndex]->GetTexture(aiTextureType_SPECULAR, 0, &specularPath); // texPath is in utf8
+		if (!specularPath.length)
+		{
+			// specular map not specified... try searching for it blindly, due to bad .mtl/.dae files with Chekov?
+			char *w = strstr((char*)texPath.C_Str(), "_D");
+			if (w)
+			{
+				w[1] = 'S';
+				wstring path = m_textureManager->utf8ToWstring((char*)texPath.C_Str(), texPath.length);
+				if (FileExistsW((wchar_t*)path.c_str()))
+				{
+					if (!m_textureManager->getTexture(path, device, devCtx, interleavedMesh.m_material.specularMap)) return false;
+				}
+				w[1] = 'D';
+			}
+		} else
+		{   
+			if (!m_textureManager->getTextureUTF8(device, devCtx, (char*)specularPath.C_Str(), texPath.length, interleavedMesh.m_material.specularMap))
+			{
+				// don't quit if we can't find a specular map; most likely nobody cares all that much
+				cout << "Warning, missing specular map: " << specularPath.C_Str() << endl;
+			}
+		}
 
 #if 0
         if(mesh->mNormals == NULL) {
@@ -405,12 +432,13 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 
         SimpleMesh::Material &mat = mesh->m_material;
         bool useNormalMap = mat.normalMap.getTexture() ? true : false;
-        if (!shader->SetPSMaterial(deviceContext, mat.ambient, mat.diffuse, mat.shininess, mat.specular, useNormalMap))
+		bool useSpecularMap = mat.specularMap.getTexture() ? true : false;
+        if (!shader->SetPSMaterial(deviceContext, mat.ambient, mat.diffuse, mat.shininess, mat.specular, useNormalMap, useSpecularMap))
         {
             return false;
         }
 
-        if (!shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, mesh->m_material.normalMap.getTexture(), lightProjections, numShadows, mesh->m_material.diffuseTexture.getTexture()))
+        if (!shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, mesh->m_material.normalMap.getTexture(), mesh->m_material.specularMap.getTexture(), lightProjections, numShadows, mesh->m_material.diffuseTexture.getTexture()))
         {
             return false;
         }

@@ -84,10 +84,10 @@ PixelInputType LightVertexShader(VertexInputType input)
 
 	if (effect == 1)
 	{ // twist the object
-		matrix convolution = rotateAboutY(3.14159 * sin(time + localPosition.y/2));
-		localPosition = mul(localPosition, convolution);
-		normal = mul(normal, (float3x3)convolution);
-		tangent = mul(tangent, (float3x3)convolution);
+		matrix twist = rotateAboutY(3.14159 * sin(time + localPosition.y/2));
+		localPosition = mul(localPosition, twist);
+		normal = mul(normal, (float3x3)twist);
+		tangent = mul(tangent, (float3x3)twist);
 	}
 
 	// Calculate the position of the vertex in world, view, and screen coordinates

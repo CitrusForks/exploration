@@ -285,6 +285,17 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	ZeroMemory(&depthBufferDesc, sizeof(depthBufferDesc));
 
 	const DXGI_FORMAT depthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT; // for more z precision, switch to DXGI_FORMAT_D32_FLOAT (w/o stencil) or DXGI_FORMAT_D32_FLOAT_S8X24_UINT (w/ 8-bit stencil and wasted 24 bits??)
+	unsigned int maxQL = 0;
+	m_device->CheckMultisampleQualityLevels(depthStencilFormat, Options::intOptions["MSAACount"], &maxQL);
+	if (!maxQL)
+	{
+		cerr << "Warning, " << Options::intOptions["MSAACount"] << "x MSAA unsupported by GPU. :(";
+		Options::intOptions["MSAACount"] = 1;
+		Options::intOptions["MSAAQuality"] = 0;
+	} else
+	{
+		Options::intOptions["MSAAQuality"] = maxQL-1;
+	}
 
 	// Set up the description of the depth buffer.
 	depthBufferDesc.Width = screenWidth; // * 2; // x 2 for supersampling test
@@ -399,14 +410,14 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
         // Create a rasterizer state with depth bias for drawing shadow maps
         rasterDesc.AntialiasedLineEnable = false;
         rasterDesc.CullMode = D3D11_CULL_BACK;
-        rasterDesc.DepthBias = 0; // XXX need a good value here
-        rasterDesc.DepthBiasClamp = 0.01f; // here too
+        rasterDesc.DepthBias = 8; // XXX need a good value here
+        rasterDesc.DepthBiasClamp = 0.995f; // here too
         rasterDesc.DepthClipEnable = true;
         rasterDesc.FillMode = D3D11_FILL_SOLID;
         rasterDesc.FrontCounterClockwise = false;
         rasterDesc.MultisampleEnable = false;
         rasterDesc.ScissorEnable = false;
-        rasterDesc.SlopeScaledDepthBias = 0.00f; // also here!
+        rasterDesc.SlopeScaledDepthBias = 1.0f; // also here!
 
         // really create it
         result = m_device->CreateRasterizerState(&rasterDesc, &m_biasRasterState);

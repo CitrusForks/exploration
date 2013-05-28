@@ -45,8 +45,9 @@ private:
         DirectX::XMFLOAT4 diffuseColor;
         DirectX::XMFLOAT4 specularColor;
         float specularPower;
-        bool useNormalMap;
-        DirectX::XMFLOAT2 padding;
+        unsigned useNormalMap; /* bool */
+		unsigned useSpecularMap; /* bool */
+        float padding;
     };
 
     struct LightBufferType
@@ -67,10 +68,9 @@ public:
 	~VanillaShaderClass();
 
 	void Shutdown();
-        bool Render(ID3D11DeviceContext *deviceContext, int indexCount, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, 
-            ID3D11ShaderResourceView** normalMap, DirectX::XMFLOAT4X4 *lightProjections, int numShadows, ID3D11ShaderResourceView** texture, unsigned resourceViewCount = 1, bool setSampler = true);
-        bool InitializeShader(ID3D11Device*, HWND, wchar_t *vsFilename, char *vsFunctionName, wchar_t *psFilename, char *psFunctionName, bool multiStreaming = false);
-        bool SetPSMaterial( ID3D11DeviceContext *deviceContext, DirectX::XMFLOAT4 &ambientColor, DirectX::XMFLOAT4 &diffuseColor, float specularPower, DirectX::XMFLOAT4 &specularColor, bool useNormalMap);
+	bool Render(ID3D11DeviceContext *deviceContext, int indexCount, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, ID3D11ShaderResourceView** normalMap, ID3D11ShaderResourceView** specularMap,DirectX::XMFLOAT4X4 *lightProjections, int numShadows, ID3D11ShaderResourceView** texture, unsigned resourceViewCount = 1, bool setSampler = true);
+		bool InitializeShader(ID3D11Device* device, HWND hwnd, wchar_t *vsFilename, wchar_t *psFilename, bool multiStreaming = false);
+		bool SetPSMaterial( ID3D11DeviceContext *deviceContext, DirectX::XMFLOAT4 &ambientColor, DirectX::XMFLOAT4 &diffuseColor, float specularPower, DirectX::XMFLOAT4 &specularColor, bool useNormalMap, bool useSpecularMap);
         bool SetPSLights( ID3D11DeviceContext *deviceContext, const DirectX::XMFLOAT3 &lightDirection, float time, DirectX::FXMVECTOR cameraPos, 
             DirectX::XMFLOAT4 *spotlightPos, DirectX::XMFLOAT3 *spotlightDir, DirectX::XMFLOAT4 *spotlightParams, int numSpotlights );
         bool setVSCameraBuffer( ID3D11DeviceContext* deviceContext, DirectX::CXMVECTOR cameraPos, float time, unsigned effect );
@@ -79,8 +79,9 @@ private:
 	void ShutdownShader();
 	void OutputShaderErrorMessage(ID3D10Blob*, HWND, WCHAR*);
 
-	bool SetShaderParameters(ID3D11DeviceContext*, DirectX::CXMMATRIX, DirectX::CXMMATRIX, DirectX::CXMMATRIX, ID3D11ShaderResourceView **normalMap, 
-            DirectX::XMFLOAT4X4* lightProjections, unsigned numLights, ID3D11ShaderResourceView** textures, unsigned numViews = 1);
+	bool SetShaderParameters(ID3D11DeviceContext* deviceContext, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix,
+		ID3D11ShaderResourceView **normalMap, ID3D11ShaderResourceView **specularMap, DirectX::XMFLOAT4X4* lightProjections, unsigned numLights, ID3D11ShaderResourceView **texture, unsigned numViews = 1)
+		;
 
 
         void RenderShader(ID3D11DeviceContext *deviceContext, int indexCount, bool setSampler = true);

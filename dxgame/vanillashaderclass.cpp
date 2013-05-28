@@ -59,13 +59,12 @@ void VanillaShaderClass::Shutdown()
 // @numViews        the number of textures sent; defaults to 1, probably best to leave it that way
 // @setSampler      leave true for normal rendering; it's set false when rendering off-screen buffer to screen,
 //                  since the intermediate target class sets its own (simpler) sampler
-bool VanillaShaderClass::Render(ID3D11DeviceContext *deviceContext, int indexCount, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix,
-                                ID3D11ShaderResourceView** normalMap, XMFLOAT4X4 *lightProjections, int numShadows, ID3D11ShaderResourceView** texture, unsigned resourceViewCount /*= 1*/, bool setSampler /*= true*/ )
+bool VanillaShaderClass::Render( ID3D11DeviceContext *deviceContext, int indexCount, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, ID3D11ShaderResourceView** normalMap, ID3D11ShaderResourceView** specularMap,DirectX::XMFLOAT4X4 *lightProjections, int numShadows, ID3D11ShaderResourceView** texture, unsigned resourceViewCount /*= 1*/, bool setSampler /*= true*/ )
 {
 	bool result;
 
 	// Set the shader parameters that it will use for rendering.
-	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, normalMap, lightProjections, numShadows, texture, resourceViewCount);
+	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, normalMap, specularMap, lightProjections, numShadows, texture, resourceViewCount);
 	if(!result)
 	{
 		return false;
@@ -78,18 +77,21 @@ bool VanillaShaderClass::Render(ID3D11DeviceContext *deviceContext, int indexCou
 }
 
 // This method actually compiles shader programs, via the compiler dll. N.B., that's not allowed in the Windows App Store but is that a thing that's actually relevant to anyone's life?
-bool VanillaShaderClass::InitializeShader( ID3D11Device *device, HWND hwnd, wchar_t *vsFilename, char *vsFunctionName, wchar_t *psFilename, char *psFunctionName, bool multiStreaming /*= false*/ )
+bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wchar_t *vsFilename, wchar_t *psFilename, bool multiStreaming /*= false*/ )
 {
     HRESULT result;
     ID3D10Blob* errorMessage = 0;
 
     ID3D10Blob* vertexShaderBuffer = nullptr;
 
-    // Compile the vertex shader code.
+    // Old code to compile shader at runtime:
     //result = D3DX11CompileFromFile(vsFilename, NULL, NULL, vsFunctionName, "vs_4_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, NULL, 
 								//&vertexShaderBuffer, &errorMessage, NULL); // XXX D3DX11 is deprecated, replace this with CompileFromFile()
 
-    result = D3DCompileFromFile(vsFilename, nullptr, nullptr, vsFunctionName, "vs_4_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &vertexShaderBuffer, &errorMessage);
+    //result = D3DCompileFromFile(vsFilename, nullptr, nullptr, vsFunctionName, "vs_4_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &vertexShaderBuffer, &errorMessage);
+
+	// actually, how about load bytecode...
+	result = D3DReadFileToBlob(vsFilename, &vertexShaderBuffer);
     if(FAILED(result))
     {
 	    // If the shader failed to compile it should have writen something to the error message.
@@ -109,8 +111,8 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device *device, HWND hwnd, wcha
 
     ID3D10Blob* pixelShaderBuffer = nullptr;
 
-    // Compile the pixel shader code.
-    result = D3DCompileFromFile(psFilename, NULL, NULL, psFunctionName, "ps_4_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &pixelShaderBuffer, &errorMessage); 
+    //result = D3DCompileFromFile(psFilename, NULL, NULL, psFunctionName, "ps_4_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &pixelShaderBuffer, &errorMessage); 
+	result = D3DReadFileToBlob(psFilename, &pixelShaderBuffer);
     if(FAILED(result))
     {
 	    // If the shader failed to compile it should have writen something to the error message.
@@ -285,7 +287,9 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device *device, HWND hwnd, wcha
 	    return false;
     }
 
-    D3D11_SAMPLER_DESC samplerDesc2 = {D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_WRAP, 0.0f, 8, D3D11_COMPARISON_ALWAYS };
+    // ..._POINT would be the logical choice here but using LINEAR eliminates shadow artifacts
+    // it's a non-anisotropic sampler for the copy to the swap chain and for sampling shadow maps etc.
+    D3D11_SAMPLER_DESC samplerDesc2 = {D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_CLAMP, D3D11_TEXTURE_ADDRESS_CLAMP, D3D11_TEXTURE_ADDRESS_CLAMP, 0.0f, 8, D3D11_COMPARISON_ALWAYS };
     samplerDesc2.MinLOD = 0;
     samplerDesc2.MaxLOD = D3D11_FLOAT32_MAX;
 
@@ -398,8 +402,7 @@ void VanillaShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND
 }
 
 // this method mainly sets matrices and textures for the Render method; private
-bool VanillaShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext, CXMMATRIX worldMatrix, CXMMATRIX viewMatrix, CXMMATRIX projectionMatrix,
-    ID3D11ShaderResourceView **normalMap, XMFLOAT4X4* lightProjections, unsigned numLights, ID3D11ShaderResourceView **texture, unsigned numViews)
+bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, ID3D11ShaderResourceView **normalMap, ID3D11ShaderResourceView **specularMap, DirectX::XMFLOAT4X4* lightProjections, unsigned numLights, ID3D11ShaderResourceView **texture, unsigned numViews /*= 1*/ )
 {
     HRESULT result;
     D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -440,10 +443,6 @@ bool VanillaShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext,
     }
     dataPtr->numLights = numLights;
 
-    //dataPtr->world = worldMatrix;
-    //dataPtr->view = viewMatrix;
-    //dataPtr->projection = projectionMatrix;
-
     // Unlock the constant buffer.
     deviceContext->Unmap(m_matrixBuffer, 0);
 
@@ -453,21 +452,20 @@ bool VanillaShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext,
     // Now set the constant buffer in the vertex shader with the updated values.
     deviceContext->VSSetConstantBuffers(bufferNumber, 1, &m_matrixBuffer);
 
-    //if (!setVSCameraBuffer(deviceContext, cameraPos, 0.0f, 0)) return false;
-
-    //cDataPtr->padding = 0.0f;
-
     // Set shader texture resource in the pixel shader.
     deviceContext->PSSetShaderResources(0, numViews, texture);
 
     // same for normal map, if present
     if (normalMap && *normalMap) deviceContext->PSSetShaderResources(1, 1, normalMap);
 
+	// and specular map
+	if (specularMap && *specularMap) deviceContext->PSSetShaderResources(2, 1, specularMap);
+
     return true;
 }
 
 // set material values; these are conventional parameters
-bool VanillaShaderClass::SetPSMaterial( ID3D11DeviceContext *deviceContext, XMFLOAT4 &ambientColor, XMFLOAT4 &diffuseColor, float specularPower, XMFLOAT4 &specularColor, bool useNormalMap )
+bool VanillaShaderClass::SetPSMaterial( ID3D11DeviceContext *deviceContext, DirectX::XMFLOAT4 &ambientColor, DirectX::XMFLOAT4 &diffuseColor, float specularPower, DirectX::XMFLOAT4 &specularColor, bool useNormalMap, bool useSpecularMap )
 {
     HRESULT result;
     D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -490,7 +488,8 @@ bool VanillaShaderClass::SetPSMaterial( ID3D11DeviceContext *deviceContext, XMFL
     dataPtr->specularPower = specularPower;
     dataPtr->specularColor = specularColor;
     dataPtr->useNormalMap = useNormalMap;
-    dataPtr->padding = XMFLOAT2(0,0);
+	dataPtr->useSpecularMap = useSpecularMap;
+    dataPtr->padding = 0;
 
     deviceContext->Unmap(m_materialBuffer, 0);
 

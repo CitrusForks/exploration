@@ -47,7 +47,7 @@ static const float PI = 3.14159265358979;
 ////////////////////////////////////////////////////////////////////////////////
 // Pixel Shader
 ////////////////////////////////////////////////////////////////////////////////
-float4 LightPixelShader(PixelInputType input) : SV_TARGET
+float4 main(PixelInputType input) : SV_TARGET
 {
 
 	float textureAlpha = diffuseTexture[0].Sample(SampleType, input.tex).a;

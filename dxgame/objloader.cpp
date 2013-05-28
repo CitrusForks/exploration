@@ -19,7 +19,7 @@ using namespace DirectX;
 bool loadOBJ(const wchar_t * path, 
     vector<Vertex> & out_vertices)
 {
-    printf("Loading OBJ file %s...\n", path);
+    wcout << L"Loading OBJ file " <<  path << endl;
 
     vector<unsigned int> vertexIndices, uvIndices, normalIndices;
     vector<DirectX::XMFLOAT3> temp_vertices; 

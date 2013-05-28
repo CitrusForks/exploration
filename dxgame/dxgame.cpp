@@ -3,6 +3,11 @@
 
 #include "stdafx.h"
 
+// define this to debug main shaders with VS2012:
+// #define DISABLE_OFFSCREEN_BUFFER 1
+// 
+
+
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
@@ -103,8 +108,12 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, Van
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-        Options::setDefaults();
+    Options::setDefaults();
 	int width = Options::intOptions["Width"], height = Options::intOptions["Height"];
+#ifdef DISABLE_OFFSCREEN_BUFFER
+	Options::intOptions["MSAACount"] = 1;
+	Options::intOptions["MSAAQuality"] = 0;
+#endif
 
 	wcout << L"Unicode test: проверка Unicode" << endl; // unlikely to work! need to manually set codepage in terminal
 	cout << endl; // because the above is unlikely to work
@@ -179,14 +188,14 @@ int _tmain(int argc, _TCHAR* argv[])
 
         // shaders0 holds the shaders for the main scene rendering step
 	VanillaShaderClass shaders0;
-	if (!shaders0.InitializeShader(d3d.GetDevice(), window, L"light.vs", "LightVertexShader",  L"light.ps", "LightPixelShader"))
+	if (!shaders0.InitializeShader(d3d.GetDevice(), window, L"light_vs.cso",  L"light_ps.cso"))
         {
             return 1;
         }
 
         // shadowShaders contains a cut-down pixel shader to facilitate generating a shadow map from a depth buffer
         VanillaShaderClass shadowShaders;
-        shadowShaders.InitializeShader(d3d.GetDevice(), window, L"light.vs", "LightVertexShader", L"shadow.ps", "LightPixelShader");
+        shadowShaders.InitializeShader(d3d.GetDevice(), window, L"light_vs.cso", L"shadow_ps.cso");
 
         // shadow maps! 
         vector<ShadowBuffer> shadowBuffers;
@@ -198,7 +207,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
         // this is the effects shader for rendering from off-screen buffer to swap chain
         VanillaShaderClass postProcess;
-        if (!postProcess.InitializeShader(d3d.GetDevice(), window, L"postprocess.vs", "PostProcVShader", L"postprocess.ps", "PostProcPixelShader"))
+        if (!postProcess.InitializeShader(d3d.GetDevice(), window, L"postprocess_vs.cso", L"postprocess_ps.cso"))
         {
             return 1;
         }
@@ -234,9 +243,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
         XMMATRIX projection = XMMatrixPerspectiveFovLH((float)((60.0/360.0) * M_PI * 2), (float)width / (float)height, 0.1f, 1000.0f);
 
-        cout << XMMatrixTranspose(projection);
+        // cout << XMMatrixTranspose(projection);
 
-        cout << XMVector3Transform(XMVectorSet(1,1,1,1), XMMatrixTranspose(projection));
+        //cout << XMVector3Transform(XMVectorSet(0,0,2,1), projection);
 
 
         XMMATRIX ortho = XMMatrixOrthographicOffCenterLH(0.0f, 1.0f, 0.0f, 1.0f, 0.1f, 1.1f);
@@ -324,20 +333,24 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, Van
     // Rendering
     // 
 
+#ifndef DISABLE_OFFSCREEN_BUFFER
     d3d.BeginScene(false); // don't clear back buffer; we're just going to overwrite it completely from the off-screen buffer
+#else
+	d3d.BeginScene(true);
+#endif
 
     //
     //      SPOTLIGHTS! TODO: move them
     // 
     XMFLOAT4 lightPos[4]; 
     ZeroMemory(lightPos, sizeof(lightPos));
-    XMStoreFloat4(lightPos, FPCamera.getEyePosition());
+    XMStoreFloat4(lightPos, XMVector4Transform(FPCamera.getEyePosition(), XMMatrixTranslation(0.1f, -0.3, 0.1))); // hold flashlight lower
     lightPos->y += 0.2f;
     lightPos[1] = XMFLOAT4(4.0f, 4.0f, 3.0f, 1.0f);
 
     XMFLOAT3 lightDir[4];
     ZeroMemory(lightDir, sizeof(lightDir));
-    XMStoreFloat3(lightDir, XMVector3TransformNormal(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), XMMatrixRotationAxis(XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f), 10.0f/180 * (float)M_PI) * XMMatrixTranslation(1.0f, 0, 0) * XMMatrixTranspose(FPCamera.getViewMatrix())));
+    XMStoreFloat3(lightDir, XMVector3TransformNormal(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), -2.0f/180 * (float)M_PI) *  XMMatrixTranspose(FPCamera.getViewMatrix())));
     XMStoreFloat3(&(lightDir[1]), axis45deg);
 
     float lightHalfAngles[4] = { (float)M_PI * 15.0f/180.f, (float)M_PI * 25.0f/180.f, 0.0f, 0.0f };
@@ -359,7 +372,7 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, Van
     }
 
 
-    shaders0.SetPSLights(d3d.GetDeviceContext(), lightDirection, (float)timer.sinceInit(), FPCamera.getPosition(), lightPos, lightDir, lightParams, 2);
+    shaders0.SetPSLights(d3d.GetDeviceContext(), lightDirection, (float)timer.sinceInit(), FPCamera.getEyePosition(), lightPos, lightDir, lightParams, 2);
 
     XMMATRIX world = XMMatrixTranslation(0.0f, 0.0f, 7.0f);
 
@@ -379,6 +392,7 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, Van
     // Set up the viewport for rendering at shadow map resolution
     D3D11_VIEWPORT viewport = { 0.0f, 0.0f, (float)ShadowBuffer::width, (float)ShadowBuffer::height, 0.0f, 1.0f };
     d3d.GetDeviceContext()->RSSetViewports(1, &viewport);
+    d3d.setDepthBias(true);
 
     for (int i = 0; i < shadowsNum && i < numLights; ++i)
     {
@@ -400,26 +414,36 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, Van
 
     shaders0.setVSCameraBuffer(d3d.GetDeviceContext(), FPCamera.getEyePosition(), (float)timer.sinceInit(), 0);
 
+
+#ifndef DISABLE_OFFSCREEN_BUFFER
     offScreen.setAsRenderTarget(d3d.GetDeviceContext(), d3d.GetDepthStencilView()); // set the off-screen texture as the render target
     offScreen.clear(d3d.GetDeviceContext());
+#else
+	d3d.setAsRenderTarget(true);
+	d3d.depthOn();
+#endif
 
     ShadowBuffer::pushToGPU(d3d.GetDeviceContext(), shadows, shadowsNum); // the DepthStencilView must be re-bound before this call! e.g., the offScreen.setAsRenderTarget() call does it
+    d3d.setDepthBias(false);
+
 
     if (!doRenderCalls(models, d3d, shaders0, view, projection, worldFinal, lightProj, numLights)) return false;
 
     // done rendering scene
 
+#ifndef DISABLE_OFFSCREEN_BUFFER
     d3d.depthOff(); // disable depth test
 
     d3d.setAsRenderTarget(false); // set a swap chain buffer as render target again
 
     square.setBuffers(d3d.GetDeviceContext()); // use the two triangles to render off-screen texture to swap chain, through a shader
-    if (!postProcess.Render(d3d.GetDeviceContext(), square.getIndexCount(), XMMatrixIdentity(), XMMatrixIdentity(), ortho, nullptr, lightProj, numLights, offScreen.getResourceViewAndResolveMSAA(d3d.GetDeviceContext()), 1, false))
+    if (!postProcess.Render(d3d.GetDeviceContext(), square.getIndexCount(), XMMatrixIdentity(), XMMatrixIdentity(), ortho, nullptr, nullptr, lightProj, numLights, offScreen.getResourceViewAndResolveMSAA(d3d.GetDeviceContext()), 1, false))
     //if (!postProcess.Render(d3d.GetDeviceContext(), square.getIndexCount(), XMMatrixIdentity(), XMMatrixIdentity(), ortho, nullptr, lightProj, numLights, shadows[1].getResourceView(d3d.GetDeviceContext()), 1, false)) // comment out previous line and uncomment this one to visually inspect a shadow map
     {
         Errors::Cry(L"Error rendering off-screen texture to display. :/");
         return false;
     }
+#endif
 
     text.write(d3d.GetDeviceContext(), L"Hello?", 0, 0);
 

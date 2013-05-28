@@ -11,8 +11,8 @@ ShadowBuffer::~ShadowBuffer()
 }
 
 
-int ShadowBuffer::width = 1024;
-int ShadowBuffer::height = 1024;
+int ShadowBuffer::width = 512;
+int ShadowBuffer::height = 512;
 
 bool ShadowBuffer::init(ID3D11Device *device, ID3D11DeviceContext *devCtx)
 {
@@ -151,5 +151,5 @@ void ShadowBuffer::pushToGPU( ID3D11DeviceContext *devCtx, ShadowBuffer *buffers
         views.push_back(*(buffers[i].getResourceView(devCtx))); // XXX getResourceView only returns a double pointer for debugging purposes--it allows the return to be passed directly to VanillaShaderClass::Render() XXX
     }
 
-    devCtx->PSSetShaderResources(2, numBuffers, views.data());
+    devCtx->PSSetShaderResources(3, numBuffers, views.data()); // collection of shadow maps starts at : register(t3)
 }
