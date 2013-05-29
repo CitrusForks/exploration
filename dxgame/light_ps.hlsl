@@ -27,8 +27,8 @@ cbuffer MaterialBuffer : register(b0)
 {
 	float4 ambientColor;
 	float4 diffuseColor;
-    float4 specularColor;
-    float specularPower;
+        float4 specularColor;
+        float specularPower;
 	bool useNormalMap;
 	bool useSpecularMap;
 	float padding;
@@ -36,7 +36,7 @@ cbuffer MaterialBuffer : register(b0)
 
 cbuffer LightBuffer : register(b1)
 {
-    float3 lightDirection; // directional light; one is enough for now?
+        float3 lightDirection; // directional light; one is enough for now?
 	float time;            // this isn't strictly light but it's useful for goofy effects
 	float4 cameraPos;
 	float4 spotlightPos[NUM_SPOTLIGHTS];  // spotlights!
@@ -48,7 +48,7 @@ cbuffer LightBuffer : register(b1)
 
 struct PixelInputType
 {
-    float4 position : SV_POSITION;
+        float4 position : SV_POSITION;
 	float4 modelPos : MODELPOS;
 	float4 worldPos : WORLDPOS;
         float2 tex : TEXCOORD0;
@@ -81,9 +81,9 @@ return 0.0;
 float isSpotlightShadow(float4 lightClipSpaceCoordinates, uint whichShadow, float2 jitter)
 {
     float shadowSample = sampleShadowMap(
-        saturate(float2(
-            jitter.x + 0.5 * lightClipSpaceCoordinates.x / lightClipSpaceCoordinates.w + 0.5, 
-            jitter.y + -0.5 * lightClipSpaceCoordinates.y / lightClipSpaceCoordinates.w + 0.5)),  // clip -> NDC -> viewport transforms
+        saturate(jitter + float2(
+             0.5 * lightClipSpaceCoordinates.x / lightClipSpaceCoordinates.w + 0.5, 
+            -0.5 * lightClipSpaceCoordinates.y / lightClipSpaceCoordinates.w + 0.5)),  // clip -> NDC -> viewport transforms
         whichShadow
     );
 
@@ -165,12 +165,15 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 
 	if(lightIntensity > 0.0f)
         {
-		////////////////////////////// TODO: Shadow for directional light! Just need to cobble together the orthogonal projection and whatnot
+	    ////////////////////////////// TODO: Shadow for directional light! Just need to cobble together the orthogonal projection and whatnot
 
-            // Determine the final diffuse color based on the diffuse color and the amount of light intensity.
-            color += (diffuseColor * lightIntensity);
+            if (!isSpotlightShadow(input.shadowUV[NUM_SPOTLIGHTS], NUM_SPOTLIGHTS, float2(0,0)))
+            {
 
-	    // Saturate the ambient and diffuse color.
+                // Determine the final diffuse color based on the diffuse color and the amount of light intensity.
+                color += (diffuseColor * lightIntensity);
+
+	        // Saturate the ambient and diffuse color.
 		color = saturate(color);
 
 		//a graphical representation of the slight difference between the results of interpolating view direction and interpolating world position for recalculating view direction
@@ -186,6 +189,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 			// calculate specular reflection based on dot product of half-vector and normal vector, along with material data
 			specular = specularMultiplier * specularColor * pow(saturate(dot(H, normal)), specularPower);
 		}
+            }
         }
 
 	// spotlight calculations

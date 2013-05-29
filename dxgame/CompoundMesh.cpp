@@ -174,9 +174,10 @@ void CompoundMesh::apply_material(SimpleMesh::Material *to, aiMaterial *mtl)
         memcpy(&to->ambient, &color, sizeof(XMFLOAT4));
     if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_SPECULAR, &color)) 
         memcpy(&to->specular, &color, sizeof(XMFLOAT4));
-    if(AI_SUCCESS == aiGetMaterialFloatArray(mtl, AI_MATKEY_SHININESS, &shinines, &max)
-       && AI_SUCCESS == aiGetMaterialFloatArray(mtl, AI_MATKEY_SHININESS_STRENGTH, &shininessStrength, &max))
-        to->shininess = shinines * shininessStrength;
+    if(AI_SUCCESS == aiGetMaterialFloatArray(mtl, AI_MATKEY_SHININESS, &shinines, &max))
+        to->shininess = shinines;
+    if(AI_SUCCESS == aiGetMaterialFloatArray(mtl, AI_MATKEY_SHININESS_STRENGTH, &shininessStrength, &max))
+        to->specular.x *= shininessStrength, to->specular.y *= shininessStrength, to->specular.z *= shininessStrength;
 
 }
 

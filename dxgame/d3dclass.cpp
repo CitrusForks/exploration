@@ -409,10 +409,10 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 
         // Create a rasterizer state with depth bias for drawing shadow maps
         rasterDesc.AntialiasedLineEnable = false;
-        rasterDesc.CullMode = D3D11_CULL_BACK;
+        rasterDesc.CullMode = D3D11_CULL_NONE;
         rasterDesc.DepthBias = 8; // XXX need a good value here
         rasterDesc.DepthBiasClamp = 0.995f; // here too
-        rasterDesc.DepthClipEnable = true;
+        rasterDesc.DepthClipEnable = false;
         rasterDesc.FillMode = D3D11_FILL_SOLID;
         rasterDesc.FrontCounterClockwise = false;
         rasterDesc.MultisampleEnable = false;
