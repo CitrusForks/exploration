@@ -14,9 +14,12 @@ ShadowBuffer::~ShadowBuffer()
 int ShadowBuffer::width = 512;
 int ShadowBuffer::height = 512;
 
-bool ShadowBuffer::init(ID3D11Device *device, ID3D11DeviceContext *devCtx)
+bool ShadowBuffer::init( ID3D11Device *device, ID3D11DeviceContext *deviceContext, int resolutionMultiplier /*= 1*/ )
 {
     HRESULT rc;
+
+    m_width = width * resolutionMultiplier;
+    m_height = height * resolutionMultiplier;
 
 #if 0
     D3D11_TEXTURE2D_DESC tdesc;
@@ -61,8 +64,8 @@ bool ShadowBuffer::init(ID3D11Device *device, ID3D11DeviceContext *devCtx)
     ZeroMemory(&depthBufferDesc, sizeof(depthBufferDesc));
 
     // Set up the description of the depth buffer.
-    depthBufferDesc.Width = width; // * 2; // x 2 for supersampling test
-    depthBufferDesc.Height = height; // * 2;
+    depthBufferDesc.Width = m_width;
+    depthBufferDesc.Height = m_height;
     depthBufferDesc.MipLevels = 1;
     depthBufferDesc.ArraySize = 1;
     depthBufferDesc.Format = DXGI_FORMAT_R32_TYPELESS;

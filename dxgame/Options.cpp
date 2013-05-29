@@ -15,6 +15,6 @@ namespace Options
         intOptions["Width"] = 1024;
         intOptions["Height"] = 768;
         intOptions["FullScreen"] = 0; // because I'm too lazy to have a separate table of bool options
-        intOptions["MouseSensitivy"] = 8; // sensitivity multiplier = this option / 32.0
+        intOptions["MouseSensitivity"] = 8; // sensitivity multiplier = this option / 32.0
     }
 }

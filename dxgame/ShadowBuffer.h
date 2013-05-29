@@ -17,7 +17,7 @@ public:
     ShadowBuffer();
     ~ShadowBuffer(void);
 
-    bool init(ID3D11Device *, ID3D11DeviceContext *);
+    bool init(ID3D11Device *device, ID3D11DeviceContext *deviceContext, int resolutionMultiplier = 1);
     void release();
 
     // should be clear; this sets m_targetView as the current render target
@@ -32,6 +32,8 @@ public:
     // helper method to present an array of these buffers to the GPU
     static void pushToGPU(ID3D11DeviceContext *devCtx, ShadowBuffer *buffers, int numBuffers);
 
-    static int width, height; // shadow map sizes? should these be in Otions instead?
+    int m_width, m_height;
+
+    static int width, height; // shadow map size defaults? Should these be in Options instead?
 };
 

@@ -103,7 +103,7 @@ void reportError(const char *prefix)
 	cout << prefix << errorStr << endl;
 }
 
-bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, VanillaShaderClass &shaders0, XMFLOAT3 lightDirection, Chronometer &timer, IntermediateRenderTarget &offScreen, ModelManager &models, CXMMATRIX projection, SimpleMesh &square, VanillaShaderClass &postProcess, CXMMATRIX ortho, SimpleText &text, VanillaShaderClass &shadowShaders, ShadowBuffer *shadows, int shadowsNum, CXMMATRIX directionalShadowOrtho );
+bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, VanillaShaderClass &shaders0, XMFLOAT3 lightDirection, Chronometer &timer, IntermediateRenderTarget &offScreen, ModelManager &models, CXMMATRIX projection, SimpleMesh &square, VanillaShaderClass &postProcess, CXMMATRIX ortho, SimpleText &text, VanillaShaderClass &shadowShaders, ShadowBuffer *shadows, int shadowsNum);
 
 
 int _tmain(int argc, _TCHAR* argv[])
@@ -200,10 +200,12 @@ int _tmain(int argc, _TCHAR* argv[])
         // shadow maps! 
         vector<ShadowBuffer> shadowBuffers;
         shadowBuffers.resize(NUM_SPOTLIGHTS + 1); // +1 for directional light
-        for (unsigned i = 0; i < shadowBuffers.size(); ++i)
+        for (unsigned i = 0; i < shadowBuffers.size()-1; ++i)
         {
             shadowBuffers[i].init(d3d.GetDevice(), d3d.GetDeviceContext());
         }
+
+        shadowBuffers[shadowBuffers.size()-1].init(d3d.GetDevice(), d3d.GetDeviceContext(), 8);
 
         // this is the effects shader for rendering from off-screen buffer to swap chain
         VanillaShaderClass postProcess;
@@ -250,10 +252,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
         XMMATRIX ortho = XMMatrixOrthographicOffCenterLH(0.0f, 1.0f, 0.0f, 1.0f, 0.1f, 1.1f);
 
-        XMFLOAT3 lightDirection(0.0f,  -1.0f, 0.0f); // directional light
-
-        XMMATRIX directionalShadowOrtho = XMMatrixLookToLH(FPCamera.getEyePosition() + XMVectorSet(0, 100.0f, 0, 0), 
-            XMLoadFloat3(&lightDirection), XMVectorSet(0, 1, 0, 0)) * XMMatrixOrthographicLH(50, 50, 0.1, 1000); // view * orthographic projection, for directional light
+        XMFLOAT3 lightDirection;
+        
+        XMStoreFloat3(&lightDirection, XMVector3Normalize(XMVectorSet(0.0f,  -0.2, 1.0f, 0.0f))); // directional light
 
 	MSG msg;
 	ZeroMemory(&msg, sizeof(MSG)); // clear message structure
@@ -285,7 +286,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			done = true;
 		}
 
-                if (!RenderScene(d3d, FPCamera, axis45deg, shaders0, lightDirection, timer, offScreen, models, projection, square, postProcess, ortho, text, shadowShaders, shadowBuffers.data(), shadowBuffers.size(), directionalShadowOrtho)) return -1;
+                if (!RenderScene(d3d, FPCamera, axis45deg, shaders0, lightDirection, timer, offScreen, models, projection, square, postProcess, ortho, text, shadowShaders, shadowBuffers.data(), shadowBuffers.size())) return -1;
 
 		//Sleep(10); // don't cook the CPU yet
                 angle += (float)(M_PI) * (float)timer.sincePrev();
@@ -330,7 +331,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 bool doRenderCalls( ModelManager & models, D3DClass &d3d, VanillaShaderClass & shader, CXMMATRIX view, CXMMATRIX projection, CXMMATRIX worldFinal, XMFLOAT4X4 *lightProjections, unsigned numLights );
 
-bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, VanillaShaderClass &shaders0, XMFLOAT3 lightDirection, Chronometer &timer, IntermediateRenderTarget &offScreen, ModelManager &models, CXMMATRIX projection, SimpleMesh &square, VanillaShaderClass &postProcess, CXMMATRIX ortho, SimpleText &text, VanillaShaderClass &shadowShaders, ShadowBuffer *shadows, int shadowsNum, CXMMATRIX directionalShadowOrtho )
+bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, VanillaShaderClass &shaders0, XMFLOAT3 lightDirection, Chronometer &timer, IntermediateRenderTarget &offScreen, ModelManager &models, CXMMATRIX projection, SimpleMesh &square, VanillaShaderClass &postProcess, CXMMATRIX ortho, SimpleText &text, VanillaShaderClass &shadowShaders, ShadowBuffer *shadows, int shadowsNum)
 {
     //
     // Rendering
@@ -339,7 +340,7 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, Van
 #ifndef DISABLE_OFFSCREEN_BUFFER
     d3d.BeginScene(false); // don't clear back buffer; we're just going to overwrite it completely from the off-screen buffer
 #else
-	d3d.BeginScene(true);
+    d3d.BeginScene(true);
 #endif
 
     //
@@ -349,13 +350,14 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, Van
 
     XMFLOAT4 lightPos[NUM_SPOTLIGHTS+1]; // positions
     ZeroMemory(lightPos, sizeof(lightPos));
-    XMStoreFloat4(lightPos, XMVector4Transform(FPCamera.getEyePosition(), XMMatrixTranslation(0.1f, -0.3, 0.1))); // hold flashlight lower
+    XMStoreFloat4(lightPos, XMVector4Transform(FPCamera.getEyePosition(), XMMatrixTranslation(0.1f, -0.3f, 0.1))); // hold flashlight lower... tilt it? or no?
     lightPos->y += 0.2f;
     lightPos[1] = XMFLOAT4(4.0f, 4.0f, 3.0f, 1.0f);
 
     XMFLOAT3 lightDir[NUM_SPOTLIGHTS+1]; // directions
     ZeroMemory(lightDir, sizeof(lightDir));
-    XMStoreFloat3(lightDir, XMVector3TransformNormal(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), -2.0f/180 * (float)M_PI) *  XMMatrixTranspose(FPCamera.getViewMatrix())));
+    XMStoreFloat3(lightDir, XMVector3TransformNormal(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), -2.0f/180 * (float)M_PI) *  XMMatrixTranspose(FPCamera.getViewMatrix()))); 
+    // re: the above transpose; view matrix is the inverse of what we want to transform a vector extending from the eye and the 3x3 excerpt of the view matrix for a normal transform is orthogonal so the inverse is the transpose
     XMStoreFloat3(&(lightDir[1]), axis45deg);
 
     float lightHalfAngles[NUM_SPOTLIGHTS+1] = { (float)M_PI * 15.0f/180.f, (float)M_PI * 25.0f/180.f, 0.0f, 0.0f }; // angles from axis to generatrix
@@ -376,9 +378,23 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, Van
         XMStoreFloat4x4(lightProj+i, viewProj);
     }
 
+    XMVECTOR skyCamPos = FPCamera.getEyePosition();
+    skyCamPos = XMVectorFloor(skyCamPos + XMVectorSet(0.5f, 0.5f, 0.5f, 0.0f) + XMVectorSet(lightDirection.x,0,lightDirection.y,0)*90  + XMVectorSet(0, 50.0f, 0, 0));
+
+    XMMATRIX directionalShadowOrtho = XMMatrixLookToLH(skyCamPos, // looking down from above the player; shift forward to avoid shading stuff behind the player
+        XMLoadFloat3(&lightDirection), XMVectorSet(0, 0, 1, 0)) * XMMatrixOrthographicLH(100, 100, 0.1f, 100); // view * orthographic projection, for directional light
+    // N.B., "up" should be orthogonal to lightDirection, or at least not parallel because a crossproduct is performed
+
     XMStoreFloat4x4(lightProj+NUM_SPOTLIGHTS, directionalShadowOrtho);
 
-    shaders0.SetPSLights(d3d.GetDeviceContext(), lightDirection, (float)timer.sinceInit(), FPCamera.getEyePosition(), lightPos, lightDir, lightParams, 2);
+    XMFLOAT4 sunlight( 255.0f / 255.0f, 255.0f / 255.0f, 251.0f / 255.0f, 1.0f ); // sun yellow orange
+    XMFLOAT4 blue(0, 0, 1.0f, 1.0f );
+
+    sunlight.x *=2;
+    sunlight.y *=2;
+    sunlight.z *=2;
+
+    shaders0.SetPSLights(d3d.GetDeviceContext(), lightDirection, (float)timer.sinceInit(), FPCamera.getEyePosition(), lightPos, lightDir, lightParams, 2, sunlight, sunlight);
 
     XMMATRIX world = XMMatrixTranslation(0.0f, 0.0f, 7.0f);
 
@@ -409,7 +425,13 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, Van
         if (!doRenderCalls(models, d3d, shadowShaders, view, XMMatrixIdentity(), worldFinal, lightProj, numLights)) return false;
     }
 
+    //
+    // The directional light shadowmap may be lighting a very large outdoor area, so it may require an uniquely high resolution.
+    //
+    D3D11_VIEWPORT viewport2 = { 0.0f, 0.0f, (float)shadows[NUM_SPOTLIGHTS].m_width, (float)shadows[NUM_SPOTLIGHTS].m_height, 0.0f, 1.0f };
+    d3d.GetDeviceContext()->RSSetViewports(1, &viewport2);
     XMMATRIX view = XMLoadFloat4x4(&(lightProj[NUM_SPOTLIGHTS]));
+
     shadows[NUM_SPOTLIGHTS].setAsRenderTarget(d3d.GetDeviceContext());
     shadows[NUM_SPOTLIGHTS].clear(d3d.GetDeviceContext());
     if (!doRenderCalls(models, d3d, shadowShaders, view, XMMatrixIdentity(), worldFinal, lightProj, numLights)) return false;
@@ -418,8 +440,8 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, Van
     //
     // render the scene to off-screen buffer
     // 
-    D3D11_VIEWPORT viewport2 = { 0.0f, 0.0f,  (float)Options::intOptions["Width"], (float)Options::intOptions["Height"], 0.0f, 1.0f};
-    d3d.GetDeviceContext()->RSSetViewports(1, &viewport2);
+    D3D11_VIEWPORT viewportMain = { 0.0f, 0.0f,  (float)Options::intOptions["Width"], (float)Options::intOptions["Height"], 0.0f, 1.0f};
+    d3d.GetDeviceContext()->RSSetViewports(1, &viewportMain);
 
     view = FPCamera.getViewMatrix();
 
@@ -447,6 +469,10 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, Van
     //
 
 #ifndef DISABLE_OFFSCREEN_BUFFER
+
+    //
+    // Copy off-screen buffer to swap chain buffer
+
     d3d.depthOff(); // disable depth test
 
     d3d.setAsRenderTarget(false); // set a swap chain buffer as render target again
@@ -481,7 +507,7 @@ bool doRenderCalls( ModelManager & models, D3DClass &d3d, VanillaShaderClass & s
     }
 
     //if (!spider.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixScaling(0.05f, 0.05f, 0.05f) * worldFinal * XMMatrixTranslation(-1.0f, 2.0f, 6.0f), view, projection))
-    if (!models["duck.obj"]->render(d3d.GetDeviceContext(), &shader, worldFinal * XMMatrixTranslation(-1.0f, 0.0f, 3.0f), view, projection, lightProjections, numLights))
+    if (!models["duck.obj"]->render(d3d.GetDeviceContext(), &shader, worldFinal * XMMatrixTranslation(-1.0f, -0.2f, 3.0f), view, projection, lightProjections, numLights))
     {
         Errors::Cry(L"Render error in scene. :|");
         return false;

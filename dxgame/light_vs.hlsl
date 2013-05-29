@@ -37,10 +37,10 @@ struct VertexInputType
 
 struct PixelInputType
 {
-    float4 position : SV_POSITION;
+        float4 position : SV_POSITION;
 	float4 modelPos : MODELPOS;
 	float4 worldPos : WORLDPOS;
-    float2 tex : TEXCOORD0;
+        float2 tex : TEXCOORD0;
 	nointerpolation uint texNum : TEXINDEX;                    // which texture to use
 	float3 normal : NORMAL;
 	float3 tangent : TANGENT;
@@ -95,6 +95,8 @@ PixelInputType LightVertexShader(VertexInputType input)
     output.worldPos = worldPosition = output.position = mul(localPosition, worldMatrix);
     output.position = mul(output.position, viewMatrix);
     output.position = mul(output.position, projectionMatrix);
+
+    //output.position = mul(worldPosition, lightVP[NUM_SPOTLIGHTS]);
     
     // Store the texture coordinates for the pixel shader.
     output.tex = input.tex;

@@ -42,7 +42,9 @@ cbuffer LightBuffer : register(b1)
 	float4 spotlightPos[NUM_SPOTLIGHTS];  // spotlights!
 	float4 spotlightDir[NUM_SPOTLIGHTS];  // float3 would take up 4 floats anyway, might as well make it explicit
 	float4 spotlightEtc[NUM_SPOTLIGHTS];  // arrays are packed into 4-float elements anyway so this is {Cos(angle), constant attenuation, linear, quadratic}
-	uint numLights;
+        float4 ambientLight; // color
+        float4 diffuseLight; // color, can also encode intensity obviously
+	uint numLights;        
 };
 // end of globals
 
@@ -104,6 +106,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
         float4 specular = 0.0f;
 	uint texNum = input.texNum;
 	float3 tangent = input.tangent;
+        float4 actualSpecularColor = specularColor;;
 	//tangent = normalize(input.tangent);
 
 	//return 1.0-pow(input.position.zzzz,2); // ghostly distance-visualization world
@@ -111,8 +114,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	//return float4(0, dot(input.tangent, input.normal), 0, 1)*10; // uncomment for error visualization
 	//return float4(tangent.x, tangent.y, tangent.z, 1); // uncomment for amazing technicolor vomit shader
 
-	//return pow(sampleShadowMap(saturate(input.shadowUV[0]), 0),100);
-	//return float4(input.shadowUV[0], 0, 0);
+
 
 	textureColor = diffuseTexture.Sample(SampleType, input.tex);
 
@@ -123,8 +125,9 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	// check the specular map
 	if (useSpecularMap)
 	{
-		specularMultiplier = specularMap.Sample(SampleType, input.tex).r;
-	}
+	    specularMultiplier = specularMap.Sample(SampleType, input.tex).r;
+            if (specularColor.x == 0.0f && specularColor.y == 0.0f && specularColor.z == 0.0f) actualSpecularColor = float4(0.1, 0.1, 0.1, 0.1);
+	} 
 
 
 	float3 normal;
@@ -152,7 +155,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	float3 viewDirection = normalize(cameraPos.xyz - input.worldPos.xyz );
 
 	// Set the default output color to the ambient light value for all pixels.
-        color = ambientColor;
+        color = ambientColor * ambientLight;
 
 	// Initialize the specular color.
 	specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -165,13 +168,28 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 
 	if(lightIntensity > 0.0f)
         {
-	    ////////////////////////////// TODO: Shadow for directional light! Just need to cobble together the orthogonal projection and whatnot
+            //return sampleShadowMap(float2(input.shadowUV[NUM_SPOTLIGHTS].x * 0.5 + 0.5, -0.5 * input.shadowUV[NUM_SPOTLIGHTS].y + 0.5), NUM_SPOTLIGHTS);
 
-            if (!isSpotlightShadow(input.shadowUV[NUM_SPOTLIGHTS], NUM_SPOTLIGHTS, float2(0,0)))
+            int totalShadow = 0;
+            if (isSpotlightShadow(input.shadowUV[NUM_SPOTLIGHTS], NUM_SPOTLIGHTS, float2(0,0)))
             {
+                totalShadow += 1;
+                if (isSpotlightShadow(input.shadowUV[NUM_SPOTLIGHTS], NUM_SPOTLIGHTS, float2(0.00051f,0.0005f))) totalShadow += 1;
+                if (isSpotlightShadow(input.shadowUV[NUM_SPOTLIGHTS], NUM_SPOTLIGHTS, float2(-0.0005f,-0.00049f))) totalShadow += 1;
+                if (isSpotlightShadow(input.shadowUV[NUM_SPOTLIGHTS], NUM_SPOTLIGHTS, float2(-0.00052f,0.00048f))) totalShadow += 1;
+                if (isSpotlightShadow(input.shadowUV[NUM_SPOTLIGHTS], NUM_SPOTLIGHTS, float2(0.000511f,-0.00047f))) totalShadow += 1;
+                if (isSpotlightShadow(input.shadowUV[NUM_SPOTLIGHTS], NUM_SPOTLIGHTS, float2(0.00031,0.000301f))) totalShadow += 1;
+                if (isSpotlightShadow(input.shadowUV[NUM_SPOTLIGHTS], NUM_SPOTLIGHTS, float2(0.000299f,-0.00029))) totalShadow += 1;
+                if (isSpotlightShadow(input.shadowUV[NUM_SPOTLIGHTS], NUM_SPOTLIGHTS, float2(-0.00032f,-0.00028))) totalShadow += 1;
+                if (isSpotlightShadow(input.shadowUV[NUM_SPOTLIGHTS], NUM_SPOTLIGHTS, float2(-0.000295,0.0002f))) totalShadow += 1;
 
+            }
+
+            if (totalShadow < 9)
+            {
+                float shadowMultiplier = 1.0f - (1.0f/9.0f) * totalShadow;
                 // Determine the final diffuse color based on the diffuse color and the amount of light intensity.
-                color += (diffuseColor * lightIntensity);
+                color += (diffuseColor * lightIntensity * diffuseLight * shadowMultiplier);
 
 	        // Saturate the ambient and diffuse color.
 		color = saturate(color);
@@ -182,12 +200,12 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 		//float4 rr = {r.x, r.y, r.z, 1.0f};
 		//return rr;
 
-		if (specularMultiplier > 0.0000001f)
+		if (specularMultiplier > 0.00001f)
 		{
 			// calculate half-vector for Blinn-Phong specular model
 			float3 H = normalize(-lightDirection + viewDirection);
 			// calculate specular reflection based on dot product of half-vector and normal vector, along with material data
-			specular = specularMultiplier * specularColor * pow(saturate(dot(H, normal)), specularPower);
+			specular = shadowMultiplier * specularMultiplier * actualSpecularColor * pow(saturate(dot(H, normal)), specularPower);
 		}
             }
         }
@@ -240,7 +258,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 					// calculate half-vector for Blinn-Phong specular model
 					float3 H = normalize(toLight + viewDirection);
 					// calculate specular reflection based on dot product of half-vector and normal vector, along with material data
-					specular += specularMultiplier * attenuation * fallOff * specularColor * pow(saturate(dot(H, normalize(normal))), specularPower);
+					specular += specularMultiplier * attenuation * fallOff * actualSpecularColor * pow(saturate(dot(H, normalize(normal))), specularPower);
 				}
 			}
 		}

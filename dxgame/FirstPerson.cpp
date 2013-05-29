@@ -70,7 +70,7 @@ void FirstPerson::perFrameUpdate(double timeElapsed, Input &input)
         int sign = (input.IsPressed(DIK_S) || input.IsPressed(DIK_DOWN) || input.IsPressed(DIK_DOWNARROW)) ? -1 : 1; // XXX refactor me
         moving = true;
 
-        offset += XMVector3Rotate(forward, XMQuaternionRotationRollPitchYaw(0.0f, m_heading, 0.0f)) * (float)sign;
+        offset += getForwardVector() * (float)sign;
 
     }
 
@@ -100,11 +100,11 @@ void FirstPerson::perFrameUpdate(double timeElapsed, Input &input)
         // first frame, don't go wild with crazy mouse inputs
     } else
     {
-        m_heading += (float) (timeElapsed * (x - m_mouse_x) * rotationSpeed * (Options::intOptions["MouseSensitivy"] / 32.0f)); // x movement rotates
+        m_heading += (float) (timeElapsed * (x - m_mouse_x) * rotationSpeed * (Options::intOptions["MouseSensitivity"] / 32.0f)); // x movement rotates
         
-        m_pitch += (float) (timeElapsed * (y - m_mouse_y) * (Options::intOptions["MouseSensitivy"] / 32.0f)); // y movement looks up and down
-        if (m_pitch < -M_PI_2+0.001) m_pitch = (float) -M_PI_2+0.001; // clamp pitch
-        if (m_pitch > M_PI_2-0.001) m_pitch = (float) M_PI_2-0.001; 
+        m_pitch += (float) (timeElapsed * (y - m_mouse_y) * (Options::intOptions["MouseSensitivity"] / 32.0f)); // y movement looks up and down
+        if (m_pitch < (float)-M_PI_2+0.001f) m_pitch = (float) -M_PI_2+0.001f; // clamp pitch
+        if (m_pitch > (float)M_PI_2-0.001f) m_pitch = (float) M_PI_2-0.001f; 
     }
     m_mouse_x = x;
     m_mouse_y = y;
@@ -140,5 +140,12 @@ XMVECTOR FirstPerson::getEyePosition()
 void FirstPerson::setPosition(FXMVECTOR to)
 {
     XMStoreFloat4(&m_position, to);
+}
+
+
+// heading in vector form
+XMVECTOR FirstPerson::getForwardVector()
+{
+    return XMVector3Normalize(XMVector3Rotate(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), XMQuaternionRotationRollPitchYaw(0.0f, m_heading, 0.0f))); // the quaternion is used just to prove to myself that I can use a quaternion
 }
 

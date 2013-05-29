@@ -10,8 +10,8 @@ cbuffer MaterialBuffer : register(b0)
 {
 	float4 ambientColor;
 	float4 diffuseColor;
-    float4 specularColor;
-    float specularPower;
+        float4 specularColor;
+        float specularPower;
 	bool useNormalMap;
 	float2 padding;
 }

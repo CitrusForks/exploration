@@ -22,6 +22,9 @@ public:
     ~FirstPerson(void);
 
     void perFrameUpdate(double timeElapsed, Input &input);
+
+    DirectX::XMVECTOR getForwardVector();
+
     DirectX::XMMATRIX getViewMatrix(); 
     DirectX::XMVECTOR getPosition();
     DirectX::XMVECTOR getEyePosition();

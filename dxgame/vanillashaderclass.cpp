@@ -441,6 +441,7 @@ bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext
     {
         XMStoreFloat4x4(&(dataPtr->lightViewProjection[i]), XMMatrixTranspose(XMLoadFloat4x4(lightProjections+i)));
     }
+    XMStoreFloat4x4(&(dataPtr->lightViewProjection[NUM_SPOTLIGHTS]), XMMatrixTranspose(XMLoadFloat4x4(lightProjections+NUM_SPOTLIGHTS)));
     dataPtr->numLights = numLights;
 
     // Unlock the constant buffer.
@@ -508,7 +509,7 @@ bool VanillaShaderClass::SetPSMaterial( ID3D11DeviceContext *deviceContext, Dire
 //      x = Cos(beamAngle), y = constant attenuation, z = linear attenuation, w = quadrating attenuation
 // numSpotlights is the number of elements in the arrays above; valid range is [0..NUM_SPOTLIGHTS) 
 //      NOTE Perhaps the arrays should be vector instead?
-bool VanillaShaderClass::SetPSLights( ID3D11DeviceContext *deviceContext, const XMFLOAT3 &lightDirection, float time, FXMVECTOR cameraPos, XMFLOAT4 *spotlightPos, XMFLOAT3 *spotlightDir, XMFLOAT4 *spotlightParams, int numSpotlights )
+bool VanillaShaderClass::SetPSLights( ID3D11DeviceContext *deviceContext, const DirectX::XMFLOAT3 &lightDirection, float time, DirectX::FXMVECTOR cameraPos, DirectX::XMFLOAT4 *spotlightPos, DirectX::XMFLOAT3 *spotlightDir, DirectX::XMFLOAT4 *spotlightParams, int numSpotlights, DirectX::XMFLOAT4 &ambientLight, DirectX::XMFLOAT4 &diffuseLight )
 {
     HRESULT result;
     D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -552,7 +553,10 @@ bool VanillaShaderClass::SetPSLights( ID3D11DeviceContext *deviceContext, const 
         dataPtr->spotlightDir[i] = XMFLOAT4(0,0,0,0);
         dataPtr->spotlightEtc[i] = XMFLOAT4(0,0,0,0);
     }
-    
+
+    dataPtr->ambientLight = ambientLight;
+    dataPtr->diffuseLight = diffuseLight; // from directional light, that is
+
     deviceContext->Unmap(m_lightBuffer, 0);
 
     deviceContext->PSSetConstantBuffers(1, 1, &m_lightBuffer); // light buffer is register(cb1) aka slot one
