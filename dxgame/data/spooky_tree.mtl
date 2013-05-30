@@ -1,0 +1,33 @@
+# Blender MTL File: 'None'
+# Material Count: 3
+
+newmtl pmat1
+Ns 196.078431
+Ka 0.000000 0.000000 0.000000
+Kd 0.558431 0.558431 0.558431
+Ks 0.500000 0.500000 0.500000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd wal69ar_small_D.jpg
+
+newmtl pmat2
+Ns 196.078431
+Ka 0.000000 0.000000 0.000000
+Kd 0.558431 0.558431 0.558431
+Ks 0.500000 0.500000 0.500000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd wal69ar_small_D.jpg
+
+newmtl pmat3
+Ns 96.078431
+Ka 0.000000 0.000000 0.000000
+Kd 0.558431 0.558431 0.558431
+Ks 0.500000 0.500000 0.500000
+Ni 1.000000
+d 1.000000
+illum 2
+#map_Kd slime-green-grunge_D.jpg
+map_Kd wal67ar_small_D.jpg
