@@ -11,7 +11,7 @@ cbuffer MatrixBuffer
 	matrix worldMatrix;
 	matrix viewMatrix;
 	matrix projectionMatrix;
-	matrix lightVP[NUM_SPOTLIGHTS+1]; // world coordinates -> light shadow map coordinates
+	matrix lightVP[NUM_SPOTLIGHTS+2]; // world coordinates -> light shadow map coordinates
 	uint numLights;
 };
 
@@ -45,7 +45,7 @@ struct PixelInputType
 	float3 normal : NORMAL;
 	float3 tangent : TANGENT;
 	float3 viewDirection : VIEWDIR;
-	float4 shadowUV[NUM_SPOTLIGHTS+1] : SHADOWUV;
+	float4 shadowUV[NUM_SPOTLIGHTS+2] : SHADOWUV;
 };
 
 
@@ -118,7 +118,8 @@ PixelInputType LightVertexShader(VertexInputType input)
 	    output.shadowUV[i] = mul(worldPosition, lightVP[i]);
     }
 
-    output.shadowUV[NUM_SPOTLIGHTS] = mul(worldPosition, lightVP[NUM_SPOTLIGHTS]);
+    output.shadowUV[NUM_SPOTLIGHTS] = mul(worldPosition, lightVP[NUM_SPOTLIGHTS]);    // directional light
+    output.shadowUV[NUM_SPOTLIGHTS+1] = mul(worldPosition, lightVP[NUM_SPOTLIGHTS+1]);// it has two shadow maps for 2x LOD
 
     return output;
 }

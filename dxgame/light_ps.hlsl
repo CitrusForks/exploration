@@ -1,6 +1,31 @@
 // Filename: light.ps
 
+// our stupid spotlight number constant... maybe it should be in its own include file
 #define NUM_SPOTLIGHTS 4
+
+
+// a random number function of some sort that I found on the net, ported from apparently glsl:
+
+// Input: It uses texture coords as the random number seed.
+// Output: Random number: [0,1), that is between 0.0 and 0.999999... inclusive.
+// Author: Michael Pohoreski
+// Copyright: Copyleft 2012 :-)
+
+float random( float2 p )
+{
+  // We need irrationals for pseudo randomness.
+  // Most (all?) known transcendental numbers will (generally) work.
+  const float2 r = float2(
+    23.1406926327792690,  // e^pi (Gelfond's constant)
+     2.6651441426902251); // 2^sqrt(2) (Gelfond–Schneider constant)
+  return frac( cos( fmod( 123456789., 1e-7 + 256. * dot(p,r) ) ) );  
+}
+
+// and this nonsense is by me:
+float2 rand2( float2 p )
+{
+    return float2(random(p), random(float2(p.y + countbits(p.x), p.x + countbits(p.y))));
+}
 
 
 // globals:
@@ -12,7 +37,7 @@ Texture2D normalMap : register(t1); // yep, normals
 Texture2D specularMap : register(t2); // per-pixel specular values
 
 // shadow maps:
-Texture2D shadowMap[NUM_SPOTLIGHTS+1] : register(t3); 
+Texture2D shadowMap[NUM_SPOTLIGHTS+2] : register(t3); 
 // this would be way nicer as a Texture2DArray but we can't use a Texture2DArray as a DepthStencilBuffer target... 
 // copying a bunch of shadowmaps from individual texture would be a lot of extra work for the GPU just to make this shader code a little prettier
 // so for now, this is what's happening.
@@ -58,7 +83,7 @@ struct PixelInputType
 	float3 normal : NORMAL;
 	float3 tangent : TANGENT;
 	float3 viewDirection : VIEWDIR;
-	float4 shadowUV[NUM_SPOTLIGHTS+1] : SHADOWUV;
+	float4 shadowUV[NUM_SPOTLIGHTS+2] : SHADOWUV;
 };
 
 
@@ -73,7 +98,7 @@ SAMPLESHADOWMAP(1)
 SAMPLESHADOWMAP(2)
 SAMPLESHADOWMAP(3)
 SAMPLESHADOWMAP(4)
-//SAMPLESHADOWMAP(5)
+SAMPLESHADOWMAP(5)
 #undef SAMPLESHADOWMAP
 // :|
 return 0.0; 
@@ -83,9 +108,9 @@ return 0.0;
 float isSpotlightShadow(float4 lightClipSpaceCoordinates, uint whichShadow, float2 jitter)
 {
     float shadowSample = sampleShadowMap(
-        saturate(jitter + float2(
+            jitter + float2(
              0.5 * lightClipSpaceCoordinates.x / lightClipSpaceCoordinates.w + 0.5, 
-            -0.5 * lightClipSpaceCoordinates.y / lightClipSpaceCoordinates.w + 0.5)),  // clip -> NDC -> viewport transforms
+            -0.5 * lightClipSpaceCoordinates.y / lightClipSpaceCoordinates.w + 0.5),  // clip -> NDC -> viewport transforms
         whichShadow
     );
 
@@ -113,8 +138,6 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 
 	//return float4(0, dot(input.tangent, input.normal), 0, 1)*10; // uncomment for error visualization
 	//return float4(tangent.x, tangent.y, tangent.z, 1); // uncomment for amazing technicolor vomit shader
-
-
 
 	textureColor = diffuseTexture.Sample(SampleType, input.tex);
 
@@ -168,20 +191,38 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 
 	if(lightIntensity > 0.0f)
         {
-            //return sampleShadowMap(float2(input.shadowUV[NUM_SPOTLIGHTS].x * 0.5 + 0.5, -0.5 * input.shadowUV[NUM_SPOTLIGHTS].y + 0.5), NUM_SPOTLIGHTS);
+            float ds;
 
             int totalShadow = 0;
-            if (isSpotlightShadow(input.shadowUV[NUM_SPOTLIGHTS], NUM_SPOTLIGHTS, float2(0,0)))
+            uint mapNum = NUM_SPOTLIGHTS+1;
+            float2 uv = float2(0.5 * input.shadowUV[mapNum].x / input.shadowUV[mapNum].w +
+                0.5, -0.5 * input.shadowUV[mapNum].y + 0.5);
+            float rand = random(uv);
+            if (uv.x > 0.05 && uv.x < 0.95 && uv.y > 0.05 && uv.y < 0.95)
+            {
+                ds = 1.0/2048; // high LOD map dimension
+                //color.r = 1.0;
+            } else
+            {
+                mapNum = NUM_SPOTLIGHTS;
+                //uv = float2(input.shadowUV[mapNum].x * 0.5 + 0.5, -0.5 * input.shadowUV[mapNum].y + 0.5);
+                ds = 1.0/4096; // low LOD map dimension
+                //color.g = 1.0;
+            }
+            
+            //return sampleShadowMap(input.shadowUV[NUM_SPOTLIGHTS+1], NUM_SPOTLIGHTS+1);
+
+            if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(0,0)))
             {
                 totalShadow += 1;
-                if (isSpotlightShadow(input.shadowUV[NUM_SPOTLIGHTS], NUM_SPOTLIGHTS, float2(0.00051f,0.0005f))) totalShadow += 1;
-                if (isSpotlightShadow(input.shadowUV[NUM_SPOTLIGHTS], NUM_SPOTLIGHTS, float2(-0.0005f,-0.00049f))) totalShadow += 1;
-                if (isSpotlightShadow(input.shadowUV[NUM_SPOTLIGHTS], NUM_SPOTLIGHTS, float2(-0.00052f,0.00048f))) totalShadow += 1;
-                if (isSpotlightShadow(input.shadowUV[NUM_SPOTLIGHTS], NUM_SPOTLIGHTS, float2(0.000511f,-0.00047f))) totalShadow += 1;
-                if (isSpotlightShadow(input.shadowUV[NUM_SPOTLIGHTS], NUM_SPOTLIGHTS, float2(0.00031,0.000301f))) totalShadow += 1;
-                if (isSpotlightShadow(input.shadowUV[NUM_SPOTLIGHTS], NUM_SPOTLIGHTS, float2(0.000299f,-0.00029))) totalShadow += 1;
-                if (isSpotlightShadow(input.shadowUV[NUM_SPOTLIGHTS], NUM_SPOTLIGHTS, float2(-0.00032f,-0.00028))) totalShadow += 1;
-                if (isSpotlightShadow(input.shadowUV[NUM_SPOTLIGHTS], NUM_SPOTLIGHTS, float2(-0.000295,0.0002f))) totalShadow += 1;
+                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(ds,ds))) totalShadow += 1;
+                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(-ds,-ds))) totalShadow += 1;
+                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(-ds,ds))) totalShadow += 1;
+                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(ds,-ds))) totalShadow += 1;
+                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(0,ds))) totalShadow += 1;
+                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(0,-ds))) totalShadow += 1;
+                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(-ds,0))) totalShadow += 1;
+                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(ds,0))) totalShadow += 1;
 
             }
 

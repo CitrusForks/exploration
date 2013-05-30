@@ -289,9 +289,7 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
 
     // ..._POINT would be the logical choice here but using LINEAR eliminates shadow artifacts
     // it's a non-anisotropic sampler for the copy to the swap chain and for sampling shadow maps etc.
-    D3D11_SAMPLER_DESC samplerDesc2 = {D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_CLAMP, D3D11_TEXTURE_ADDRESS_CLAMP, D3D11_TEXTURE_ADDRESS_CLAMP, 0.0f, 8, D3D11_COMPARISON_ALWAYS };
-    samplerDesc2.MinLOD = 0;
-    samplerDesc2.MaxLOD = D3D11_FLOAT32_MAX;
+    D3D11_SAMPLER_DESC samplerDesc2 = {D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER, 0.0f, 8, D3D11_COMPARISON_ALWAYS, {1,1,1,1}, 0, D3D11_FLOAT32_MAX };
 
     result = device->CreateSamplerState(&samplerDesc2, m_sampleState + 1);
     if(FAILED(result))
@@ -441,7 +439,8 @@ bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext
     {
         XMStoreFloat4x4(&(dataPtr->lightViewProjection[i]), XMMatrixTranspose(XMLoadFloat4x4(lightProjections+i)));
     }
-    XMStoreFloat4x4(&(dataPtr->lightViewProjection[NUM_SPOTLIGHTS]), XMMatrixTranspose(XMLoadFloat4x4(lightProjections+NUM_SPOTLIGHTS)));
+    XMStoreFloat4x4(&(dataPtr->lightViewProjection[NUM_SPOTLIGHTS]), XMMatrixTranspose(XMLoadFloat4x4(lightProjections+NUM_SPOTLIGHTS)));    // directional light's shadow maps
+    XMStoreFloat4x4(&(dataPtr->lightViewProjection[NUM_SPOTLIGHTS+1]), XMMatrixTranspose(XMLoadFloat4x4(lightProjections+NUM_SPOTLIGHTS+1)));
     dataPtr->numLights = numLights;
 
     // Unlock the constant buffer.

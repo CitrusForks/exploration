@@ -26,7 +26,7 @@ private:
         DirectX::XMFLOAT4X4 world;
         DirectX::XMFLOAT4X4 view;
         DirectX::XMFLOAT4X4 projection;
-        DirectX::XMFLOAT4X4 lightViewProjection[NUM_SPOTLIGHTS+1];
+        DirectX::XMFLOAT4X4 lightViewProjection[NUM_SPOTLIGHTS+2];
         unsigned int numLights; // number of lights casting shadows in scene; aka how much of above array is populated
         float padding[3];
     };
