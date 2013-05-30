@@ -4,7 +4,7 @@
 #include "stdafx.h"
 
 // define this to debug main shaders with VS2012:
-#define DISABLE_OFFSCREEN_BUFFER 1
+//#define DISABLE_OFFSCREEN_BUFFER 1
 // 
 
 
