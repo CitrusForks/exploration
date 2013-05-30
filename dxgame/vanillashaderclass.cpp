@@ -474,7 +474,6 @@ bool VanillaShaderClass::SetPSMaterial( ID3D11DeviceContext *deviceContext, Dire
     deviceContext->VSSetShader(m_vertexShader, NULL, 0); // TODO change this to an "effect?" or are effects going out of style?
     deviceContext->PSSetShader(m_pixelShader, NULL, 0);
 
-
     result = deviceContext->Map(m_materialBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
     if (FAILED(result))
     {
@@ -485,10 +484,10 @@ bool VanillaShaderClass::SetPSMaterial( ID3D11DeviceContext *deviceContext, Dire
 
     dataPtr->ambientColor = ambientColor;
     dataPtr->diffuseColor = diffuseColor;
-    dataPtr->specularPower = specularPower;
     dataPtr->specularColor = specularColor;
+    dataPtr->specularPower = specularPower;
     dataPtr->useNormalMap = useNormalMap;
-	dataPtr->useSpecularMap = useSpecularMap;
+    dataPtr->useSpecularMap = useSpecularMap;
     dataPtr->padding = 0;
 
     deviceContext->Unmap(m_materialBuffer, 0);

@@ -226,17 +226,17 @@ int _tmain(int argc, _TCHAR* argv[])
         // models will hold all the models we load:
         ModelManager models(d3d.GetDevice(), d3d.GetDeviceContext());
 
-        CompoundMesh *mesh = models["Chekov.obj"];
+        //CompoundMesh *mesh = models["Chekov.obj"];
 
-        CompoundMesh *duck = models["duck.obj"];
+        //CompoundMesh *duck = models["duck.obj"];
 
-        CompoundMesh *floor = models["floor.obj"];
+        //CompoundMesh *floor = models["floor.obj"];
 
-        CompoundMesh *torus = models["torus.obj"];
+        //CompoundMesh *torus = models["torus.obj"];
 
-        CompoundMesh *building = models["LPBuildX13r_3ds.3ds"];
+        //CompoundMesh *building = models["LPBuildX13r_3ds.3ds"];
 
-        if (!mesh || !duck || !floor || !torus || !building) return -1;
+        //if (!mesh || !duck || !floor || !torus || !building) return -1;
 
         // WARNING, these pointers are invalid since the vector holding them has probably been reallocated
 
@@ -257,7 +257,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
         XMFLOAT3 lightDirection;
         
-        XMStoreFloat3(&lightDirection, XMVector3Normalize(XMVectorSet(0.1f,  -0.2, 1.0f, 0.0f))); // directional light
+        XMStoreFloat3(&lightDirection, XMVector3Normalize(XMVectorSet(0.1f,  -0.2f, 1.0f, 0.0f))); // directional light
 
 	MSG msg;
 	ZeroMemory(&msg, sizeof(MSG)); // clear message structure
@@ -353,7 +353,7 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, Van
 
     XMFLOAT4 lightPos[NUM_SPOTLIGHTS]; // positions
     ZeroMemory(lightPos, sizeof(lightPos));
-    XMStoreFloat4(lightPos, XMVector4Transform(FPCamera.getEyePosition(), XMMatrixTranslation(0.1f, -0.3f, 0.1))); // hold flashlight lower... tilt it? or no?
+    XMStoreFloat4(lightPos, XMVector4Transform(FPCamera.getEyePosition(), XMMatrixTranslation(0.1f, -0.3f, 0.1f))); // hold flashlight lower... tilt it? or no?
     lightPos->y += 0.2f;
     lightPos[1] = XMFLOAT4(4.0f, 4.0f, 3.0f, 1.0f);
 
@@ -403,11 +403,13 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, Van
     XMFLOAT4 sunlight( 255.0f / 255.0f, 255.0f / 255.0f, 251.0f / 255.0f, 1.0f ); // sun yellow orange
     XMFLOAT4 blue(0, 0, 1.0f, 1.0f );
 
+#if 0
     sunlight.x *=2;
     sunlight.y *=2;
     sunlight.z *=2;
+#endif
 
-    shaders0.SetPSLights(d3d.GetDeviceContext(), lightDirection, (float)timer.sinceInit(), FPCamera.getEyePosition(), lightPos, lightDir, lightParams, 2, sunlight, sunlight);
+    shaders0.SetPSLights(d3d.GetDeviceContext(), lightDirection, (float)timer.sinceInit(), FPCamera.getEyePosition(), lightPos, lightDir, lightParams, 2, blue, sunlight);
 
     XMMATRIX world = XMMatrixTranslation(0.0f, 0.0f, 7.0f);
 
@@ -527,8 +529,15 @@ bool doRenderCalls( ModelManager & models, D3DClass &d3d, VanillaShaderClass & s
         return false;
     }
 
+    if (!models["spooky_tree.obj"]->render(d3d.GetDeviceContext(), &shader, XMMatrixScaling(1, 1, 1) * XMMatrixTranslation(-7.0f, 0.0f, 6.0f),  view, projection, lightProjections, numLights))
+    {
+        Errors::Cry(L"Render error in scene. :|");
+        return false;
+    }
+
+
     //if (!spider.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixScaling(0.05f, 0.05f, 0.05f) * worldFinal * XMMatrixTranslation(-1.0f, 2.0f, 6.0f), view, projection))
-    if (!models["duck.obj"]->render(d3d.GetDeviceContext(), &shader, worldFinal * XMMatrixTranslation(-1.0f, -0.2f, 3.0f), view, projection, lightProjections, numLights))
+    if (!models["duck.obj"]->render(d3d.GetDeviceContext(), &shader, XMMatrixScaling(5,5,5) * worldFinal * XMMatrixTranslation(-1.0f, -0.2f, 3.0f), view, projection, lightProjections, numLights))
     {
         Errors::Cry(L"Render error in scene. :|");
         return false;

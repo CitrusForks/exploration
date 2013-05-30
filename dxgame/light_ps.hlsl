@@ -149,6 +149,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	if (useSpecularMap)
 	{
 	    specularMultiplier = specularMap.Sample(SampleType, input.tex).r;
+
             if (specularColor.x == 0.0f && specularColor.y == 0.0f && specularColor.z == 0.0f) actualSpecularColor = float4(0.1, 0.1, 0.1, 0.1);
 	} 
 
@@ -195,10 +196,12 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 
             int totalShadow = 0;
             uint mapNum = NUM_SPOTLIGHTS+1;
+
+            // get shadowmap coordinates in local high def shadowmap:
             float2 uv = float2(0.5 * input.shadowUV[mapNum].x / input.shadowUV[mapNum].w +
                 0.5, -0.5 * input.shadowUV[mapNum].y + 0.5);
-            float rand = random(uv);
-            if (uv.x > 0.05 && uv.x < 0.95 && uv.y > 0.05 && uv.y < 0.95)
+
+            if (uv.x > 0.01 && uv.x < 0.99 && uv.y > 0.01 && uv.y < 0.99) // are the coordinates in the map?
             {
                 ds = 1.0/2048; // high LOD map dimension
                 //color.r = 1.0;
