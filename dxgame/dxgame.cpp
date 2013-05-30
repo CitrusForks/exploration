@@ -4,7 +4,7 @@
 #include "stdafx.h"
 
 // define this to debug main shaders with VS2012:
-#define DISABLE_OFFSCREEN_BUFFER 1
+//#define DISABLE_OFFSCREEN_BUFFER 1
 // 
 
 
@@ -353,13 +353,13 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, Van
 
     XMFLOAT4 lightPos[NUM_SPOTLIGHTS]; // positions
     ZeroMemory(lightPos, sizeof(lightPos));
-    XMStoreFloat4(lightPos, XMVector4Transform(FPCamera.getEyePosition(), XMMatrixTranslation(0.1f, -0.3f, 0.1f))); // hold flashlight lower... tilt it? or no?
+    XMStoreFloat4(lightPos, XMVector4Transform(FPCamera.getEyePosition(), XMMatrixTranslation(0.15f, -0.8f, 0.1f))); // hold flashlight lower... 
     lightPos->y += 0.2f;
     lightPos[1] = XMFLOAT4(4.0f, 4.0f, 3.0f, 1.0f);
 
     XMFLOAT3 lightDir[NUM_SPOTLIGHTS]; // directions
     ZeroMemory(lightDir, sizeof(lightDir));
-    XMStoreFloat3(lightDir, XMVector3TransformNormal(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f), -2.0f/180 * (float)M_PI) *  XMMatrixTranspose(FPCamera.getViewMatrix()))); 
+    XMStoreFloat3(lightDir, XMVector3TransformNormal(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f),  XMMatrixRotationAxis(XMVectorSet(1,0,0,0), (float)-M_PI/8)  *  XMMatrixTranspose(FPCamera.getViewMatrix()))); 
     // re: the above transpose; view matrix is the inverse of what we want to transform a vector extending from the eye and the 3x3 excerpt of the view matrix for a normal transform is orthogonal so the inverse is the transpose
     XMStoreFloat3(&(lightDir[1]), axis45deg);
 
