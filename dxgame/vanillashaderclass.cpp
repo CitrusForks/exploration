@@ -507,7 +507,7 @@ bool VanillaShaderClass::SetPSMaterial( ID3D11DeviceContext *deviceContext, Dire
 //      x = Cos(beamAngle), y = constant attenuation, z = linear attenuation, w = quadrating attenuation
 // numSpotlights is the number of elements in the arrays above; valid range is [0..NUM_SPOTLIGHTS) 
 //      NOTE Perhaps the arrays should be vector instead?
-bool VanillaShaderClass::SetPSLights( ID3D11DeviceContext *deviceContext, const DirectX::XMFLOAT3 &lightDirection, float time, DirectX::FXMVECTOR cameraPos, DirectX::XMFLOAT4 *spotlightPos, DirectX::XMFLOAT3 *spotlightDir, DirectX::XMFLOAT4 *spotlightParams, int numSpotlights, DirectX::XMFLOAT4 &ambientLight, DirectX::XMFLOAT4 &diffuseLight )
+bool VanillaShaderClass::SetPSLights( ID3D11DeviceContext *deviceContext, const DirectX::FXMVECTOR lightDirection, float time, const DirectX::FXMVECTOR cameraPos, std::vector<Light> &lights, const DirectX::XMFLOAT4 &ambientLight, const DirectX::XMFLOAT4 &diffuseLight )
 {
     HRESULT result;
     D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -525,7 +525,7 @@ bool VanillaShaderClass::SetPSLights( ID3D11DeviceContext *deviceContext, const 
 
     dataPtr = (LightBufferType*)mappedResource.pData;
 
-    dataPtr->lightDirection = lightDirection;
+    XMStoreFloat3(&dataPtr->lightDirection, lightDirection);
     dataPtr->time = time;
     XMStoreFloat4(&dataPtr->cameraPos, cameraPos);
     

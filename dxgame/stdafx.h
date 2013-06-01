@@ -46,13 +46,14 @@
 
 #include <directxmath.h>
 
+#include "cpp_hlsl_defs.h"
 
 #include "Chronometer.h"
-//#include "ComplexMesh.h"
 #include "CompoundMesh.h"
 #include "Errors.h"
 #include "FirstPerson.h"
 #include "IntermediateRenderTarget.h"
+#include "LightsAndShadows.h"
 #include "LoadedTexture.h"
 #include "ModelManager.h"
 #include "Options.h"

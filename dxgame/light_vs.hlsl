@@ -1,7 +1,7 @@
 // Filename: light.vs
 // Originally from rastertek.com tutorials, heavily modified
 
-#define NUM_SPOTLIGHTS 4
+#include "cpp_hlsl_defs.h"
 
 //
 // Globals

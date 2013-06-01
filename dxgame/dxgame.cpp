@@ -103,7 +103,7 @@ void reportError(const char *prefix)
 	cout << prefix << errorStr << endl;
 }
 
-bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, VanillaShaderClass &shaders0, XMFLOAT3 lightDirection, Chronometer &timer, IntermediateRenderTarget &offScreen, ModelManager &models, CXMMATRIX projection, SimpleMesh &square, VanillaShaderClass &postProcess, CXMMATRIX ortho, SimpleText &text, VanillaShaderClass &shadowShaders, ShadowBuffer *shadows, int shadowsNum);
+bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shaders0, Chronometer &timer, IntermediateRenderTarget &offScreen, ModelManager &models, CXMMATRIX projection, SimpleMesh &square, VanillaShaderClass &postProcess, CXMMATRIX ortho, SimpleText &text, VanillaShaderClass &shadowShaders, ShadowBuffer *shadows, int shadowsNum);
 
 
 int _tmain(int argc, _TCHAR* argv[])
@@ -197,18 +197,7 @@ int _tmain(int argc, _TCHAR* argv[])
         VanillaShaderClass shadowShaders;
         shadowShaders.InitializeShader(d3d.GetDevice(), window, L"light_vs.cso", L"shadow_ps.cso");
 
-        // shadow maps! 
-        vector<ShadowBuffer> shadowBuffers;
-        shadowBuffers.resize(NUM_SPOTLIGHTS + 2); // +1 for directional light
-        for (unsigned i = 0; i < shadowBuffers.size()-1; ++i)
-        {
-            shadowBuffers[i].init(d3d.GetDevice(), d3d.GetDeviceContext());
-        }
-
-        // shadow maps for directional lights:
-        shadowBuffers[shadowBuffers.size()-2].init(d3d.GetDevice(), d3d.GetDeviceContext(), 8); // 4Kx4K texture... kinda hefty, this is for the sweeping 100mx100m view
-        shadowBuffers[shadowBuffers.size()-1].init(d3d.GetDevice(), d3d.GetDeviceContext(), 4); // this is for the player's immediate surroundings
-
+ 
 
         // this is the effects shader for rendering from off-screen buffer to swap chain
         VanillaShaderClass postProcess;
@@ -226,19 +215,24 @@ int _tmain(int argc, _TCHAR* argv[])
         // models will hold all the models we load:
         ModelManager models(d3d.GetDevice(), d3d.GetDeviceContext());
 
-        //CompoundMesh *mesh = models["Chekov.obj"];
 
-        //CompoundMesh *duck = models["duck.obj"];
 
-        //CompoundMesh *floor = models["floor.obj"];
+        // TODO: load all this in a separate "scene" abstraction class
+        CompoundMesh *mesh = models["Chekov.obj"];
 
-        //CompoundMesh *torus = models["torus.obj"];
+        models["duck.obj"]; // retrieving an unloaded model triggers a load from disk
 
-        //CompoundMesh *building = models["LPBuildX13r_3ds.3ds"];
+        models["floor.obj"];
+
+        models["torus.obj"];
+
+        models["LPBuildX13r_3ds.3ds"];
+
+        models["spooky_tree.obj"];
 
         //if (!mesh || !duck || !floor || !torus || !building) return -1;
 
-        // WARNING, these pointers are invalid since the vector holding them has probably been reallocated
+        // WARNING, these pointers are invalid since the vector holding them has probably been reallocated. Use refnums instead if you must.
 
         SimpleMesh square;
         if (!square.load(L"square.obj", d3d.GetDevice()))
@@ -248,22 +242,11 @@ int _tmain(int argc, _TCHAR* argv[])
 
         XMMATRIX projection = XMMatrixPerspectiveFovLH((float)((60.0/360.0) * M_PI * 2), (float)width / (float)height, 0.1f, 1000.0f);
 
-        // cout << XMMatrixTranspose(projection);
-
-        //cout << XMVector3Transform(XMVectorSet(0,0,2,1), projection);
-
-
         XMMATRIX ortho = XMMatrixOrthographicOffCenterLH(0.0f, 1.0f, 0.0f, 1.0f, 0.1f, 1.1f);
-
-        XMFLOAT3 lightDirection;
-        
-        XMStoreFloat3(&lightDirection, XMVector3Normalize(XMVectorSet(0.1f,  -0.2f, 1.0f, 0.0f))); // directional light
 
 	MSG msg;
 	ZeroMemory(&msg, sizeof(MSG)); // clear message structure
 	
-        XMVECTOR axis45deg = XMVectorSet(-0.7071067811865475f, -0.7071067811865475f, 0.0f, 0.0f); // normalized 45 degree angle vector
-
         float angle = 0.0f;
 	bool done = false;
 	while (!done)
@@ -289,7 +272,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			done = true;
 		}
 
-                if (!RenderScene(d3d, FPCamera, axis45deg, shaders0, lightDirection, timer, offScreen, models, projection, square, postProcess, ortho, text, shadowShaders, shadowBuffers.data(), shadowBuffers.size())) return -1;
+                if (!RenderScene(d3d, FPCamera, shaders0, timer, offScreen, models, projection, square, postProcess, ortho, text, shadowShaders, shadowBuffers.data(), shadowBuffers.size())) return -1;
 
 		//Sleep(10); // don't cook the CPU yet
                 angle += (float)(M_PI) * (float)timer.sincePrev();
@@ -334,7 +317,8 @@ int _tmain(int argc, _TCHAR* argv[])
 
 bool doRenderCalls( ModelManager & models, D3DClass &d3d, VanillaShaderClass & shader, CXMMATRIX view, CXMMATRIX projection, CXMMATRIX worldFinal, XMFLOAT4X4 *lightProjections, unsigned numLights );
 
-bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, VanillaShaderClass &shaders0, XMFLOAT3 lightDirection, Chronometer &timer, IntermediateRenderTarget &offScreen, ModelManager &models, CXMMATRIX projection, SimpleMesh &square, VanillaShaderClass &postProcess, CXMMATRIX ortho, SimpleText &text, VanillaShaderClass &shadowShaders, ShadowBuffer *shadows, int shadowsNum)
+
+bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shaders0, Chronometer &timer, IntermediateRenderTarget &offScreen, ModelManager &models, CXMMATRIX projection, SimpleMesh &square, VanillaShaderClass &postProcess, CXMMATRIX ortho, SimpleText &text, VanillaShaderClass &shadowShaders, ShadowBuffer *shadows, int shadowsNum)
 {
     //
     // Rendering
@@ -345,63 +329,7 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, Van
 #else
     d3d.BeginScene(true);
 #endif
-
-    //
-    // Spotlights! 
-    // TODO: move them
-    // 
-
-    XMFLOAT4 lightPos[NUM_SPOTLIGHTS]; // positions
-    ZeroMemory(lightPos, sizeof(lightPos));
-    XMStoreFloat4(lightPos, XMVector4Transform(FPCamera.getEyePosition(), XMMatrixTranslation(0.15f, -0.8f, 0.1f))); // hold flashlight lower... 
-    lightPos->y += 0.2f;
-    lightPos[1] = XMFLOAT4(4.0f, 4.0f, 3.0f, 1.0f);
-
-    XMFLOAT3 lightDir[NUM_SPOTLIGHTS]; // directions
-    ZeroMemory(lightDir, sizeof(lightDir));
-    XMStoreFloat3(lightDir, XMVector3TransformNormal(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f),  XMMatrixRotationAxis(XMVectorSet(1,0,0,0), (float)-M_PI/8)  *  XMMatrixTranspose(FPCamera.getViewMatrix()))); 
-    // re: the above transpose; view matrix is the inverse of what we want to transform a vector extending from the eye and the 3x3 excerpt of the view matrix for a normal transform is orthogonal so the inverse is the transpose
-    XMStoreFloat3(&(lightDir[1]), axis45deg);
-
-    float lightHalfAngles[NUM_SPOTLIGHTS] = { (float)M_PI * 15.0f/180.f, (float)M_PI * 25.0f/180.f, 0.0f, 0.0f }; // angles from axis to generatrix
-
-    XMFLOAT4 lightParams[NUM_SPOTLIGHTS]; // { cos(halfAngle), constant attenuation, linear att., quadratic att. }
-    ZeroMemory(lightParams, sizeof(lightParams));
-    lightParams[0] = XMFLOAT4(cosf(lightHalfAngles[0]), 0.75f, 0, 0.05f); // player flashlight
-    lightParams[1] = XMFLOAT4(cosf(lightHalfAngles[1]), 0.75f, 0.1f, 0);  // fixed floating light
-
-    int numLights = 2;
-
-    XMFLOAT4X4 lightProj[NUM_SPOTLIGHTS+2]; // View*Projection matrices ("VP") for all the lights, >>>including the directional light in the final position x2 LOD<<<
-
-    for (int i = 0; i < numLights; ++i)
-    {
-        XMMATRIX viewProj = XMMatrixLookToLH(XMLoadFloat4(lightPos+i), XMLoadFloat3(lightDir+i), XMVectorSet(0, 1, 0, 0)) * 
-            XMMatrixPerspectiveFovLH(lightHalfAngles[i]*2, 1.0f /* shadowmap is a square at any res. */, 0.1f, 1000.0f);
-        XMStoreFloat4x4(lightProj+i, viewProj);
-    }
-
-    XMVECTOR skyCamPos = FPCamera.getEyePosition();
-    skyCamPos = XMVectorFloor(skyCamPos + XMVectorSet(0.5f, 0.5f, 0.5f, 0.0f) - XMLoadFloat3(&lightDirection) * 90);
-
-    XMMATRIX directionalShadowOrtho = XMMatrixLookToLH(skyCamPos, 
-        XMLoadFloat3(&lightDirection), XMVectorSet(0, 0, 1, 0)) * XMMatrixOrthographicLH(100, 100, 0.1f, 1000); // view * orthographic projection, for directional light
-    // N.B., "up" should be orthogonal to lightDirection, or at least not parallel because a crossproduct is performed
-
-    XMStoreFloat4x4(lightProj+NUM_SPOTLIGHTS, directionalShadowOrtho);
-
-    // >>> high LOD directional shadow <<<
-    skyCamPos = FPCamera.getEyePosition();
-    skyCamPos = /* XMVectorFloor */(skyCamPos /* + XMVectorSet(0.5f, 0.5f, 0.5f, 0.0f) */ - XMLoadFloat3(&lightDirection) * 90 + FPCamera.getForwardVector()*3.5);
-    directionalShadowOrtho = XMMatrixLookToLH(skyCamPos, 
-        XMLoadFloat3(&lightDirection), XMVectorSet(0, 0, 1, 0)) * XMMatrixOrthographicLH(7, 7, 0.1f, 1000); // view * orthographic projection, for directional light
-
-    XMStoreFloat4x4(lightProj+NUM_SPOTLIGHTS+1, directionalShadowOrtho);
-
-
-
-    XMFLOAT4 sunlight( 255.0f / 255.0f, 255.0f / 255.0f, 251.0f / 255.0f, 1.0f ); // sun yellow orange
-    XMFLOAT4 blue(0, 0, 1.0f, 1.0f );
+    initLights(FPCamera);
 
 #if 0
     sunlight.x *=2;
@@ -409,7 +337,6 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, FXMVECTOR axis45deg, Van
     sunlight.z *=2;
 #endif
 
-    shaders0.SetPSLights(d3d.GetDeviceContext(), lightDirection, (float)timer.sinceInit(), FPCamera.getEyePosition(), lightPos, lightDir, lightParams, 2, blue, sunlight);
 
     XMMATRIX world = XMMatrixTranslation(0.0f, 0.0f, 7.0f);
 

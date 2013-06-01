@@ -147,11 +147,13 @@
     <ClInclude Include="Chronometer.h" />
     <ClInclude Include="ComplexMesh.h" />
     <ClInclude Include="CompoundMesh.h" />
+    <ClInclude Include="cpp_hlsl_defs.h" />
     <ClInclude Include="d3dclass.h" />
     <ClInclude Include="Errors.h" />
     <ClInclude Include="FirstPerson.h" />
     <ClInclude Include="input.h" />
     <ClInclude Include="IntermediateRenderTarget.h" />
+    <ClInclude Include="LightsAndShadows.h" />
     <ClInclude Include="ModelManager.h" />
     <ClInclude Include="objloader.hpp" />
     <ClInclude Include="Options.h" />
@@ -178,6 +180,7 @@
     <ClCompile Include="FirstPerson.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="IntermediateRenderTarget.cpp" />
+    <ClCompile Include="LightsAndShadows.cpp" />
     <ClCompile Include="ModelManager.cpp" />
     <ClCompile Include="objloader.cpp" />
     <ClCompile Include="Options.cpp" />

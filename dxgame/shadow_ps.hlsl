@@ -16,7 +16,7 @@ cbuffer MaterialBuffer : register(b0)
 	float2 padding;
 }
 
-#define NUM_SPOTLIGHTS 4
+#include "cpp_hlsl_defs.h"
 
 cbuffer LightBuffer : register(b1)
 {

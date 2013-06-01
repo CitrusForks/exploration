@@ -13,9 +13,9 @@
 #include <DirectXMath.h>
 using namespace std;
 
-#define NUM_SPOTLIGHTS 4
+#include "cpp_hlsl_defs.h"
 
-#pragma pack(4)
+#include "LightsAndShadows.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Class name: TextureShaderClass
@@ -75,7 +75,7 @@ public:
 	bool Render(ID3D11DeviceContext *deviceContext, int indexCount, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, ID3D11ShaderResourceView** normalMap, ID3D11ShaderResourceView** specularMap,DirectX::XMFLOAT4X4 *lightProjections, int numShadows, ID3D11ShaderResourceView** texture, unsigned resourceViewCount = 1, bool setSampler = true);
     	bool InitializeShader(ID3D11Device* device, HWND hwnd, wchar_t *vsFilename, wchar_t *psFilename, bool multiStreaming = false);
     	bool SetPSMaterial( ID3D11DeviceContext *deviceContext, DirectX::XMFLOAT4 &ambientColor, DirectX::XMFLOAT4 &diffuseColor, float specularPower, DirectX::XMFLOAT4 &specularColor, bool useNormalMap, bool useSpecularMap);
-        bool SetPSLights( ID3D11DeviceContext *deviceContext, const DirectX::XMFLOAT3 &lightDirection, float time, DirectX::FXMVECTOR cameraPos, DirectX::XMFLOAT4 *spotlightPos, DirectX::XMFLOAT3 *spotlightDir, DirectX::XMFLOAT4 *spotlightParams, int numSpotlights, DirectX::XMFLOAT4 &ambientLight, DirectX::XMFLOAT4 &diffuseLight );
+        bool SetPSLights( ID3D11DeviceContext *deviceContext, const DirectX::FXMVECTOR lightDirection, float time, const DirectX::FXMVECTOR cameraPos, std::vector<Light> &lights, const DirectX::XMFLOAT4 &ambientLight, const DirectX::XMFLOAT4 &diffuseLight );
         bool setVSCameraBuffer( ID3D11DeviceContext* deviceContext, DirectX::CXMVECTOR cameraPos, float time, unsigned effect );
 
 private:

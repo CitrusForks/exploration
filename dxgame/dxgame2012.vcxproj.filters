@@ -93,6 +93,12 @@
     <ClInclude Include="ShadowBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="cpp_hlsl_defs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LightsAndShadows.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -156,6 +162,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ShadowBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LightsAndShadows.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

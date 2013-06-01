@@ -4,7 +4,7 @@ SamplerState SampleType : register(s1); // register one contains the non-filteri
 //
 // Globals -- shared with main shader for C++ code reuse but we probably only use time here
 //
-#define NUM_SPOTLIGHTS 4
+#include "cpp_hlsl_defs.h"
 
 cbuffer LightBuffer : register(b1)
 {

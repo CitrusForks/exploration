@@ -1,8 +1,6 @@
 // Filename: light.ps
 
-// our stupid spotlight number constant... maybe it should be in its own include file
-#define NUM_SPOTLIGHTS 4
-
+#include "cpp_hlsl_defs.h"
 
 // a random number function of some sort that I found on the net, ported from apparently glsl:
 
