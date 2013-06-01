@@ -34,7 +34,10 @@
 #include "FirstPerson.h"
 #include "SimpleText.h"
 #include "ShadowBuffer.h"
+#include "LightsAndShadows.h"
+#include "Light.h"
 
+// is this a terrible way to specify libraries for linking? I kind of like it now.
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
@@ -47,6 +50,10 @@
 
 using namespace std;
 using namespace DirectX;
+
+namespace DirectX
+{
+// a couple of operators to print out DirectXMath matrix and vector variables
 
 ostream& operator << ( ostream& os, CXMMATRIX m) 
 { 
@@ -68,6 +75,7 @@ ostream& operator << ( ostream& os, FXMVECTOR v)
     return os << vv.x << "\t" << vv.y << "\t" << vv.z << "\t" << vv.w << endl;
 }
 
+}
 
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
@@ -103,7 +111,7 @@ void reportError(const char *prefix)
 	cout << prefix << errorStr << endl;
 }
 
-bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shaders0, Chronometer &timer, IntermediateRenderTarget &offScreen, ModelManager &models, CXMMATRIX projection, SimpleMesh &square, VanillaShaderClass &postProcess, CXMMATRIX ortho, SimpleText &text, VanillaShaderClass &shadowShaders, ShadowBuffer *shadows, int shadowsNum);
+bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shaders0, Chronometer &timer, IntermediateRenderTarget &offScreen, ModelManager &models, CXMMATRIX projection, SimpleMesh &square, VanillaShaderClass &postProcess, CXMMATRIX ortho, SimpleText &text, LightsAndShadows &lighting);
 
 
 int _tmain(int argc, _TCHAR* argv[])
@@ -193,12 +201,6 @@ int _tmain(int argc, _TCHAR* argv[])
             return 1;
         }
 
-        // shadowShaders contains a cut-down pixel shader to facilitate generating a shadow map from a depth buffer
-        VanillaShaderClass shadowShaders;
-        shadowShaders.InitializeShader(d3d.GetDevice(), window, L"light_vs.cso", L"shadow_ps.cso");
-
- 
-
         // this is the effects shader for rendering from off-screen buffer to swap chain
         VanillaShaderClass postProcess;
         if (!postProcess.InitializeShader(d3d.GetDevice(), window, L"postprocess_vs.cso", L"postprocess_ps.cso"))
@@ -215,9 +217,7 @@ int _tmain(int argc, _TCHAR* argv[])
         // models will hold all the models we load:
         ModelManager models(d3d.GetDevice(), d3d.GetDeviceContext());
 
-
-
-        // TODO: load all this in a separate "scene" abstraction class
+                // TODO: load all this in a separate "scene" abstraction class
         CompoundMesh *mesh = models["Chekov.obj"];
 
         models["duck.obj"]; // retrieving an unloaded model triggers a load from disk
@@ -232,7 +232,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
         //if (!mesh || !duck || !floor || !torus || !building) return -1;
 
-        // WARNING, these pointers are invalid since the vector holding them has probably been reallocated. Use refnums instead if you must.
+        // WARNING, pointers returned by models["whatever"] may be invalid later if a model is loaded and the internal vector is reallocated. Use refnums to store an index for longterm fast lookup!
+
+        LightsAndShadows lighting(d3d, window);
 
         SimpleMesh square;
         if (!square.load(L"square.obj", d3d.GetDevice()))
@@ -272,7 +274,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			done = true;
 		}
 
-                if (!RenderScene(d3d, FPCamera, shaders0, timer, offScreen, models, projection, square, postProcess, ortho, text, shadowShaders, shadowBuffers.data(), shadowBuffers.size())) return -1;
+                if (!RenderScene(d3d, FPCamera, shaders0, timer, offScreen, models, projection, square, postProcess, ortho, text, lighting)) return -1;
 
 		//Sleep(10); // don't cook the CPU yet
                 angle += (float)(M_PI) * (float)timer.sincePrev();
@@ -295,12 +297,6 @@ int _tmain(int argc, _TCHAR* argv[])
         // perhaps a garbage bag
 	shaders0.Shutdown();
         postProcess.Shutdown();
-        shadowShaders.Shutdown();
-
-        for (int i = 0; i < NUM_SPOTLIGHTS + 2; ++i)
-        {
-            shadowBuffers[i].release();
-        }
 
         offScreen.Shutdown();
 
@@ -315,10 +311,12 @@ int _tmain(int argc, _TCHAR* argv[])
 	return 0;
 }
 
-bool doRenderCalls( ModelManager & models, D3DClass &d3d, VanillaShaderClass & shader, CXMMATRIX view, CXMMATRIX projection, CXMMATRIX worldFinal, XMFLOAT4X4 *lightProjections, unsigned numLights );
+bool doRenderCalls( ModelManager & models, D3DClass &d3d, VanillaShaderClass & shader, CXMMATRIX view, CXMMATRIX projection, std::vector<Light> &lights);
+
+bool renderShadowMaps( D3DClass &d3d, ModelManager & models );
 
 
-bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shaders0, Chronometer &timer, IntermediateRenderTarget &offScreen, ModelManager &models, CXMMATRIX projection, SimpleMesh &square, VanillaShaderClass &postProcess, CXMMATRIX ortho, SimpleText &text, VanillaShaderClass &shadowShaders, ShadowBuffer *shadows, int shadowsNum)
+bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shaders0, Chronometer &timer, IntermediateRenderTarget &offScreen, ModelManager &models, CXMMATRIX projection, SimpleMesh &square, VanillaShaderClass &postProcess, CXMMATRIX ortho, SimpleText &text, LightsAndShadows &lighting)
 {
     //
     // Rendering
@@ -329,7 +327,8 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shad
 #else
     d3d.BeginScene(true);
 #endif
-    initLights(FPCamera);
+    
+    lighting.setFlashlight(FPCamera);
 
 #if 0
     sunlight.x *=2;
@@ -340,51 +339,7 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shad
 
     XMMATRIX world = XMMatrixTranslation(0.0f, 0.0f, 7.0f);
 
-    XMMATRIX worldFinal = /* XMMatrixRotationAxis(axis, angle) * */ world;
-
-    //
-    // make shadow maps
-    //
-
-    ID3D11ShaderResourceView *nil[NUM_SPOTLIGHTS+2];
-    ZeroMemory(nil, sizeof(nil));
-    d3d.GetDeviceContext()->PSSetShaderResources(3, NUM_SPOTLIGHTS+2, nil); // unbind shadow buffers from input
-
-    // Set up the viewport for rendering at shadow map resolution
-    D3D11_VIEWPORT viewport = { 0.0f, 0.0f, (float)ShadowBuffer::width, (float)ShadowBuffer::height, 0.0f, 1.0f };
-    d3d.GetDeviceContext()->RSSetViewports(1, &viewport);
-    d3d.setDepthBias(true);
-
-    // re-render scene once for every shadow
-    int i;
-    for (i = 0; i < shadowsNum && i < numLights; ++i)
-    {
-        XMMATRIX view = XMLoadFloat4x4(&(lightProj[i]));
-
-        shadows[i].setAsRenderTarget(d3d.GetDeviceContext());
-        shadows[i].clear(d3d.GetDeviceContext());
-
-        if (!doRenderCalls(models, d3d, shadowShaders, view, XMMatrixIdentity(), worldFinal, lightProj, numLights)) return false;
-    }
-
-    //
-    // The directional light shadowmaps may be lighting a very large outdoor area, so they may require higher resolutions.
-    //
-    D3D11_VIEWPORT viewport2 = { 0.0f, 0.0f, (float)shadows[NUM_SPOTLIGHTS].m_width, (float)shadows[NUM_SPOTLIGHTS].m_height, 0.0f, 1.0f };
-    d3d.GetDeviceContext()->RSSetViewports(1, &viewport2);
-    XMMATRIX view = XMLoadFloat4x4(&(lightProj[NUM_SPOTLIGHTS]));
-
-    shadows[NUM_SPOTLIGHTS].setAsRenderTarget(d3d.GetDeviceContext());
-    shadows[NUM_SPOTLIGHTS].clear(d3d.GetDeviceContext());
-    if (!doRenderCalls(models, d3d, shadowShaders, view, XMMatrixIdentity(), worldFinal, lightProj, numLights)) return false;
-
-    D3D11_VIEWPORT viewport3 = { 0.0f, 0.0f, (float)shadows[NUM_SPOTLIGHTS+1].m_width, (float)shadows[NUM_SPOTLIGHTS+1].m_height, 0.0f, 1.0f };
-    d3d.GetDeviceContext()->RSSetViewports(1, &viewport3);
-    view = XMLoadFloat4x4(&(lightProj[NUM_SPOTLIGHTS+1]));
-
-    shadows[NUM_SPOTLIGHTS+1].setAsRenderTarget(d3d.GetDeviceContext());
-    shadows[NUM_SPOTLIGHTS+1].clear(d3d.GetDeviceContext());
-    if (!doRenderCalls(models, d3d, shadowShaders, view, XMMatrixIdentity(), worldFinal, lightProj, numLights)) return false;
+    return lighting.renderShadowMaps(d3d, models);
 
 
     //
@@ -393,7 +348,7 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shad
     D3D11_VIEWPORT viewportMain = { 0.0f, 0.0f,  (float)Options::intOptions["Width"], (float)Options::intOptions["Height"], 0.0f, 1.0f};
     d3d.GetDeviceContext()->RSSetViewports(1, &viewportMain);
 
-    view = FPCamera.getViewMatrix();
+    XMMATRIX view = FPCamera.getViewMatrix();
 
     shaders0.setVSCameraBuffer(d3d.GetDeviceContext(), FPCamera.getEyePosition(), (float)timer.sinceInit(), 0);
 
@@ -406,11 +361,11 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shad
 	d3d.depthOn();
 #endif
 
-    ShadowBuffer::pushToGPU(d3d.GetDeviceContext(), shadows, shadowsNum); // the DepthStencilView must be re-bound before this call! e.g., the offScreen.setAsRenderTarget() call does it
+    lighting.setShadowsAsViewResources(d3d);
     d3d.setDepthBias(false);
 
 
-    if (!doRenderCalls(models, d3d, shaders0, view, projection, worldFinal, lightProj, numLights)) return false;
+    if (!doRenderCalls(models, d3d, shaders0, view, projection, lighting.getLights())) return false;
     //if (!doRenderCalls(models, d3d, shaders0, XMMatrixLookToLH(FPCamera.getEyePosition() + XMVectorSet(0, 100.0f, 0, 0), 
     //    XMLoadFloat3(&lightDirection), XMVectorSet(0, 1, 0, 0)), XMMatrixOrthographicLH(50, 50, 0.1, 1000), worldFinal, lightProj, numLights)) return false;
     
@@ -428,7 +383,7 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shad
     d3d.setAsRenderTarget(false); // set a swap chain buffer as render target again
 
     square.setBuffers(d3d.GetDeviceContext()); // use the two triangles to render off-screen texture to swap chain, through a shader
-    if (!postProcess.Render(d3d.GetDeviceContext(), square.getIndexCount(), XMMatrixIdentity(), XMMatrixIdentity(), ortho, nullptr, nullptr, lightProj, numLights, offScreen.getResourceViewAndResolveMSAA(d3d.GetDeviceContext()), 1, false))
+    if (!postProcess.Render(d3d.GetDeviceContext(), square.getIndexCount(), XMMatrixIdentity(), XMMatrixIdentity(), ortho, nullptr, nullptr, nullptr, offScreen.getResourceViewAndResolveMSAA(d3d.GetDeviceContext()), 1, false))
     //if (!postProcess.Render(d3d.GetDeviceContext(), square.getIndexCount(), XMMatrixIdentity(), XMMatrixIdentity(), ortho, nullptr, nullptr, lightProj, numLights, shadows[NUM_SPOTLIGHTS].getResourceView(d3d.GetDeviceContext()), 1, false)) // comment out previous line and uncomment this one to visually inspect a shadow map
     {
         Errors::Cry(L"Error rendering off-screen texture to display. :/");
@@ -448,15 +403,15 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shad
 
 // some kind of function that dispatches the render calls to models in the model manager
 // it needs to be called once per shadow map and then once more for the final scene
-bool doRenderCalls( ModelManager & models, D3DClass &d3d, VanillaShaderClass & shader, CXMMATRIX view, CXMMATRIX projection, CXMMATRIX worldFinal, XMFLOAT4X4 *lightProjections, unsigned numLights )
+bool doRenderCalls( ModelManager & models, D3DClass &d3d, VanillaShaderClass & shader, CXMMATRIX view, CXMMATRIX projection, std::vector<Light> &lights)
 {
-    if (!models["Chekov.obj"]->render(d3d.GetDeviceContext(), &shader, XMMatrixScaling(0.53f, 0.53f, 0.53f) * XMMatrixTranslation(0.0f, 0.0f, 7.0f),  view, projection, lightProjections, numLights))
+    if (!models["Chekov.obj"]->render(d3d.GetDeviceContext(), &shader, XMMatrixScaling(0.53f, 0.53f, 0.53f) * XMMatrixTranslation(0.0f, 0.0f, 7.0f),  view, projection, lights))
     {
         Errors::Cry(L"Render error in scene. :|");
         return false;
     }
 
-    if (!models["spooky_tree.obj"]->render(d3d.GetDeviceContext(), &shader, XMMatrixScaling(1, 1, 1) * XMMatrixTranslation(-7.0f, 0.0f, 6.0f),  view, projection, lightProjections, numLights))
+    if (!models["spooky_tree.obj"]->render(d3d.GetDeviceContext(), &shader, XMMatrixScaling(1, 1, 1) * XMMatrixTranslation(-7.0f, 0.0f, 6.0f),  view, projection, lights))
     {
         Errors::Cry(L"Render error in scene. :|");
         return false;
@@ -464,13 +419,13 @@ bool doRenderCalls( ModelManager & models, D3DClass &d3d, VanillaShaderClass & s
 
 
     //if (!spider.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixScaling(0.05f, 0.05f, 0.05f) * worldFinal * XMMatrixTranslation(-1.0f, 2.0f, 6.0f), view, projection))
-    if (!models["duck.obj"]->render(d3d.GetDeviceContext(), &shader, XMMatrixScaling(5,5,5) * worldFinal * XMMatrixTranslation(-1.0f, -0.2f, 3.0f), view, projection, lightProjections, numLights))
+    if (!models["duck.obj"]->render(d3d.GetDeviceContext(), &shader, XMMatrixScaling(5,5,5) * XMMatrixTranslation(-1.0f, -0.2f, 10.0f), view, projection, lights))
     {
         Errors::Cry(L"Render error in scene. :|");
         return false;
     }
 #if 1
-    if (!models["floor.obj"]->render(d3d.GetDeviceContext(), &shader, XMMatrixIdentity(), view, projection, lightProjections, numLights))
+    if (!models["floor.obj"]->render(d3d.GetDeviceContext(), &shader, XMMatrixIdentity(), view, projection, lights))
     {
         Errors::Cry(L"Render error in scene. :|");
         return false;
@@ -478,14 +433,14 @@ bool doRenderCalls( ModelManager & models, D3DClass &d3d, VanillaShaderClass & s
 #endif
     //shaders0.setVSCameraBuffer(d3d.GetDeviceContext(), FPCamera.getEyePosition(), timer.sinceInit(), 1);
 
-    if (!models["torus.obj"]->render(d3d.GetDeviceContext(), &shader, XMMatrixTranslation(0.0f, 1.0f, 3.0f), view, projection, lightProjections, numLights))
+    if (!models["torus.obj"]->render(d3d.GetDeviceContext(), &shader, XMMatrixTranslation(0.0f, 1.0f, 3.0f), view, projection, lights))
     {
         Errors::Cry(L"Render error in scene. :|");
         return false;
     }
 
     //shaders0.setVSCameraBuffer(d3d.GetDeviceContext(), FPCamera.getEyePosition(), timer.sinceInit(), 0);
-    if (!models["LPBuildX13r_3ds.3ds"]->render(d3d.GetDeviceContext(), &shader, XMMatrixRotationAxis(XMVectorSet(1.0f,0,0,0), (float)M_PI_2) * XMMatrixScaling(0.15f, 0.15f, 0.15f) * XMMatrixTranslation(-10.0f, 4.5001f, 15.0f), view, projection, lightProjections, numLights))
+    if (!models["LPBuildX13r_3ds.3ds"]->render(d3d.GetDeviceContext(), &shader, XMMatrixRotationAxis(XMVectorSet(1.0f,0,0,0), (float)M_PI_2) * XMMatrixScaling(0.15f, 0.15f, 0.15f) * XMMatrixTranslation(-10.0f, 4.5001f, 15.0f), view, projection, lights))
     {
         Errors::Cry(L"Render error in scene. :|");
         return false;

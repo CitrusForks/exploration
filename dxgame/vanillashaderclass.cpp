@@ -53,18 +53,21 @@ void VanillaShaderClass::Shutdown()
 // @viewMatrix      world -> view coordinates
 // @projection      view -> screen 
 // @normalMap       points to a resource view, may be nullptr
+// @specularMap     points to a resource view, may be nullptr
+// @lights          points to a vector of Light structures, to retrieve matrices, may be nullptr (e.g., for rendering the simple square for postprocessing)
 // @texture         points to one or more texture resource views; one variant is to send 
 //                  all vertexes and textures for a model at once and specify textures 
 //                  at every vertex... it's even implemented but ugh? See ComplexMesh.cpp
 // @numViews        the number of textures sent; defaults to 1, probably best to leave it that way
 // @setSampler      leave true for normal rendering; it's set false when rendering off-screen buffer to screen,
 //                  since the intermediate target class sets its own (simpler) sampler
-bool VanillaShaderClass::Render( ID3D11DeviceContext *deviceContext, int indexCount, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, ID3D11ShaderResourceView** normalMap, ID3D11ShaderResourceView** specularMap,DirectX::XMFLOAT4X4 *lightProjections, int numShadows, ID3D11ShaderResourceView** texture, unsigned resourceViewCount /*= 1*/, bool setSampler /*= true*/ )
+bool VanillaShaderClass::Render( ID3D11DeviceContext *deviceContext, int indexCount, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, 
+                                ID3D11ShaderResourceView** normalMap, ID3D11ShaderResourceView** specularMap,std::vector<Light> *lights, ID3D11ShaderResourceView** texture, unsigned resourceViewCount /*= 1*/, bool setSampler /*= true*/ )
 {
 	bool result;
 
 	// Set the shader parameters that it will use for rendering.
-	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, normalMap, specularMap, lightProjections, numShadows, texture, resourceViewCount);
+	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, normalMap, specularMap, lights, texture, resourceViewCount);
 	if(!result)
 	{
 		return false;
@@ -400,7 +403,8 @@ void VanillaShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND
 }
 
 // this method mainly sets matrices and textures for the Render method; private
-bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, ID3D11ShaderResourceView **normalMap, ID3D11ShaderResourceView **specularMap, DirectX::XMFLOAT4X4* lightProjections, unsigned numLights, ID3D11ShaderResourceView **texture, unsigned numViews /*= 1*/ )
+bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, 
+                                             ID3D11ShaderResourceView **normalMap, ID3D11ShaderResourceView **specularMap, std::vector<Light> *lights, ID3D11ShaderResourceView **texture, unsigned numViews /*= 1*/ )
 {
     HRESULT result;
     D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -435,13 +439,17 @@ bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext
 
     ZeroMemory(dataPtr->lightViewProjection, sizeof(dataPtr->lightViewProjection));
 
-    for (unsigned i = 0; i < numLights; ++i)
+    if (lights)
     {
-        XMStoreFloat4x4(&(dataPtr->lightViewProjection[i]), XMMatrixTranspose(XMLoadFloat4x4(lightProjections+i)));
+        int j = 0;
+        for (auto i = lights->begin(); i < lights->end() && i->enabled; ++i, ++j)
+        {
+            XMStoreFloat4x4(&(dataPtr->lightViewProjection[j]), XMMatrixTranspose(XMLoadFloat4x4(&i->projection)));
+        }
+        XMStoreFloat4x4(&(dataPtr->lightViewProjection[NUM_SPOTLIGHTS]), XMMatrixTranspose(XMLoadFloat4x4(&(*lights)[NUM_SPOTLIGHTS].projection)));    // directional light's shadow maps
+        XMStoreFloat4x4(&(dataPtr->lightViewProjection[NUM_SPOTLIGHTS+1]), XMMatrixTranspose(XMLoadFloat4x4(&(*lights)[NUM_SPOTLIGHTS+1].projection)));
+        dataPtr->numLights = j;
     }
-    XMStoreFloat4x4(&(dataPtr->lightViewProjection[NUM_SPOTLIGHTS]), XMMatrixTranspose(XMLoadFloat4x4(lightProjections+NUM_SPOTLIGHTS)));    // directional light's shadow maps
-    XMStoreFloat4x4(&(dataPtr->lightViewProjection[NUM_SPOTLIGHTS+1]), XMMatrixTranspose(XMLoadFloat4x4(lightProjections+NUM_SPOTLIGHTS+1)));
-    dataPtr->numLights = numLights;
 
     // Unlock the constant buffer.
     deviceContext->Unmap(m_matrixBuffer, 0);
@@ -507,7 +515,8 @@ bool VanillaShaderClass::SetPSMaterial( ID3D11DeviceContext *deviceContext, Dire
 //      x = Cos(beamAngle), y = constant attenuation, z = linear attenuation, w = quadrating attenuation
 // numSpotlights is the number of elements in the arrays above; valid range is [0..NUM_SPOTLIGHTS) 
 //      NOTE Perhaps the arrays should be vector instead?
-bool VanillaShaderClass::SetPSLights( ID3D11DeviceContext *deviceContext, const DirectX::FXMVECTOR lightDirection, float time, const DirectX::FXMVECTOR cameraPos, std::vector<Light> &lights, const DirectX::XMFLOAT4 &ambientLight, const DirectX::XMFLOAT4 &diffuseLight )
+bool VanillaShaderClass::SetPSLights( ID3D11DeviceContext *deviceContext, const DirectX::FXMVECTOR lightDirection, float time, const DirectX::FXMVECTOR cameraPos, std::vector<Light> &lights, 
+                                     const DirectX::XMFLOAT4 &ambientLight, const DirectX::XMFLOAT4 &diffuseLight )
 {
     HRESULT result;
     D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -529,27 +538,24 @@ bool VanillaShaderClass::SetPSLights( ID3D11DeviceContext *deviceContext, const 
     dataPtr->time = time;
     XMStoreFloat4(&dataPtr->cameraPos, cameraPos);
     
-    for (int i = 0; i < numSpotlights; ++i)
+    int j = 0;
+    for (auto i = lights.begin(); i != lights.end(); ++i, ++j)
     {
-        dataPtr->spotlightPos[i] = spotlightPos[i];
-        dataPtr->spotlightDir[i] = XMFLOAT4(spotlightDir[i].x, spotlightDir[i].y, spotlightDir[i].z, 0);
-        if (!spotlightParams)
+        if (i->enabled)
         {
-            dataPtr->spotlightEtc[i].x = cosf((float)M_PI * 15.0f/180.f); // angle from axis to lateral surface (or "generatrix" if you want to look up some terms for cone parts)
-            dataPtr->spotlightEtc[i].y = 0.75f; // constant attenuation 
-            dataPtr->spotlightEtc[i].z = 0.0f; // linear
-            dataPtr->spotlightEtc[i].w = 0.01f; // d^2 
+            dataPtr->spotlightPos[j] = i->position;
+            dataPtr->spotlightDir[j] = XMFLOAT4(i->direction.x, i->direction.y, i->direction.z, 0);
+            dataPtr->spotlightEtc[j].x = i->cosHalfAngle;
+            dataPtr->spotlightEtc[j].y = i->constantAttenuation;
+            dataPtr->spotlightEtc[j].z = i->linearAttenuation;
+            dataPtr->spotlightEtc[j].w = i->quadraticAttenuation;
         } else
         {
-            dataPtr->spotlightEtc[i] = spotlightParams[i];
+            dataPtr->spotlightPos[j] = XMFLOAT4(0,0,0,0);
+            dataPtr->spotlightDir[j] = XMFLOAT4(0,0,0,0);
+            dataPtr->spotlightEtc[j] = XMFLOAT4(0,0,0,0);
         }
-    }
 
-    for (int i = numSpotlights; i < NUM_SPOTLIGHTS; ++i)
-    {
-        dataPtr->spotlightPos[i] = XMFLOAT4(0,0,0,0);
-        dataPtr->spotlightDir[i] = XMFLOAT4(0,0,0,0);
-        dataPtr->spotlightEtc[i] = XMFLOAT4(0,0,0,0);
     }
 
     dataPtr->ambientLight = ambientLight;

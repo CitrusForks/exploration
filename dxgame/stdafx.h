@@ -48,12 +48,14 @@
 
 #include "cpp_hlsl_defs.h"
 
+#include "LightsAndShadows.h"
+
 #include "Chronometer.h"
 #include "CompoundMesh.h"
 #include "Errors.h"
 #include "FirstPerson.h"
 #include "IntermediateRenderTarget.h"
-#include "LightsAndShadows.h"
+
 #include "LoadedTexture.h"
 #include "ModelManager.h"
 #include "Options.h"

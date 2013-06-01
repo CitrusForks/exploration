@@ -153,6 +153,7 @@
     <ClInclude Include="FirstPerson.h" />
     <ClInclude Include="input.h" />
     <ClInclude Include="IntermediateRenderTarget.h" />
+    <ClInclude Include="Light.h" />
     <ClInclude Include="LightsAndShadows.h" />
     <ClInclude Include="ModelManager.h" />
     <ClInclude Include="objloader.hpp" />

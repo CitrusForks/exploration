@@ -144,14 +144,15 @@ void ShadowBuffer::clear( ID3D11DeviceContext *devCtx )
     devCtx->ClearDepthStencilView(m_depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
-void ShadowBuffer::pushToGPU( ID3D11DeviceContext *devCtx, ShadowBuffer *buffers, int numBuffers )
+void ShadowBuffer::pushToGPU( ID3D11DeviceContext *devCtx, std::vector<ShadowBuffer> &buffers, int numShadows )
 {
     vector<ID3D11ShaderResourceView *> views;
-    views.reserve(numBuffers);
+    views.reserve(buffers.size());
 
-    for (int i = 0; i < numBuffers; ++i)
+    int numBuffers = 0;
+    for (auto i = buffers.begin(); i != buffers.end(); ++i, ++numBuffers)
     {
-        views.push_back(*(buffers[i].getResourceView(devCtx))); // XXX getResourceView only returns a double pointer for debugging purposes--it allows the return to be passed directly to VanillaShaderClass::Render() XXX
+        views.push_back(*(i->getResourceView(devCtx))); // XXX getResourceView only returns a double pointer for debugging purposes--it allows the return to be passed directly to VanillaShaderClass::Render() XXX
     }
 
     devCtx->PSSetShaderResources(3, numBuffers, views.data()); // collection of shadow maps starts at : register(t3)
