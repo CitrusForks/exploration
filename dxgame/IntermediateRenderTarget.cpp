@@ -89,8 +89,8 @@ IntermediateRenderTarget::~IntermediateRenderTarget(void)
 void IntermediateRenderTarget::setAsRenderTarget(ID3D11DeviceContext *devCtx, ID3D11DepthStencilView *realDepthBuffer)
 {
     // Set up the viewport for rendering at x2 resolution to back buffer
-    D3D11_VIEWPORT viewport = { (float)m_width*2, (float)m_height*2, 0.0f, 1.0f, 0.0f, 0.0f };
-    //devCtx->RSSetViewports(1, &viewport); // XXX XXX XXX This would be super-convenient but it *just does not work*! WHY??
+    //D3D11_VIEWPORT viewport = { (float)m_width*2, (float)m_height*2, 0.0f, 1.0f, 0.0f, 0.0f }; // XXX er, this was out of order thanks to bad examples...
+    //devCtx->RSSetViewports(1, &viewport);
 
     devCtx->OMSetRenderTargets(1, &m_targetView, realDepthBuffer); // set our texture as target and that's it!
 }

@@ -235,6 +235,7 @@ int _tmain(int argc, _TCHAR* argv[])
         // WARNING, pointers returned by models["whatever"] may be invalid later if a model is loaded and the internal vector is reallocated. Use refnums to store an index for longterm fast lookup!
 
         LightsAndShadows lighting(d3d, window);
+        lighting.pointMoonlight(XMVector3Normalize(XMVectorSet(0.1f,  -0.2f, 1.0f, 0.0f)), FPCamera);
 
         SimpleMesh square;
         if (!square.load(L"square.obj", d3d.GetDevice()))
@@ -328,7 +329,7 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shad
     d3d.BeginScene(true);
 #endif
     
-    lighting.setFlashlight(FPCamera);
+    lighting.setFlashlight(FPCamera, XMConvertToRadians(25.0f/2));
 
 #if 0
     sunlight.x *=2;

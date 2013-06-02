@@ -26,7 +26,7 @@ private:
     DirectX::XMFLOAT4 sunlight;
     DirectX::XMFLOAT4 blue;
 
-    DirectX::XMVECTOR lightDirection; // direction of directional light (sunlight/moonlight/whatever celestial object illuminates your world or whatnot)
+    DirectX::XMFLOAT3 lightDirection; // direction of directional light (sunlight/moonlight/whatever celestial object illuminates your world or whatnot)
 
 
 public:
@@ -39,10 +39,10 @@ public:
     LightsAndShadows &operator = (LightsAndShadows & nope); 
    
 
-    void setFlashlight(FirstPerson &FPCamera, int whichLight = 0 );
+    void setFlashlight(FirstPerson &FPCamera, float beamHalfAngle = (float)M_PI * 15.0f/180.f, int whichLight = 0 );
     void setSpotlight( int which, DirectX::FXMVECTOR position, DirectX::FXMVECTOR direction, float beamHalfAngle = (float)M_PI * 15.0f/180.f, float constantAttenuation = 0.75f, float linearAttenuation = 0.0f, float quadraticAttenuation = 0.05f);
 
-    void pointMoonlight(DirectX::CXMMATRIX direction, FirstPerson &FPCamera);
+    void pointMoonlight(DirectX::FXMVECTOR newDirection, FirstPerson &FPCamera);
 
     bool renderShadowMaps( D3DClass &d3d, ModelManager & models );
 
