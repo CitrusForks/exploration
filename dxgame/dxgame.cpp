@@ -4,7 +4,7 @@
 #include "stdafx.h"
 
 // define this to debug main shaders with VS2012:
-//#define DISABLE_OFFSCREEN_BUFFER 1
+ #define DISABLE_OFFSCREEN_BUFFER 1
 // 
 
 
@@ -339,7 +339,9 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shad
 
     XMMATRIX world = XMMatrixTranslation(0.0f, 0.0f, 7.0f);
 
-    return lighting.renderShadowMaps(d3d, models);
+    lighting.pushToGPU(d3d.GetDeviceContext(), shaders0, (float)timer.sinceInit(), FPCamera.getEyePosition());
+
+    if (!lighting.renderShadowMaps(d3d, models)) return false;
 
 
     //
@@ -384,7 +386,7 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shad
 
     square.setBuffers(d3d.GetDeviceContext()); // use the two triangles to render off-screen texture to swap chain, through a shader
     if (!postProcess.Render(d3d.GetDeviceContext(), square.getIndexCount(), XMMatrixIdentity(), XMMatrixIdentity(), ortho, nullptr, nullptr, nullptr, offScreen.getResourceViewAndResolveMSAA(d3d.GetDeviceContext()), 1, false))
-    //if (!postProcess.Render(d3d.GetDeviceContext(), square.getIndexCount(), XMMatrixIdentity(), XMMatrixIdentity(), ortho, nullptr, nullptr, lightProj, numLights, shadows[NUM_SPOTLIGHTS].getResourceView(d3d.GetDeviceContext()), 1, false)) // comment out previous line and uncomment this one to visually inspect a shadow map
+    //if (!postProcess.Render(d3d.GetDeviceContext(), square.getIndexCount(), XMMatrixIdentity(), XMMatrixIdentity(), ortho, nullptr, nullptr, nullptr, lighting.getShadows()[NUM_SPOTLIGHTS].getResourceView(d3d.GetDeviceContext()), 1, false)) // comment out previous line and uncomment this one to visually inspect a shadow map
     {
         Errors::Cry(L"Error rendering off-screen texture to display. :/");
         return false;

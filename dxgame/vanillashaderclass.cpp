@@ -93,8 +93,8 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
 
     //result = D3DCompileFromFile(vsFilename, nullptr, nullptr, vsFunctionName, "vs_4_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &vertexShaderBuffer, &errorMessage);
 
-	// actually, how about load bytecode...
-	result = D3DReadFileToBlob(vsFilename, &vertexShaderBuffer);
+    // actually, how about load bytecode...
+    result = D3DReadFileToBlob(vsFilename, &vertexShaderBuffer);
     if(FAILED(result))
     {
 	    // If the shader failed to compile it should have writen something to the error message.
@@ -106,6 +106,9 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
 	    else
 	    {
 		    MessageBox(hwnd, vsFilename, L"Missing Shader File", MB_OK);
+                    char currentDir[1024];
+                    GetCurrentDirectoryA(1023, currentDir);
+                    cerr << "Was looking for shader in " << currentDir << endl;
 	    }
 
 	    return false;
@@ -115,7 +118,7 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
     ID3D10Blob* pixelShaderBuffer = nullptr;
 
     //result = D3DCompileFromFile(psFilename, NULL, NULL, psFunctionName, "ps_4_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &pixelShaderBuffer, &errorMessage); 
-	result = D3DReadFileToBlob(psFilename, &pixelShaderBuffer);
+    result = D3DReadFileToBlob(psFilename, &pixelShaderBuffer);
     if(FAILED(result))
     {
 	    // If the shader failed to compile it should have writen something to the error message.
@@ -127,6 +130,9 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
 	    else
 	    {
 		    MessageBox(hwnd, psFilename, L"Missing Shader File", MB_OK);
+                    char currentDir[1024];
+                    GetCurrentDirectoryA(1023, currentDir);
+                    cerr << "Was looking for shader in " << currentDir << endl;
 	    }
 
 	    return false;
@@ -442,7 +448,7 @@ bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext
     if (lights)
     {
         int j = 0;
-        for (auto i = lights->begin(); i < lights->end() && i->enabled; ++i, ++j)
+        for (auto i = lights->begin(); i < lights->end() && i->enabled && j < NUM_SPOTLIGHTS; ++i, ++j)
         {
             XMStoreFloat4x4(&(dataPtr->lightViewProjection[j]), XMMatrixTranspose(XMLoadFloat4x4(&i->projection)));
         }
@@ -539,7 +545,7 @@ bool VanillaShaderClass::SetPSLights( ID3D11DeviceContext *deviceContext, const 
     XMStoreFloat4(&dataPtr->cameraPos, cameraPos);
     
     int j = 0;
-    for (auto i = lights.begin(); i != lights.end(); ++i, ++j)
+    for (auto i = lights.begin(); i != lights.end() && j < NUM_SPOTLIGHTS; ++i, ++j)
     {
         if (i->enabled)
         {

@@ -18,7 +18,7 @@ LightsAndShadows::LightsAndShadows(D3DClass &d3d, HWND window) : sunlight( 255.0
     lights.resize(NUM_SPOTLIGHTS+2); // spotlights + 2 spots for directional lights
 
     float defaultHalfAngles[NUM_SPOTLIGHTS] = { (float)M_PI * 15.0f/180.f, (float)M_PI * 25.0f/180.f, 0.0f, 0.0f }; // XXX move to default scene
-    for (int i; i < NUM_SPOTLIGHTS; ++i) lights[i].halfAngle = defaultHalfAngles[i];
+    for (int i = 0; i < NUM_SPOTLIGHTS; ++i) lights[i].halfAngle = defaultHalfAngles[i];
 
     // shadow maps! 
     shadows.resize(NUM_SPOTLIGHTS + 2); // +2 for directional light x2 LOD
@@ -47,6 +47,7 @@ LightsAndShadows::LightsAndShadows( LightsAndShadows &no )
 LightsAndShadows & LightsAndShadows::operator=( LightsAndShadows & nope )
 {
     Errors::Cry("Program error! You cannot assign LightsAndShadows! Try std::shared_ptr<> to do whatever it is you're trying to accomplish.");
+    return *this;
 }
 
 // this destructor mainly releases the shadow buffer
@@ -130,15 +131,14 @@ bool LightsAndShadows::renderShadowMaps( D3DClass &d3d, ModelManager & models )
     d3d.setDepthBias(true);
 
     // re-render scene once for every shadow
-    int i;
     auto light = lights.begin();
     auto shadow = shadows.begin();
-    for (; light != lights.end() && shadow != shadows.end(); ++light, ++shadow)
+    for (; light != lights.end() && shadow != shadows.end() && light->enabled; ++light, ++shadow)
     {
-        XMMATRIX view = XMLoadFloat4x4(&lights[i].projection);
+        XMMATRIX view = XMLoadFloat4x4(&light->projection);
 
-        shadows[i].setAsRenderTarget(d3d.GetDeviceContext());
-        shadows[i].clear(d3d.GetDeviceContext());
+        shadow->setAsRenderTarget(d3d.GetDeviceContext());
+        shadow->clear(d3d.GetDeviceContext());
 
         if (!doRenderCalls(models, d3d, shadowShaders, view, XMMatrixIdentity(), lights)) return false;
     }
@@ -161,11 +161,13 @@ bool LightsAndShadows::renderShadowMaps( D3DClass &d3d, ModelManager & models )
     shadows[NUM_SPOTLIGHTS+1].setAsRenderTarget(d3d.GetDeviceContext());
     shadows[NUM_SPOTLIGHTS+1].clear(d3d.GetDeviceContext());
     if (!doRenderCalls(models, d3d, shadowShaders, view, XMMatrixIdentity(), lights)) return false;
+
+    return true;
 }
 
 void LightsAndShadows::setShadowsAsViewResources( D3DClass &d3d )
 {
-    int numShadows;
-    for (numShadows = 0; lights[numShadows].enabled; ++numShadows); // this seems dumb XXX
-    ShadowBuffer::pushToGPU(d3d.GetDeviceContext(), shadows, numShadows); // the DepthStencilView must be re-bound before this call! e.g., the offScreen.setAsRenderTarget() call does it
+    unsigned numShadows;
+    for (numShadows = 0; lights[numShadows].enabled && numShadows < lights.size(); ++numShadows); // this seems stupid XXX
+    ShadowBuffer::pushToGPU(d3d.GetDeviceContext(), shadows); // the DepthStencilView must be re-bound before this call! e.g., the offScreen.setAsRenderTarget() call does it
 }

@@ -144,7 +144,7 @@ void ShadowBuffer::clear( ID3D11DeviceContext *devCtx )
     devCtx->ClearDepthStencilView(m_depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
-void ShadowBuffer::pushToGPU( ID3D11DeviceContext *devCtx, std::vector<ShadowBuffer> &buffers, int numShadows )
+void ShadowBuffer::pushToGPU( ID3D11DeviceContext *devCtx, std::vector<ShadowBuffer> &buffers )
 {
     vector<ID3D11ShaderResourceView *> views;
     views.reserve(buffers.size());

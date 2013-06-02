@@ -30,7 +30,7 @@ public:
     void clear(ID3D11DeviceContext *devCtx);
 
     // helper method to present an array of these buffers to the GPU
-    static void pushToGPU(ID3D11DeviceContext *devCtx, std::vector<ShadowBuffer> &buffers, int numShadows);
+    static void pushToGPU(ID3D11DeviceContext *devCtx, std::vector<ShadowBuffer> &buffers);
 
     int m_width, m_height;
 

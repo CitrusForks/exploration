@@ -50,6 +50,7 @@ public:
     void setShadowsAsViewResources(D3DClass &d3d);
 
     std::vector<Light> &getLights() { return lights; }
+    std::vector<ShadowBuffer> &getShadows() { return shadows; }
 };
 
 #endif

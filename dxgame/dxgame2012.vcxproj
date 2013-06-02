@@ -65,6 +65,13 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <FxCompile />
+    <PostBuildEvent>
+      <Command>copy $(ProjectDir)\*.cso $(ProjectDir)\data\</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>copy shader outputs to data dir.</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -81,6 +88,13 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <FxCompile>
+      <ObjectFileOutput>$(OutDir)\data%(Filename).cso</ObjectFileOutput>
+    </FxCompile>
+    <PostBuildEvent>
+      <Command>copy $(ProjectDir)\*.cso $(OutDir)</Command>
+      <Message>copy shader outputs to data dir.</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <FxCompile Include="light_ps.hlsl">
@@ -94,7 +108,6 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
       <DisableOptimizations Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</DisableOptimizations>
-      <DisableOptimizations Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</DisableOptimizations>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)%(Filename).cso</ObjectFileOutput>
     </FxCompile>
     <FxCompile Include="light_vs.hlsl">
@@ -107,7 +120,7 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
       <DisableOptimizations Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</DisableOptimizations>
-      <DisableOptimizations Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</DisableOptimizations>
+      <DisableOptimizations Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DisableOptimizations>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)%(Filename).cso</ObjectFileOutput>
     </FxCompile>
     <FxCompile Include="postprocess_ps.hlsl">

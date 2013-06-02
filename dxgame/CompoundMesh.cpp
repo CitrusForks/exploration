@@ -339,6 +339,11 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
 
         // for all triangles, add indices to the index buffer
         indices.clear();
+        if (mesh->mNumFaces < 1)
+        {
+            cerr << "Oddity: no faces in mesh." << endl;
+            continue;
+        }
         indices.reserve(mesh->mNumFaces * 3); // triangles, of course! the only consequence of a mistake here would be a slight performanec loss due to reallocations
         for (unsigned t = 0; t < mesh->mNumFaces; ++t) 
         {
@@ -353,6 +358,12 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
             }
         }
 
+        if (vertices.size() < 1) 
+        {
+            cerr << "Oddity: no vertices in mesh. Perhaps it was composed entirely of non-triangles?";
+            continue;
+        }
+
         // feed the vertex and index buffers to the GPU
         D3D11_BUFFER_DESC vbufDesc = { vertices.size() * sizeof(Vertex), D3D11_USAGE_IMMUTABLE, D3D11_BIND_VERTEX_BUFFER, 0, 0, 0};
         D3D11_SUBRESOURCE_DATA vbufSub = { vertices.data(), 0, 0 };
@@ -364,10 +375,16 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
             return false;
         }
 
+        if (indices.size() < 1)
+        {
+            cerr << "Oddity: no indices in mesh!";
+            continue;
+        }
+
         D3D11_BUFFER_DESC ibufDesc = { indices.size() * sizeof(unsigned), D3D11_USAGE_IMMUTABLE, D3D11_BIND_INDEX_BUFFER, 0, 0, 0};
         D3D11_SUBRESOURCE_DATA ibufSub = { indices.data(), 0, 0 };
 
-        device->CreateBuffer(&ibufDesc, &ibufSub, &interleavedMesh.m_indexBuffer);
+        hr = device->CreateBuffer(&ibufDesc, &ibufSub, &interleavedMesh.m_indexBuffer);
         if (FAILED(hr))
         {
             Errors::Cry("CreateBuffer() failed for index buffer.");
