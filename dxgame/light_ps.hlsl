@@ -192,7 +192,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
         {
             float ds;
 
-            int totalShadow = 0;
+            float totalShadow = 0;
             uint mapNum = NUM_SPOTLIGHTS+1;
 
             // get shadowmap coordinates in local high def shadowmap:
@@ -213,23 +213,26 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
             
             //return sampleShadowMap(input.shadowUV[NUM_SPOTLIGHTS+1], NUM_SPOTLIGHTS+1);
 
+            // N.B., Gaussian blur kernel: http://homepages.inf.ed.ac.uk/rbf/HIPR2/gsmooth.htm
+
             if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(0,0)))
-            {
-                totalShadow += 1;
-                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(ds,ds))) totalShadow += 1;
-                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(-ds,-ds))) totalShadow += 1;
-                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(-ds,ds))) totalShadow += 1;
-                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(ds,-ds))) totalShadow += 1;
-                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(0,ds))) totalShadow += 1;
-                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(0,-ds))) totalShadow += 1;
-                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(-ds,0))) totalShadow += 1;
-                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(ds,0))) totalShadow += 1;
+            //{
+                totalShadow += 41.0/273;
+                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(ds,ds))) totalShadow += 16.0/273;
+                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(-ds,-ds))) totalShadow += 16.0/273;
+                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(-ds,ds))) totalShadow += 16.0/273;
+                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(ds,-ds))) totalShadow += 16.0/273;
+                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(0,ds))) totalShadow += 26.0/273;
+                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(0,-ds))) totalShadow += 26.0/273;
+                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(-ds,0))) totalShadow += 26.0/273;
+                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(ds,0))) totalShadow += 26.0/273;
+            //}
 
-            }
+            const float maxPossibleShadow = (41.0 + 16.0 * 4 + 26.0 * 4) / 273;
 
-            if (totalShadow < 9)
+            if (totalShadow < maxPossibleShadow)
             {
-                float shadowMultiplier = 1.0f - (1.0f/9.0f) * totalShadow;
+                float shadowMultiplier = 1.0f - (1.0f/maxPossibleShadow) * totalShadow;
                 // Determine the final diffuse color based on the diffuse color and the amount of light intensity.
                 color += (diffuseColor * lightIntensity * diffuseLight * shadowMultiplier);
 
