@@ -330,6 +330,7 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shad
 #endif
     
     lighting.setFlashlight(FPCamera, XMConvertToRadians(25.0f/2));
+    lighting.pointMoonlight(XMVector3Normalize(XMVectorSet(0.1f,  -0.2f, 1.0f, 0.0f)), FPCamera);
 
 #if 0
     sunlight.x *=2;

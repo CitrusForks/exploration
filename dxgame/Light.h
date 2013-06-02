@@ -39,7 +39,7 @@ struct Light
 
     void updateProjection()
     {
-        float angle = max(halfAngle * 2.5f, (DirectX::XM_PIDIV2));
+        float angle = min(halfAngle * 2.5f, (DirectX::XM_PIDIV2));
         // halfAngle*2.5 just needs to make sure the projected view encompasses the entire spotlight
         // one might think that halfAngle*2 would be ideal but that looks more like a view inscribed within the circle of the spotlight
 
