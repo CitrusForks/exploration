@@ -67,7 +67,7 @@ void LightsAndShadows::setFlashlight( FirstPerson &FPCamera, float beamHalfAngle
 
     XMVECTOR forward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f); // left-handed forward vector for the player, just to make it obvious what this is
     lights[whichLight].move(
-        XMVector4Transform(FPCamera.getEyePosition(), XMMatrixTranslation(0.15f, -0.6f, 0.1f)), // hold flashlight lower... 
+        XMVector4Transform(FPCamera.getEyePosition(), XMMatrixTranslation(0.15f, -0.6f, 0.0f)), // hold flashlight lower... 
         XMVector3TransformNormal(forward, XMMatrixRotationAxis(XMVectorSet(1,0,0,0), (float)-M_PI/8)  *  XMMatrixTranspose(FPCamera.getViewMatrix())) // tilt it a bit so the light doesn't look like a stupid circle
         );
     // re: the above transpose; view matrix is the inverse of what we want to transform a vector extending from the eye and the 3x3 excerpt of the view matrix for a normal transform is orthogonal so the inverse is the transpose

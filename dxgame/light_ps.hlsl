@@ -116,6 +116,71 @@ float isSpotlightShadow(float4 lightClipSpaceCoordinates, uint whichShadow, floa
     else return false;
 }
 
+#define SIXTEEN_POINT_GAUSSIAN_KERNEL yes_please
+
+//
+// shadow sampler with approximated Gaussian blur
+//
+// Returns [0..1] 0 for total shadow, 1 for total illumination; just multiply the light by this return multiplier, basically.
+//
+// mapNum is which shadow map to sample
+// ds is the distance between the centers of two pixels along one axis, generally 1/length_of_side (that is, width of height; shadow map is presumed to be a square)
+float blurredShadow(in float4 shadowUV, in int mapNum, in float ds)
+{
+    float totalShadow = 0.0f;
+    // N.B., Gaussian blur kernel: http://homepages.inf.ed.ac.uk/rbf/HIPR2/gsmooth.htm
+
+    if (isSpotlightShadow(shadowUV, mapNum, float2(0,0)))
+    //{ // uncomment these braces to limit shadow only to area where the center pixel of kernel is in shadow; it's a last resort to cut down on glitches
+        totalShadow += 41.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2(ds,ds))) totalShadow += 16.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds,-ds))) totalShadow += 16.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds,ds))) totalShadow += 16.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2(ds,-ds))) totalShadow += 16.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2(0,ds))) totalShadow += 26.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2(0,-ds))) totalShadow += 26.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds,0))) totalShadow += 26.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2(ds,0))) totalShadow += 26.0/273;
+#ifdef SIXTEEN_POINT_GAUSSIAN_KERNEL
+        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds*2,0))) totalShadow += 7.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2( ds*2,0))) totalShadow += 7.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2(0,-ds*2))) totalShadow += 7.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2(0, ds*2))) totalShadow += 7.0/273;
+
+        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds*2,-ds*2))) totalShadow += 1.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds*2, ds*2))) totalShadow += 1.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2( ds*2,-ds*2))) totalShadow += 1.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2( ds*2, ds*2))) totalShadow += 1.0/273;
+
+        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds*2,-ds  ))) totalShadow += 4.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds  ,-ds*2))) totalShadow += 4.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds*2, ds  ))) totalShadow += 4.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds  , ds*2))) totalShadow += 4.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2( ds*2,-ds  ))) totalShadow += 4.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2( ds  ,-ds*2))) totalShadow += 4.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2( ds*2, ds  ))) totalShadow += 4.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2( ds  , ds*2))) totalShadow += 4.0/273;
+#endif
+    //}
+
+    const float maxPossibleShadow = (41.0 + 16.0 * 4 + 26.0 * 4) / 273
+#ifdef SIXTEEN_POINT_GAUSSIAN_KERNEL
+        + (7.0 * 4 + 4.0 + 4.0 * 8) / 273
+#endif
+        ;
+
+    float shadowMultiplier;
+
+    if (totalShadow < maxPossibleShadow)
+    {
+        shadowMultiplier = 1.0f - (1.0f/maxPossibleShadow) * totalShadow;
+    } else 
+    {
+        shadowMultiplier = 0.0f;
+    }
+
+    return shadowMultiplier;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Pixel Shader
@@ -213,28 +278,12 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
             
             //return sampleShadowMap(input.shadowUV[NUM_SPOTLIGHTS+1], NUM_SPOTLIGHTS+1);
 
-            // N.B., Gaussian blur kernel: http://homepages.inf.ed.ac.uk/rbf/HIPR2/gsmooth.htm
+            float shadowFactor = blurredShadow(input.shadowUV[mapNum], mapNum, ds);
 
-            if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(0,0)))
-            //{
-                totalShadow += 41.0/273;
-                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(ds,ds))) totalShadow += 16.0/273;
-                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(-ds,-ds))) totalShadow += 16.0/273;
-                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(-ds,ds))) totalShadow += 16.0/273;
-                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(ds,-ds))) totalShadow += 16.0/273;
-                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(0,ds))) totalShadow += 26.0/273;
-                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(0,-ds))) totalShadow += 26.0/273;
-                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(-ds,0))) totalShadow += 26.0/273;
-                if (isSpotlightShadow(input.shadowUV[mapNum], mapNum, float2(ds,0))) totalShadow += 26.0/273;
-            //}
-
-            const float maxPossibleShadow = (41.0 + 16.0 * 4 + 26.0 * 4) / 273;
-
-            if (totalShadow < maxPossibleShadow)
+            if (shadowFactor > 0.0f)
             {
-                float shadowMultiplier = 1.0f - (1.0f/maxPossibleShadow) * totalShadow;
                 // Determine the final diffuse color based on the diffuse color and the amount of light intensity.
-                color += (diffuseColor * lightIntensity * diffuseLight * shadowMultiplier);
+                color += (diffuseColor * lightIntensity * diffuseLight * shadowFactor);
 
 	        // Saturate the ambient and diffuse color.
 		color = saturate(color);
@@ -250,7 +299,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 			// calculate half-vector for Blinn-Phong specular model
 			float3 H = normalize(-lightDirection + viewDirection);
 			// calculate specular reflection based on dot product of half-vector and normal vector, along with material data
-			specular = shadowMultiplier * specularMultiplier * actualSpecularColor * pow(saturate(dot(H, normal)), specularPower);
+			specular = shadowFactor * specularMultiplier * actualSpecularColor * pow(saturate(dot(H, normal)), specularPower);
 		}
             }
         }
@@ -271,14 +320,9 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 		{
 			// well, a spotlight could be hitting this pixel
 			// check for shadow, though
-                        uint shadowTotal = 0;
-                        if (isSpotlightShadow(input.shadowUV[i], i, float2(0,0))) continue; //shadowTotal++;
-                        //if (isSpotlightShadow(input.shadowUV[i], i, float2((0.0011), 0))) shadowTotal++;
-                        //if (isSpotlightShadow(input.shadowUV[i], i, float2((0.0011),0))) shadowTotal++;
-                        //if (isSpotlightShadow(input.shadowUV[i], i, float2(0, (0.0011)))) shadowTotal++;
-                        //if (isSpotlightShadow(input.shadowUV[i], i, float2(0, (0.0011)))) shadowTotal++;
+                        float shadowFactor = blurredShadow(input.shadowUV[i], i, 1.0/512); // TODO: maybe pass the dimensions along?
 
-                        //if (shadowTotal == 5) continue;
+                        if (shadowFactor == 0.0f) continue;
 
 			float3 toLight = -sourceToPixel;
 			float spotlightIntensity = dot(normal, toLight);
@@ -287,7 +331,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 			{
 				float attenuation = 1.0 / (spotlightEtc[i].y + spotlightEtc[i].z * distToLight + spotlightEtc[i].w * pow(distToLight,2));
 
-                                attenuation *= 1-(shadowTotal/5.0); // modify attenuation by shadow factor because it's convenient
+                                attenuation *= shadowFactor; // modify attenuation by shadow factor because it's convenient
 
 				//beamAlignment = pow(beamAlignment,100); // XXX this seems like stupid way of doing this but the books do it pretty much like this, it turns out
 
