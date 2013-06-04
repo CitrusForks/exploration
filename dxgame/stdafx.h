@@ -49,25 +49,21 @@
 #include "cpp_hlsl_defs.h"
 
 #include "Actor.h"
-
-#include "LightsAndShadows.h"
-
 #include "Chronometer.h"
 #include "CompoundMesh.h"
 #include "Errors.h"
 #include "FirstPerson.h"
+#include "Input.h"
 #include "IntermediateRenderTarget.h"
-
+#include "LightsAndShadows.h"
 #include "LoadedTexture.h"
 #include "ModelManager.h"
 #include "Options.h"
-#include "TextureManager.h"
 #include "SimpleMesh.h"
 #include "SimpleText.h"
 #include "Sound.h"
+#include "TextureManager.h"
 #include "WICTextureLoader.h"
 #include "d3dclass.h"
-#include "Input.h"
 #include "vanillashaderclass.h"
 #include "vertex.h"
-

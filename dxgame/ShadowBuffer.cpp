@@ -21,44 +21,6 @@ bool ShadowBuffer::init( ID3D11Device *device, ID3D11DeviceContext *deviceContex
     m_width = width * resolutionMultiplier;
     m_height = height * resolutionMultiplier;
 
-#if 0
-    D3D11_TEXTURE2D_DESC tdesc;
-    // a render target might be needed in D3D9 but not in modern DirectX since we can just retrieve the depth buffer
-    DXGI_FORMAT format = DXGI_FORMAT_A8_UNORM;
-
-    tdesc.Width = width; //  * 2; // x2 for supersampling test
-    tdesc.Height = height; //  * 2;
-    tdesc.MipLevels = 1; // no mipmap please
-    tdesc.ArraySize = 1;
-    tdesc.Format = format; // ughhhhhh what do I pick; I think we're not using the output in this buffer at all anyway, it's stupid
-    DXGI_SAMPLE_DESC sampleDesc = {1, 0};
-    tdesc.SampleDesc = sampleDesc;
-    tdesc.Usage = D3D11_USAGE_DEFAULT;
-    tdesc.BindFlags = D3D11_BIND_RENDER_TARGET; // | D3D11_BIND_SHADER_RESOURCE;
-    tdesc.CPUAccessFlags = 0; 
-    tdesc.MiscFlags = 0;
-
-    rc = device->CreateTexture2D(&tdesc, nullptr, &m_texture);
-    if (FAILED(rc))
-    {
-        Errors::Cry(L"Couldn't create a texture for shadow buffer. :/");
-        return false;
-    }
-
-    D3D11_RENDER_TARGET_VIEW_DESC targetDesc;
-    targetDesc.Format = format;
-    targetDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-    targetDesc.Texture2D.MipSlice = 0;
-
-    rc = device->CreateRenderTargetView(m_texture, &targetDesc, &m_targetView);
-    if (FAILED(rc))
-    {
-        Errors::Cry(L"Couldn't create render target view. :/");
-        m_texture->Release();
-        return false;
-    }
-#endif
-
     // Initialize the description of the depth buffer.
     D3D11_TEXTURE2D_DESC depthBufferDesc;
     ZeroMemory(&depthBufferDesc, sizeof(depthBufferDesc));

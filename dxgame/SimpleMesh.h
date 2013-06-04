@@ -9,11 +9,9 @@
 #include "vanillashaderclass.h"
 #include "LoadedTexture.h"
 
-class CompoundMesh;
-
-class SimpleMesh
+struct SimpleMesh
 {
-protected: // we're going to abuse SimpleMesh as a glorified struct in CompoundMesh; it's not good for much on its own.
+//protected: // we're going to abuse SimpleMesh as a glorified struct in CompoundMesh; it's not good for much on its own.
     struct Material
     {
         DirectX::XMFLOAT4 ambient;  // multiply light components by these...
@@ -34,9 +32,9 @@ protected: // we're going to abuse SimpleMesh as a glorified struct in CompoundM
     ID3D11Buffer *m_vertexBuffer, *m_indexBuffer;
     unsigned int m_indexCount;
 
-    friend CompoundMesh;
+    //friend CompoundMesh;
 
-public:
+//public:
     void setBuffers(ID3D11DeviceContext *deviceContext);
     bool load(wchar_t *objFileName, ID3D11Device* device, DirectX::XMFLOAT2 texture_scaler = DirectX::XMFLOAT2(1.0f, 1.0f));
     void Release();

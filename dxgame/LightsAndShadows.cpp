@@ -6,6 +6,7 @@
 #include <windef.h>
 #include "d3dclass.h"
 #include "ShadowBuffer.h"
+#include <functional>
 
 using namespace DirectX;
 using namespace std;
@@ -118,10 +119,9 @@ void LightsAndShadows::pointMoonlight( DirectX::FXMVECTOR newDirection, FirstPer
 }
 
 
-// XXX refactor in the future:
-bool doRenderCalls( ModelManager & models, D3DClass &d3d, VanillaShaderClass & shader, CXMMATRIX view, CXMMATRIX projection, std::vector<Light> &lights);
-
-bool LightsAndShadows::renderShadowMaps( D3DClass &d3d, ModelManager & models )
+bool LightsAndShadows::renderShadowMaps( D3DClass &d3d, 
+                                        std::function<bool(VanillaShaderClass &shader, CXMMATRIX view, CXMMATRIX projection, std::vector<Light> &lights)> doRenderCalls
+                                        )
 {
     //
     // make shadow maps
@@ -146,7 +146,7 @@ bool LightsAndShadows::renderShadowMaps( D3DClass &d3d, ModelManager & models )
         shadow->setAsRenderTarget(d3d.GetDeviceContext());
         shadow->clear(d3d.GetDeviceContext());
 
-        if (!doRenderCalls(models, d3d, shadowShaders, view, XMMatrixIdentity(), lights)) return false;
+        if (!doRenderCalls(shadowShaders, view, XMMatrixIdentity(), lights)) return false;
     }
 
     //
@@ -159,7 +159,7 @@ bool LightsAndShadows::renderShadowMaps( D3DClass &d3d, ModelManager & models )
     shadows[NUM_SPOTLIGHTS].clear(d3d.GetDeviceContext());
 
     XMMATRIX view = XMLoadFloat4x4(&(lights[NUM_SPOTLIGHTS].projection));
-    if (!doRenderCalls(models, d3d, shadowShaders, view, XMMatrixIdentity(), lights)) return false;
+    if (!doRenderCalls(shadowShaders, view, XMMatrixIdentity(), lights)) return false;
 
     // next map
     D3D11_VIEWPORT viewport3 = { 0.0f, 0.0f, (float)shadows[NUM_SPOTLIGHTS+1].m_width, (float)shadows[NUM_SPOTLIGHTS+1].m_height, 0.0f, 1.0f };
@@ -169,7 +169,7 @@ bool LightsAndShadows::renderShadowMaps( D3DClass &d3d, ModelManager & models )
     shadows[NUM_SPOTLIGHTS+1].clear(d3d.GetDeviceContext());
 
     view = XMLoadFloat4x4(&(lights[NUM_SPOTLIGHTS+1].projection));
-    if (!doRenderCalls(models, d3d, shadowShaders, view, XMMatrixIdentity(), lights)) return false;
+    if (!doRenderCalls(shadowShaders, view, XMMatrixIdentity(), lights)) return false;
 
     return true;
 }

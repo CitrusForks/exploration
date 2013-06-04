@@ -314,8 +314,6 @@ int _tmain(int argc, _TCHAR* argv[])
 
 bool doRenderCalls( ModelManager & models, D3DClass &d3d, VanillaShaderClass & shader, CXMMATRIX view, CXMMATRIX projection, std::vector<Light> &lights);
 
-bool renderShadowMaps( D3DClass &d3d, ModelManager & models );
-
 
 bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shaders0, Chronometer &timer, IntermediateRenderTarget &offScreen, ModelManager &models, CXMMATRIX projection, SimpleMesh &square, VanillaShaderClass &postProcess, CXMMATRIX ortho, SimpleText &text, LightsAndShadows &lighting)
 {
@@ -343,7 +341,11 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shad
 
     lighting.updateGPU(d3d.GetDeviceContext(), shaders0, (float)timer.sinceInit(), FPCamera.getEyePosition());
 
-    if (!lighting.renderShadowMaps(d3d, models)) return false;
+    if (!lighting.renderShadowMaps(d3d, [&](VanillaShaderClass &shader, CXMMATRIX view, CXMMATRIX projection, std::vector<Light> &lights)
+        {
+            return doRenderCalls(models, d3d, shader, view, projection, lights); // we've captured models from the current scope; now the LightsAndShadows class doesn't need to be aware of it
+        }
+    )) return false;
 
 
     //

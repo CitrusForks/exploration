@@ -21,6 +21,9 @@ public:
 
     bool render(std::function<bool(DirectX::CXMMATRIX world, int modelRefNum)> &renderFunc);
 
+    void moveTo(DirectX::FXMVECTOR to);
+    void move(DirectX::FXMVECTOR );
+
     Actor(void);
     ~Actor(void);
 };

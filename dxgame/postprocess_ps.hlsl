@@ -49,7 +49,7 @@ float4 PostProcPixelShader(PixelInputType input) : SV_TARGET
 	baseOffset = input.tex - Half;
 	float2 tex = input.tex - baseOffset * 0.05; // zoom in a little to have some extra source image "off-screen"
 
-#if 1
+#if 0
 	// wavy ghost image effect
 	float4 textureColor = shaderTexture.Sample(SampleType, tex);
 	float darkness = 1.0 - saturate(distance(textureColor, float4(0,0,0,0))/1.5);
@@ -73,7 +73,7 @@ float4 PostProcPixelShader(PixelInputType input) : SV_TARGET
 	textureColor -= shaderTexture.Sample(SampleType, tex);
 #endif
 
-#if 0
+#if 1
 	// chromatic aberration
 	float4 textureColor;
 	textureColor.x = shaderTexture.Sample(SampleType, tex - baseOffset * 0.01).x; // red is smudged outward
