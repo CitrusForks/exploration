@@ -92,7 +92,7 @@
       <ObjectFileOutput>$(OutDir)\data%(Filename).cso</ObjectFileOutput>
     </FxCompile>
     <PostBuildEvent>
-      <Command>copy $(ProjectDir)\*.cso $(OutDir)</Command>
+      <Command>copy $(ProjectDir)\*.cso $(ProjectDir)\data\</Command>
       <Message>copy shader outputs to data dir.</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -157,6 +157,7 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Actor.h" />
     <ClInclude Include="Chronometer.h" />
     <ClInclude Include="ComplexMesh.h" />
     <ClInclude Include="CompoundMesh.h" />
@@ -186,6 +187,7 @@
     <ClInclude Include="WICTextureLoader.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Actor.cpp" />
     <ClCompile Include="Chronometer.cpp" />
     <ClCompile Include="CompoundMesh.cpp" />
     <ClCompile Include="d3dclass.cpp" />

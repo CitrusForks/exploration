@@ -48,6 +48,8 @@
 
 #include "cpp_hlsl_defs.h"
 
+#include "Actor.h"
+
 #include "LightsAndShadows.h"
 
 #include "Chronometer.h"

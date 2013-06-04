@@ -76,7 +76,7 @@ void LightsAndShadows::setFlashlight( FirstPerson &FPCamera, float beamHalfAngle
 }
 
 // this mainly calls the appropriate shader method to store data in the pixel shader's constant buffer for lights
-void LightsAndShadows::pushToGPU( ID3D11DeviceContext *devCtx, VanillaShaderClass &shader, float time, FXMVECTOR eyePosition )
+void LightsAndShadows::updateGPU( ID3D11DeviceContext *devCtx, VanillaShaderClass &shader, float time, FXMVECTOR eyePosition )
 {
     shader.SetPSLights(devCtx, XMLoadFloat3(&lightDirection), time, eyePosition, lights, blue, sunlight);
 }

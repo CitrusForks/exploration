@@ -116,7 +116,7 @@ float isSpotlightShadow(float4 lightClipSpaceCoordinates, uint whichShadow, floa
     else return false;
 }
 
-#define SIXTEEN_POINT_GAUSSIAN_KERNEL yes_please
+//#define SIXTEEN_POINT_GAUSSIAN_KERNEL yes_please
 
 //
 // shadow sampler with approximated Gaussian blur

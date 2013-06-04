@@ -49,7 +49,7 @@ float4 PostProcPixelShader(PixelInputType input) : SV_TARGET
 	baseOffset = input.tex - Half;
 	float2 tex = input.tex - baseOffset * 0.05; // zoom in a little to have some extra source image "off-screen"
 
-#if 0
+#if 1
 	// wavy ghost image effect
 	float4 textureColor = shaderTexture.Sample(SampleType, tex);
 	float darkness = 1.0 - saturate(distance(textureColor, float4(0,0,0,0))/1.5);
@@ -111,7 +111,7 @@ float4 PostProcPixelShader(PixelInputType input) : SV_TARGET
 	textureColor /= 4;
 #endif
 
-#if 1
+#if 0
 	// effects off
 	float4 textureColor = shaderTexture.Sample(SampleType, tex); 
 #endif

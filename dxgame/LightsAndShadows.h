@@ -46,7 +46,7 @@ public:
 
     bool renderShadowMaps( D3DClass &d3d, ModelManager & models );
 
-    void pushToGPU(ID3D11DeviceContext *devCtx, VanillaShaderClass &shader, float time, DirectX::FXMVECTOR eyePosition);
+    void updateGPU(ID3D11DeviceContext *devCtx, VanillaShaderClass &shader, float time, DirectX::FXMVECTOR eyePosition);
     void setShadowsAsViewResources(D3DClass &d3d);
 
     std::vector<Light> &getLights() { return lights; }

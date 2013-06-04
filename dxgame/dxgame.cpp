@@ -341,7 +341,7 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shad
 
     XMMATRIX world = XMMatrixTranslation(0.0f, 0.0f, 7.0f);
 
-    lighting.pushToGPU(d3d.GetDeviceContext(), shaders0, (float)timer.sinceInit(), FPCamera.getEyePosition());
+    lighting.updateGPU(d3d.GetDeviceContext(), shaders0, (float)timer.sinceInit(), FPCamera.getEyePosition());
 
     if (!lighting.renderShadowMaps(d3d, models)) return false;
 
