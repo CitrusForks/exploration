@@ -8,7 +8,7 @@ __declspec(align(16)) class Actor
 {
 private:
     DirectX::XMVECTOR m_position;
-    DirectX::XMVECTOR m_heading;
+    DirectX::XMVECTOR m_heading, m_upHint;
     DirectX::XMMATRIX m_world;
 
     int m_modelRefNum;
