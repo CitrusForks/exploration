@@ -52,6 +52,7 @@
 #include "Actor.h"
 #include "Chronometer.h"
 #include "CompoundMesh.h"
+#include "dxmathprint.h"
 #include "Errors.h"
 #include "FirstPerson.h"
 #include "Input.h"

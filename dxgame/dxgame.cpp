@@ -51,33 +51,6 @@
 using namespace std;
 using namespace DirectX;
 
-namespace DirectX
-{
-// a couple of operators to print out DirectXMath matrix and vector variables
-
-ostream& operator << ( ostream& os, CXMMATRIX m) 
-{ 
-    XMFLOAT4X4 mm;
-    XMStoreFloat4x4(&mm, m);
-
-    for( int i = 0; i < 4; ++ i) 
-    { 
-        for( int j = 0; j < 4; ++ j) os << mm.m[i][j] << "\t"; 
-        os << endl; 
-    } 
-    return os; 
-}
-
-ostream& operator << ( ostream& os, FXMVECTOR v)
-{
-    XMFLOAT4 vv;
-    XMStoreFloat4(&vv, v);
-    return os << vv.x << "\t" << vv.y << "\t" << vv.z << "\t" << vv.w << endl;
-}
-
-}
-
-
 LRESULT CALLBACK WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
 {
 	switch(umessage)
@@ -113,6 +86,7 @@ void reportError(const char *prefix)
 
 bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shaders0, Chronometer &timer, IntermediateRenderTarget &offScreen, ModelManager &models, CXMMATRIX projection, SimpleMesh &square, VanillaShaderClass &postProcess, CXMMATRIX ortho, SimpleText &text, LightsAndShadows &lighting);
 
+float test = 0.0f; // just testing.
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -254,44 +228,48 @@ int _tmain(int argc, _TCHAR* argv[])
 	bool done = false;
 	while (!done)
 	{
-                timer.Sample(); // read timer and update variables
+            // Handle the windows messages.
+            if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+            {
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
 
-                input.Frame(); // read input and update state
-
-                FPCamera.perFrameUpdate(timer.sincePrev(), input); // move the camera
-
-                soundSystem.perFrameUpdate();
-
-		// Handle the windows messages.
-		if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-
-		// If windows signals to end the application then exit out.
-		if(msg.message == WM_QUIT)
-		{
-			done = true;
-		}
-
-                if (!RenderScene(d3d, FPCamera, shaders0, timer, offScreen, models, projection, square, postProcess, ortho, text, lighting)) return -1;
-
-		//Sleep(10); // don't cook the CPU yet
-                angle += (float)(M_PI) * (float)timer.sincePrev();
-
-
-                static double last_honked = 0.0;
-                if (input.IsPressed(DIK_E) && timer.sinceInit() - last_honked > 0.5)
+                // If windows signals to end the application then exit out.
+                if(msg.message == WM_QUIT)
                 {
-                    soundSystem.play(beepverb);
-                    last_honked = timer.sinceInit();
+                    done = true;
                 }
 
+                continue; // ... all the messages! before we draw a new frame even
+            }
 
-                if (input.IsPressed(DIK_ESCAPE)) done = true;
 
-                if (input.IsPressed(DIK_LALT) && input.IsPressed(DIK_F4)) done = true; // be nice
+            timer.Sample(); // read timer and update variables
+
+            input.Frame(); // read input and update state
+
+            FPCamera.perFrameUpdate(timer.sincePrev(), input); // move the camera
+
+            soundSystem.perFrameUpdate();
+
+
+            if (!RenderScene(d3d, FPCamera, shaders0, timer, offScreen, models, projection, square, postProcess, ortho, text, lighting)) return -1;
+
+	    //Sleep(10); // don't cook the CPU yet
+            angle += (float)(M_PI) * (float)timer.sincePrev();
+            test = angle;
+
+            static double last_honked = 0.0;
+            if (input.IsPressed(DIK_E) && timer.sinceInit() - last_honked > 0.5)
+            {
+                soundSystem.play(beepverb);
+                last_honked = timer.sinceInit();
+            }
+
+
+            if (input.IsPressed(DIK_ESCAPE)) done = true;
+
+            if (input.IsPressed(DIK_LALT) && input.IsPressed(DIK_F4)) done = true; // be nice
 	}
 
         // need some kind of container to take care of all this cleanup...
@@ -428,13 +406,9 @@ bool doRenderCalls( ModelManager & models, D3DClass &d3d, VanillaShaderClass & s
         return false;
     }
 
-    static float offset = 0.0f;
-
-    offset += 0.01f;
-
     Actor duck(models.getRefNum("duck.obj"));
     duck.moveTo(XMVectorSet(-1.0f, -0.2f, 10.0f, 0));
-    duck.setPitchYaw(offset, 0);
+    duck.setPitchYaw(0, test);
 
     //if (!spider.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixScaling(0.05f, 0.05f, 0.05f) * worldFinal * XMMatrixTranslation(-1.0f, 2.0f, 6.0f), view, projection))
     //if (!models["duck.obj"]->render(d3d.GetDeviceContext(), &shader, XMMatrixScaling(5,5,5) * XMMatrixTranslation(-1.0f, -0.2f, 10.0f), view, projection, lights))

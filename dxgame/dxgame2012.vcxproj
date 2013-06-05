@@ -164,6 +164,7 @@
     <ClInclude Include="CompoundMesh.h" />
     <ClInclude Include="cpp_hlsl_defs.h" />
     <ClInclude Include="d3dclass.h" />
+    <ClInclude Include="dxmathprint.h" />
     <ClInclude Include="Errors.h" />
     <ClInclude Include="FirstPerson.h" />
     <ClInclude Include="input.h" />
@@ -193,6 +194,7 @@
     <ClCompile Include="CompoundMesh.cpp" />
     <ClCompile Include="d3dclass.cpp" />
     <ClCompile Include="dxgame.cpp" />
+    <ClCompile Include="dxmathprint.cpp" />
     <ClCompile Include="Errors.cpp" />
     <ClCompile Include="FirstPerson.cpp" />
     <ClCompile Include="Input.cpp" />

@@ -4,6 +4,7 @@
 #include <DirectXMath.h>
 #include <math.h>
 #include <limits>
+#include "dxmathprint.h"
 
 using namespace DirectX;
 using namespace std;
@@ -49,16 +50,20 @@ void Actor::updateWorldMatrix()
     XMStoreFloat4((XMFLOAT4*) rotation.m[2], m_heading); // this column is the vector component along the +Z axis
     XMVECTOR x_component = XMVector3Normalize(XMVector3Cross(m_heading, up) * (-1)); // we're left-handed, hence multiply by -1 .___.
     XMStoreFloat4((XMFLOAT4*) rotation.m[0], x_component); // along the +X axis
-    XMStoreFloat4((XMFLOAT4*) rotation.m[1], XMVector3Normalize(XMVector3Cross(m_heading, x_component))); // along the +Y axis, same regardless of handedness
+    XMStoreFloat4((XMFLOAT4*) rotation.m[1], /*XMVector3Normalize*/(XMVector3Cross(m_heading, x_component))); // along the +Y axis, same regardless of handedness
 
     // however, the above writes to rows rather than columns so a transpose is required
     m_world = XMMatrixTranspose(XMLoadFloat4x4(&rotation)) * XMMatrixTranslationFromVector(m_position);
+
+    cout << XMVectorSet(0,0,1,0) << "  -->  " << XMVector3TransformNormal(XMVectorSet(0,0,1,0), XMMatrixTranspose(XMLoadFloat4x4(&rotation))) << endl;
 }
 
 void Actor::setPitchYaw( float pitch, float yaw )
 {
-    m_heading = XMVector3Normalize(XMVector3Rotate(XMVectorSet(0, 0, 1, 0), XMQuaternionRotationRollPitchYaw(pitch, yaw, 0)));
+    XMVECTOR quato = XMQuaternionRotationRollPitchYaw(pitch, yaw, 0);
+    m_heading = XMVector3Normalize(XMVector3Rotate(XMVectorSet(0, 0, 1, 0), quato));
     updateWorldMatrix();
+    //m_world = XMMatrixRotationQuaternion(quato) * XMMatrixTranslationFromVector(m_position);
 }
 
 void Actor::setHeading( DirectX::FXMVECTOR heading )
