@@ -4,18 +4,20 @@
 #include <functional>
 
 
-class Actor
+__declspec(align(16)) class Actor
 {
 private:
-    DirectX::XMFLOAT4 m_position;
-    DirectX::XMFLOAT4 m_heading;
-    DirectX::XMFLOAT4X4 m_world;
+    DirectX::XMVECTOR m_position;
+    DirectX::XMVECTOR m_heading;
+    DirectX::XMMATRIX m_world;
 
     int m_modelRefNum;
     
     // perhaps something like this, not final:
     int m_animation;
     float m_animationStartTime;
+
+    void updateWorldMatrix();
 
 public:
 
@@ -24,7 +26,10 @@ public:
     void moveTo(DirectX::FXMVECTOR to);
     void move(DirectX::FXMVECTOR );
 
-    Actor(void);
+    void setPitchYaw(float pitch, float yaw);
+    void setHeading(DirectX::FXMVECTOR heading);
+
+    Actor(int modelRefNum);
     ~Actor(void);
 };
 

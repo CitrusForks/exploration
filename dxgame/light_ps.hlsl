@@ -305,7 +305,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
         }
 
 	// spotlight calculations
-	for (uint i = 0; i < 2; ++i) // once per light...
+	for (uint i = 0; i < numLights; ++i) // once per light...
 	{
 		if (spotlightPos[i].w == 0.0) break; // out of lights in the scene
 		
@@ -336,8 +336,9 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 				//beamAlignment = pow(beamAlignment,100); // XXX this seems like stupid way of doing this but the books do it pretty much like this, it turns out
 
 				//float fallOff = saturate((beamAlignment*1.00001-beamCosAngle)/(1-beamCosAngle)); // maybe this way is stupid too; 1.0001 was chosen experimentally
-				float fallOff = sin(PI/1.3 * (beamAlignment-beamCosAngle)/(1-beamCosAngle)); // maybe this way is stupid too; 1.0001 was chosen experimentally
-				
+				//float fallOff = sin(PI/1.3 * (beamAlignment-beamCosAngle)/(1-beamCosAngle)); // this gives a slightly darker spot in the middle of the light, like an old flashlight
+                                float fallOff = 1.0 - pow(1.7 * (beamAlignment-beamCosAngle)/(1-beamCosAngle) - 1, 2); // so does this but with a parabola; no sin() might be faster? also, the closer that 1.7 term is to 2, the darker the spot in the middle
+
 				spotlightIntensity *= fallOff * diffuseColor * attenuation; 
 
 				color = color + spotlightIntensity;

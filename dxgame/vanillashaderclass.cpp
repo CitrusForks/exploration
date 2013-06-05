@@ -544,11 +544,12 @@ bool VanillaShaderClass::SetPSLights( ID3D11DeviceContext *deviceContext, const 
     dataPtr->time = time;
     XMStoreFloat4(&dataPtr->cameraPos, cameraPos);
     
-    int j = 0;
+    int j = 0, numLights = 0;
     for (auto i = lights.begin(); i != lights.end() && j < NUM_SPOTLIGHTS; ++i, ++j)
     {
         if (i->enabled)
         {
+            numLights = j+1;
             dataPtr->spotlightPos[j] = i->position;
             dataPtr->spotlightDir[j] = XMFLOAT4(i->direction.x, i->direction.y, i->direction.z, 0);
             dataPtr->spotlightEtc[j].x = i->cosHalfAngle;
@@ -566,6 +567,8 @@ bool VanillaShaderClass::SetPSLights( ID3D11DeviceContext *deviceContext, const 
 
     dataPtr->ambientLight = ambientLight;
     dataPtr->diffuseLight = diffuseLight; // from directional light, that is
+
+    dataPtr->numLights = numLights;
 
     deviceContext->Unmap(m_lightBuffer, 0);
 

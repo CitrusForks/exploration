@@ -411,6 +411,11 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shad
 // it needs to be called once per shadow map and then once more for the final scene
 bool doRenderCalls( ModelManager & models, D3DClass &d3d, VanillaShaderClass & shader, CXMMATRIX view, CXMMATRIX projection, std::vector<Light> &lights)
 {
+    auto renderFuncForActors = (std::function<bool(CXMMATRIX,int)>) [&] (CXMMATRIX world, int modelRefNum) 
+    {
+        return models[modelRefNum]->render(d3d.GetDeviceContext(), &shader, world,  view, projection, lights);
+    };
+
     if (!models["Chekov.obj"]->render(d3d.GetDeviceContext(), &shader, XMMatrixScaling(0.53f, 0.53f, 0.53f) * XMMatrixTranslation(0.0f, 0.0f, 7.0f),  view, projection, lights))
     {
         Errors::Cry(L"Render error in scene. :|");
@@ -423,9 +428,17 @@ bool doRenderCalls( ModelManager & models, D3DClass &d3d, VanillaShaderClass & s
         return false;
     }
 
+    static float offset = 0.0f;
+
+    offset += 0.01f;
+
+    Actor duck(models.getRefNum("duck.obj"));
+    duck.moveTo(XMVectorSet(-1.0f, -0.2f, 10.0f, 0));
+    duck.setPitchYaw(offset, 0);
 
     //if (!spider.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixScaling(0.05f, 0.05f, 0.05f) * worldFinal * XMMatrixTranslation(-1.0f, 2.0f, 6.0f), view, projection))
-    if (!models["duck.obj"]->render(d3d.GetDeviceContext(), &shader, XMMatrixScaling(5,5,5) * XMMatrixTranslation(-1.0f, -0.2f, 10.0f), view, projection, lights))
+    //if (!models["duck.obj"]->render(d3d.GetDeviceContext(), &shader, XMMatrixScaling(5,5,5) * XMMatrixTranslation(-1.0f, -0.2f, 10.0f), view, projection, lights))
+    if (!duck.render( renderFuncForActors ))
     {
         Errors::Cry(L"Render error in scene. :|");
         return false;
@@ -438,6 +451,7 @@ bool doRenderCalls( ModelManager & models, D3DClass &d3d, VanillaShaderClass & s
     }
 #endif
     //shaders0.setVSCameraBuffer(d3d.GetDeviceContext(), FPCamera.getEyePosition(), timer.sinceInit(), 1);
+
 
     if (!models["torus.obj"]->render(d3d.GetDeviceContext(), &shader, XMMatrixTranslation(0.0f, 1.0f, 3.0f), view, projection, lights))
     {

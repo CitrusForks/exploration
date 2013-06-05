@@ -15,11 +15,12 @@ class FirstPerson;
 #include "vanillashaderclass.h"
 
 // this class holds data on spotlights, directional lights, and the shadows they cast
-class LightsAndShadows
+__declspec(align(16)) class LightsAndShadows
 {
 private:
-    VanillaShaderClass shadowShaders;
+    DirectX::XMVECTOR lightDirection; // direction of directional light (sunlight/moonlight/whatever celestial object illuminates your world or whatnot)
 
+    VanillaShaderClass shadowShaders;
 
     std::vector<Light> lights;
     vector<ShadowBuffer> shadows;
@@ -27,7 +28,6 @@ private:
     DirectX::XMFLOAT4 sunlight;
     DirectX::XMFLOAT4 blue;
 
-    DirectX::XMFLOAT3 lightDirection; // direction of directional light (sunlight/moonlight/whatever celestial object illuminates your world or whatnot)
 
 
 public:

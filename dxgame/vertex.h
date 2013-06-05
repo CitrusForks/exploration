@@ -4,6 +4,7 @@
 #include <directxmath.h>
 #include <string.h> // for memcmp()
 
+// Vertex matches the format of the vertex buffer
 struct Vertex
 { 
 	DirectX::XMFLOAT3 pos;    // vertex position in model space

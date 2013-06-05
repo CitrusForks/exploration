@@ -30,9 +30,9 @@ LightsAndShadows::LightsAndShadows(D3DClass &d3d, HWND window) : sunlight( 255.0
 
     // shadow maps for directional lights:
     shadows[shadows.size()-2].init(d3d.GetDevice(), d3d.GetDeviceContext(), 8); // 4Kx4K texture... kinda hefty, this is for the sweeping 100mx100m view
-    shadows[shadows.size()-1].init(d3d.GetDevice(), d3d.GetDeviceContext(), 4); // this is for the player's immediate surroundings
+    shadows[shadows.size()-1].init(d3d.GetDevice(), d3d.GetDeviceContext(), 4); // this is for whatever's right in front of the player, approximately
 
-    XMStoreFloat3(&lightDirection, XMVector3Normalize(XMVectorSet(0.1f,  -0.2f, 1.0f, 0.0f))); // directional light; N.B., still need to call pointMoonlight()
+    lightDirection = XMVector3Normalize(XMVectorSet(0.1f,  -0.2f, 1.0f, 0.0f)); // directional light; N.B., still need to call pointMoonlight()
 
     // default test light
     XMVECTOR axis45deg = XMVectorSet(-0.7071067811865475f, -0.7071067811865475f, 0.0f, 0.0f); // normalized 45 degree angle vector
@@ -79,7 +79,7 @@ void LightsAndShadows::setFlashlight( FirstPerson &FPCamera, float beamHalfAngle
 // this mainly calls the appropriate shader method to store data in the pixel shader's constant buffer for lights
 void LightsAndShadows::updateGPU( ID3D11DeviceContext *devCtx, VanillaShaderClass &shader, float time, FXMVECTOR eyePosition )
 {
-    shader.SetPSLights(devCtx, XMLoadFloat3(&lightDirection), time, eyePosition, lights, blue, sunlight);
+    shader.SetPSLights(devCtx, lightDirection, time, eyePosition, lights, blue, sunlight);
 }
 
 // set spotlight data; position and direction are mandatory, other values have defaults
@@ -97,7 +97,7 @@ void LightsAndShadows::setSpotlight( int which, DirectX::FXMVECTOR position, Dir
 // it also updates the relevant shadow information and therefore needs player camera data in order to optimize shadowmap placement
 void LightsAndShadows::pointMoonlight( DirectX::FXMVECTOR newDirection, FirstPerson &FPCamera )
 {
-    XMStoreFloat3(&lightDirection, newDirection);
+    lightDirection = newDirection;
 
     // wide view directional shadow
     XMVECTOR skyCamPos = FPCamera.getEyePosition();
