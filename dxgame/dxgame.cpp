@@ -408,7 +408,7 @@ bool doRenderCalls( ModelManager & models, D3DClass &d3d, VanillaShaderClass & s
 
     Actor duck(models.getRefNum("duck.obj"));
     duck.moveTo(XMVectorSet(-1.0f, -0.2f, 10.0f, 0));
-    duck.setPitchYaw(-XM_PIDIV2 - XM_PIDIV4, 0);
+    duck.setRollPitchYaw(-XM_PIDIV2 - XM_PIDIV4, 0);
 
     //if (!spider.Render(d3d.GetDeviceContext(), &shaders0, FPCamera.getPosition(), XMMatrixScaling(0.05f, 0.05f, 0.05f) * worldFinal * XMMatrixTranslation(-1.0f, 2.0f, 6.0f), view, projection))
     //if (!models["duck.obj"]->render(d3d.GetDeviceContext(), &shader, XMMatrixScaling(5,5,5) * XMMatrixTranslation(-1.0f, -0.2f, 10.0f), view, projection, lights))
