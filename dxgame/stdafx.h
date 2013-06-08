@@ -39,6 +39,7 @@
 // external lib deps:
 #include <lua.hpp>
 #include <fmod.hpp>
+#include "dSFMT.h"
 
 #include <assimp/types.h>
 #include <assimp/cimport.h>

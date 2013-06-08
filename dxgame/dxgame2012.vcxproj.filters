@@ -108,6 +108,21 @@
     <ClInclude Include="dxmathprint.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="dSFMT.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dSFMT-params521.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dSFMT-common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dSFMT-params.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -180,6 +195,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="dxmathprint.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dSFMT.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
