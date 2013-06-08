@@ -54,9 +54,9 @@ LightsAndShadows & LightsAndShadows::operator=( LightsAndShadows & nope )
 // this destructor mainly releases the shadow buffer
 LightsAndShadows::~LightsAndShadows(void)
 {
-    for (auto i = shadows.begin(); i != shadows.end(); ++i)
+    for (auto &i: shadows)
     {
-        i->release();
+        i.release();
     }
 }
 

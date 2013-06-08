@@ -47,6 +47,6 @@ public:
     virtual bool update(float now, float timeSinceLastUpdate); // return false as a hint to have yourself deleted from world.
 
     Actor(int modelRefNum);
-    ~Actor(void);
+    virtual ~Actor(void);
 };
 

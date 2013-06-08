@@ -29,9 +29,9 @@ ModelManager &ModelManager::operator=(ModelManager &nope)
 
 ModelManager::~ModelManager(void)
 {
-    for (auto i = modelLibrary.begin(); i != modelLibrary.end(); ++i)
+    for (auto &i: modelLibrary)
     {
-        i->release();
+        i.release();
     }
 
     modelLibrary.clear();

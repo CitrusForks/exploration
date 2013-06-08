@@ -97,7 +97,7 @@ Sound::~Sound(void)
 {
     // uh...
 
-    for (auto i = samples.begin(); i != samples.end(); ++i) (*i)->release(); 
+    for (auto &i: samples) i->release(); 
 
     system->release(); 
 }

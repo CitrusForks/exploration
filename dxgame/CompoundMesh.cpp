@@ -100,7 +100,7 @@ bool CompoundMesh::load(ID3D11Device* device, ID3D11DeviceContext *devCtx, Textu
 
     WalkNodes(m_root, [&indexCount] (CompoundMeshNode &l_node)
     {
-        for (auto i = l_node.meshes.begin(); i != l_node.meshes.end(); ++i) indexCount += i->getIndexCount();
+        for (auto &i: l_node.meshes) indexCount += i.getIndexCount();
     });
 
     cout << modelFileName << " loaded with " << indexCount << " total indices." << endl;

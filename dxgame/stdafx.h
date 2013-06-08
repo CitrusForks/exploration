@@ -62,6 +62,8 @@
 #include "LoadedTexture.h"
 #include "ModelManager.h"
 #include "Options.h"
+#include "Scene.h"
+#include "SceneDemo.h"
 #include "SimpleMesh.h"
 #include "SimpleText.h"
 #include "Sound.h"
