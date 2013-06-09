@@ -406,7 +406,7 @@ bool doRenderCalls( ModelManager & models, D3DClass &d3d, VanillaShaderClass & s
         return false;
     }
 
-    Actor duck(models.getRefNum("duck.obj"));
+    Actor duck(models.getRefNum("duck.obj"), 0);
     duck.moveTo(XMVectorSet(-1.0f, -0.2f, 10.0f, 0));
     duck.setRollPitchYaw(-XM_PIDIV2 - XM_PIDIV4, 0);
 

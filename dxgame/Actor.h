@@ -20,7 +20,9 @@ private:
     float m_lastYaw, m_lastRoll, m_lastPitch; // just for convenience
 
     int m_modelRefNum;
-    
+  
+    int m_sceneID; // or any extra id or other opaque integer label slapped onto the object by external agents
+
     // perhaps something like this, not final:
     int m_animation; // ???
     float m_animationStartTime; // ???
@@ -46,7 +48,6 @@ public:
     // the default implementation only updates SLERP:
     virtual bool update(float now, float timeSinceLastUpdate); // return false as a hint to have yourself deleted from world.
 
-    Actor(int modelRefNum);
+    Actor(int modelRefNum, int extraID, DirectX::CXMMATRIX correction = DirectX::XMMatrixIdentity());
     virtual ~Actor(void);
 };
-

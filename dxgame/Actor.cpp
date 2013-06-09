@@ -11,9 +11,9 @@ using namespace std;
 
 static bool arrrg = false;
 
-Actor::Actor(int modelRefNum) : m_modelRefNum(modelRefNum), m_lastRoll(0.0f), m_lastPitch(0.0f), m_lastYaw(0.0f)
+Actor::Actor(int modelRefNum, int extraID, DirectX::CXMMATRIX correction /* = XMMatrixIdentity() */) : m_modelRefNum(modelRefNum), m_sceneID(extraID), m_lastRoll(0.0f), m_lastPitch(0.0f), m_lastYaw(0.0f)
 {
-    m_correction = XMMatrixIdentity(); // TODO
+    m_correction = correction;
     m_position = XMVectorSet(0, 0, 0, 0);
     m_rotation = XMQuaternionIdentity();
     updateWorldMatrix();

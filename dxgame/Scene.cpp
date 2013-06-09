@@ -19,7 +19,6 @@ bool Scene::update( float now, float timeSinceLastUpdate )
         if (i) rc = i->update(now, timeSinceLastUpdate);
         if (!true)
         {
-            delete i;
             i = nullptr;
         }
     }
@@ -29,8 +28,10 @@ bool Scene::update( float now, float timeSinceLastUpdate )
 
 bool Scene::render( std::function<bool(DirectX::CXMMATRIX world, int modelRefNum)> &renderFunc )
 {
-    for (auto i: m_actors)
+    for (auto &i: m_actors)
     {
-        if (i) i->render(renderFunc);
+        if (i) if(!i->render(renderFunc)) return false;
     }
+
+    return true;
 }
