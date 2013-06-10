@@ -8,8 +8,6 @@
 // ...perhaps an additional Lua script?
 class Scene
 {
-    std::vector <shared_ptr<Actor>> m_actors;
-
 public:
 
     bool render(std::function<bool(DirectX::CXMMATRIX world, int modelRefNum)> &renderFunc); // render all actors
@@ -19,9 +17,11 @@ public:
     int enters(shared_ptr<Actor> actor); // adds an actor, named with theater term to be precious
     void exits(int actor); // I hope you saved that reference from the enters() call...
 
-
-
     Scene(void);
     virtual ~Scene(void);
+
+private:
+    std::vector <shared_ptr<Actor>> m_actors;
+
 };
 
