@@ -57,6 +57,9 @@ public:
         void depthOff();
 
         void setDepthBias(bool onOrOffOrWhatever);
+
+        HWND getWindow() { return m_window; }
+
 private:
 	bool m_vsync_enabled;
 	int m_videoCardMemory;
@@ -72,6 +75,8 @@ private:
 	ID3D11RasterizerState *m_rasterState, *m_biasRasterState;
 	DirectX::XMFLOAT4X4 m_projectionMatrix;
 	DirectX::XMFLOAT4X4 m_orthoMatrix;
+
+        HWND m_window;
 };
 
 #endif

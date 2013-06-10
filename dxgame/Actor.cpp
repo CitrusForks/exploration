@@ -11,7 +11,7 @@ using namespace std;
 
 static bool arrrg = false;
 
-Actor::Actor(int modelRefNum, int extraID, DirectX::CXMMATRIX correction /* = XMMatrixIdentity() */) : m_modelRefNum(modelRefNum), m_sceneID(extraID), m_lastRoll(0.0f), m_lastPitch(0.0f), m_lastYaw(0.0f)
+Actor::Actor(int modelRefNum, DirectX::CXMMATRIX correction /* = XMMatrixIdentity() */) : m_modelRefNum(modelRefNum), m_lastRoll(0.0f), m_lastPitch(0.0f), m_lastYaw(0.0f)
 {
     m_correction = correction;
     m_position = XMVectorSet(0, 0, 0, 0);
@@ -26,7 +26,7 @@ Actor::~Actor(void)
 }
 
 
-bool Actor::render( std::function<bool(DirectX::CXMMATRIX world, int modelRefNum)> &renderFunc)
+bool Actor::render( std::function<bool(DirectX::CXMMATRIX world, int modelRefNum)> renderFunc )
 {
     return renderFunc(m_world, m_modelRefNum);
 }
@@ -34,7 +34,7 @@ bool Actor::render( std::function<bool(DirectX::CXMMATRIX world, int modelRefNum
 
 void Actor::moveTo( DirectX::FXMVECTOR to )
 {
-    m_position =to;
+    m_position = to;
     updateWorldMatrix();
 }
 

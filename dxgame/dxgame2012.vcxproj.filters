@@ -126,6 +126,9 @@
     <ClInclude Include="SceneDemo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SSE2Aligned.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

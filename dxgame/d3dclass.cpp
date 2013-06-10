@@ -54,6 +54,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	ID3D11Texture2D* backBufferPtr;
 	//float fieldOfView, screenAspect;
 
+        m_window = hwnd;
 
 	// Store the vsync setting.
 	m_vsync_enabled = vsync;

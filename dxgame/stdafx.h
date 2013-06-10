@@ -49,6 +49,7 @@
 #include <directxmath.h>
 
 #include "cpp_hlsl_defs.h"
+#include "SSE2Aligned.h"
 
 #include "Actor.h"
 #include "Chronometer.h"

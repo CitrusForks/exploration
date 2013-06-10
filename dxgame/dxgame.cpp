@@ -4,7 +4,7 @@
 #include "stdafx.h"
 
 // define this to debug main shaders with VS2012:
-// #define DISABLE_OFFSCREEN_BUFFER 1
+#define DISABLE_OFFSCREEN_BUFFER 1
 // 
 
 
@@ -84,7 +84,7 @@ void reportError(const char *prefix)
 	cout << prefix << errorStr << endl;
 }
 
-bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shaders0, Chronometer &timer, IntermediateRenderTarget &offScreen, ModelManager &models, CXMMATRIX projection, SimpleMesh &square, VanillaShaderClass &postProcess, CXMMATRIX ortho, SimpleText &text, LightsAndShadows &lighting);
+bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shaders0, Chronometer &timer, IntermediateRenderTarget &offScreen, Scene *scene, CXMMATRIX projection, SimpleMesh &square, VanillaShaderClass &postProcess, CXMMATRIX ortho, SimpleText &text);
 
 float test = 0.0f; // just testing.
 
@@ -188,28 +188,9 @@ int _tmain(int argc, _TCHAR* argv[])
         // this is how sounds are loaded:
         int beepverb = soundSystem.loadSound("beepverb.wav");
 
-        // models will hold all the models we load:
-        ModelManager models(d3d.GetDevice(), d3d.GetDeviceContext());
+        SceneDemo scene(d3d);
 
-                // TODO: load all this in a separate "scene" abstraction class
-        CompoundMesh *mesh = models["Chekov.obj"];
-
-        models["duck.obj"]; // retrieving an unloaded model triggers a load from disk
-
-        models["floor.obj"];
-
-        models["torus.obj"];
-
-        models["LPBuildX13r_3ds.3ds"];
-
-        models["spooky_tree.obj"];
-
-        //if (!mesh || !duck || !floor || !torus || !building) return -1;
-
-        // WARNING, pointers returned by models["whatever"] may be invalid later if a model is loaded and the internal vector is reallocated. Use refnums to store an index for longterm fast lookup!
-
-        LightsAndShadows lighting(d3d, window);
-        lighting.pointMoonlight(XMVector3Normalize(XMVectorSet(0.1f,  -0.2f, 1.0f, 0.0f)), FPCamera);
+        scene.getLights()->pointMoonlight(XMVector3Normalize(XMVectorSet(0.1f,  -0.2f, 1.0f, 0.0f)), FPCamera);
 
         SimpleMesh square;
         if (!square.load(L"square.obj", d3d.GetDevice()))
@@ -252,8 +233,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
             soundSystem.perFrameUpdate();
 
+            scene.update(timer.sinceInit(), timer.sincePrev());
 
-            if (!RenderScene(d3d, FPCamera, shaders0, timer, offScreen, models, projection, square, postProcess, ortho, text, lighting)) return -1;
+            if (!RenderScene(d3d, FPCamera, shaders0, timer, offScreen, &scene, projection, square, postProcess, ortho, text)) return -1;
 
 	    //Sleep(10); // don't cook the CPU yet
             angle += (float)(M_PI) * (float)timer.sincePrev();
@@ -290,14 +272,15 @@ int _tmain(int argc, _TCHAR* argv[])
 	return 0;
 }
 
-bool doRenderCalls( ModelManager & models, D3DClass &d3d, VanillaShaderClass & shader, CXMMATRIX view, CXMMATRIX projection, std::vector<Light> &lights);
 
-
-bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shaders0, Chronometer &timer, IntermediateRenderTarget &offScreen, ModelManager &models, CXMMATRIX projection, SimpleMesh &square, VanillaShaderClass &postProcess, CXMMATRIX ortho, SimpleText &text, LightsAndShadows &lighting)
+bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shaders0, Chronometer &timer, IntermediateRenderTarget &offScreen, Scene *scene, CXMMATRIX projection, SimpleMesh &square, VanillaShaderClass &postProcess, CXMMATRIX ortho, SimpleText &text)
 {
+    shared_ptr<LightsAndShadows> lighting = scene->getLights();
+
     //
     // Rendering
     // 
+
 
 #ifndef DISABLE_OFFSCREEN_BUFFER
     d3d.BeginScene(false); // don't clear back buffer; we're just going to overwrite it completely from the off-screen buffer
@@ -305,8 +288,8 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shad
     d3d.BeginScene(true);
 #endif
     
-    lighting.setFlashlight(FPCamera, XMConvertToRadians(25.0f/2));
-    lighting.pointMoonlight(XMVector3Normalize(XMVectorSet(0.1f,  -0.2f, 1.0f, 0.0f)), FPCamera);
+    lighting->setFlashlight(FPCamera, XMConvertToRadians(25.0f/2));
+    lighting->pointMoonlight(XMVector3Normalize(XMVectorSet(0.1f,  -0.2f, 1.0f, 0.0f)), FPCamera);
 
 #if 0
     sunlight.x *=2;
@@ -317,11 +300,17 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shad
 
     XMMATRIX world = XMMatrixTranslation(0.0f, 0.0f, 7.0f);
 
-    lighting.updateGPU(d3d.GetDeviceContext(), shaders0, (float)timer.sinceInit(), FPCamera.getEyePosition());
+    lighting->updateGPU(d3d.GetDeviceContext(), shaders0, (float)timer.sinceInit(), FPCamera.getEyePosition());
 
-    if (!lighting.renderShadowMaps(d3d, [&](VanillaShaderClass &shader, CXMMATRIX view, CXMMATRIX projection, std::vector<Light> &lights)
+    if (!lighting->renderShadowMaps(d3d, [&](VanillaShaderClass &shader, CXMMATRIX view, CXMMATRIX projection, std::vector<Light> &lights)
         {
-            return doRenderCalls(models, d3d, shader, view, projection, lights); // we've captured models from the current scope; now the LightsAndShadows class doesn't need to be aware of it
+            Scene::renderFunc_t renderFuncForScene = [&] (CXMMATRIX world, shared_ptr<ModelManager> models, int modelRefNum, shared_ptr<LightsAndShadows> lighting) 
+            {
+                return (*models)[modelRefNum]->render(d3d.GetDeviceContext(), &shaders0, world,  view, projection, lights);
+            };
+
+            //return doRenderCalls(scene, d3d, shader, view, projection, lights); 
+            return scene->render(renderFuncForScene);
         }
     )) return false;
 
@@ -345,14 +334,16 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shad
 	d3d.depthOn();
 #endif
 
-    lighting.setShadowsAsViewResources(d3d);
+    lighting->setShadowsAsViewResources(d3d);
     d3d.setDepthBias(false);
 
+    Scene::renderFunc_t renderFuncForScene = [&] (CXMMATRIX world, shared_ptr<ModelManager> models, int modelRefNum, shared_ptr<LightsAndShadows> lighting) 
+    {
+        return (*models)[modelRefNum]->render(d3d.GetDeviceContext(), &shaders0, world,  view, projection, lighting->getLights());
+    };
 
-    if (!doRenderCalls(models, d3d, shaders0, view, projection, lighting.getLights())) return false;
-    //if (!doRenderCalls(models, d3d, shaders0, XMMatrixLookToLH(FPCamera.getEyePosition() + XMVectorSet(0, 100.0f, 0, 0), 
-    //    XMLoadFloat3(&lightDirection), XMVectorSet(0, 1, 0, 0)), XMMatrixOrthographicLH(50, 50, 0.1, 1000), worldFinal, lightProj, numLights)) return false;
-    
+    if (!scene->render(renderFuncForScene)) return false; // XXX style: use exceptions instead?
+
     //
     // Done rendering scene
     //
@@ -389,6 +380,7 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shad
 // it needs to be called once per shadow map and then once more for the final scene
 bool doRenderCalls( ModelManager & models, D3DClass &d3d, VanillaShaderClass & shader, CXMMATRIX view, CXMMATRIX projection, std::vector<Light> &lights)
 {
+    exit(0);
     auto renderFuncForActors = (std::function<bool(CXMMATRIX,int)>) [&] (CXMMATRIX world, int modelRefNum) 
     {
         return models[modelRefNum]->render(d3d.GetDeviceContext(), &shader, world,  view, projection, lights);

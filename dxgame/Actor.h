@@ -2,14 +2,17 @@
 
 #include <directxmath.h>
 #include <functional>
+#include "SSE2Aligned.h"
 
 
-__declspec(align(16)) class Actor
+__declspec(align(16)) class Actor 
+    : public SSE2Aligned
 {
 private:
-    DirectX::XMVECTOR m_position;
     DirectX::XMMATRIX m_correction; // a constant correction to be applied first to the world matrix just in case--mostly because our "art assets" are actually "jacked up downloads from the free 3d model sites"
     DirectX::XMMATRIX m_world;
+
+    DirectX::XMVECTOR m_position;
 
     DirectX::XMVECTOR m_rotation;
 
@@ -32,7 +35,7 @@ private:
 
 public:
 
-    bool render(std::function<bool(DirectX::CXMMATRIX world, int modelRefNum)> &renderFunc);
+    bool render(std::function<bool(DirectX::CXMMATRIX world, int modelRefNum)> renderFunc);
 
     void moveTo(DirectX::FXMVECTOR to);
     void move(DirectX::FXMVECTOR delta);
@@ -48,6 +51,10 @@ public:
     // the default implementation only updates SLERP:
     virtual bool update(float now, float timeSinceLastUpdate); // return false as a hint to have yourself deleted from world.
 
-    Actor(int modelRefNum, int extraID, DirectX::CXMMATRIX correction = DirectX::XMMatrixIdentity());
+    // set m_sceneID; only Scene is likely to have that information, let it be set apart from construction
+    void setID(int id) { m_sceneID = id; }
+
+    Actor(int modelRefNum, DirectX::CXMMATRIX correction = DirectX::XMMatrixIdentity());
     virtual ~Actor(void);
+
 };

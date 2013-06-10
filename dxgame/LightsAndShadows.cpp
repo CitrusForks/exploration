@@ -11,10 +11,10 @@
 using namespace DirectX;
 using namespace std;
 
-LightsAndShadows::LightsAndShadows(D3DClass &d3d, HWND window) : sunlight( 255.0f / 255.0f, 255.0f / 255.0f, 251.0f / 255.0f, 1.0f ), blue(0, 0, 1.0f, 1.0f )
+LightsAndShadows::LightsAndShadows(D3DClass &d3d) : sunlight( 255.0f / 255.0f, 255.0f / 255.0f, 251.0f / 255.0f, 1.0f ), blue(0, 0, 1.0f, 1.0f )
 {
     // shadowShaders contains a cut-down pixel shader to facilitate generating a shadow map from a depth buffer
-    shadowShaders.InitializeShader(d3d.GetDevice(), window, L"light_vs.cso", L"shadow_ps.cso");
+    shadowShaders.InitializeShader(d3d.GetDevice(), d3d.getWindow(), L"light_vs.cso", L"shadow_ps.cso");
 
     lights.resize(NUM_SPOTLIGHTS+2); // spotlights + 2 spots for directional lights
 

@@ -15,7 +15,9 @@ class FirstPerson;
 #include "vanillashaderclass.h"
 
 // this class holds data on spotlights, directional lights, and the shadows they cast
+// it's barely more than a struct, honestly
 __declspec(align(16)) class LightsAndShadows
+    : public SSE2Aligned
 {
 private:
     DirectX::XMVECTOR lightDirection; // direction of directional light (sunlight/moonlight/whatever celestial object illuminates your world or whatnot)
@@ -32,7 +34,7 @@ private:
 
 public:
 
-    LightsAndShadows( D3DClass &d3d, HWND window);
+    LightsAndShadows( D3DClass &d3d );
     ~LightsAndShadows(void);
 
     // un-copy and un-assign

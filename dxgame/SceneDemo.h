@@ -5,16 +5,20 @@
 #include "Scene.h"
 #include "ModelManager.h"
 #include "TextureManager.h"
+#include "d3dclass.h"
 
 class SceneDemo :
     public Scene
 {
 public:
-    SceneDemo(shared_ptr<ModelManager> models = nullptr, shared_ptr<TextureManager> textures = nullptr);
+    SceneDemo(D3DClass &d3d, shared_ptr<ModelManager> models = nullptr, shared_ptr<TextureManager> textures = nullptr);
     ~SceneDemo(void);
 
+    virtual bool update( float now, float timeSinceLastUpdate );
+
+
 private:
-    shared_ptr<ModelManager> m_models;
-    shared_ptr<TextureManager> m_textures;
+    shared_ptr<Actor> duck, chekov, tree, torus, house;
+
 };
 

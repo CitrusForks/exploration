@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include "d3dclass.h"
 
 class ModelManager
 {
@@ -19,7 +20,7 @@ private:
     TextureManager m_texMgr;
 
 public:
-    ModelManager(ID3D11Device *device, ID3D11DeviceContext *devCtx);
+    ModelManager(D3DClass &d3d);
     ModelManager(ModelManager &);
     ModelManager &operator=(ModelManager &);
     ~ModelManager(void);

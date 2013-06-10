@@ -14,7 +14,7 @@ ModelManager::ModelManager(ModelManager &no)
     exit(1);
 }
 
-ModelManager::ModelManager( ID3D11Device *device, ID3D11DeviceContext *devCtx ) : m_device(device), m_deviceContext(devCtx)
+ModelManager::ModelManager( D3DClass &d3d ) : m_device(d3d.GetDevice()), m_deviceContext(d3d.GetDeviceContext())
 {
 
 }
