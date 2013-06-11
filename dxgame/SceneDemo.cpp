@@ -31,15 +31,15 @@ SceneDemo::SceneDemo(D3DClass &d3d, shared_ptr<ModelManager> models, shared_ptr<
         new Actor(m_models->getRefNum("spooky_tree.obj"))
         ));
 
-#if 0
+    enters(shared_ptr<Actor>(
+        new Actor(m_models->getRefNum("floor.obj"))
+        ));
+#if 1
 
     enters(house = shared_ptr<Actor>(
         new Actor(m_models->getRefNum("LPBuildX13r_3ds.3ds"), XMMatrixRotationAxis(XMVectorSet(1.0f,0,0,0), (float)M_PI_2) * XMMatrixScaling(0.15f, 0.15f, 0.15f) * XMMatrixTranslation(0.0f, 4.5001f, 0))
         ));
 
-    enters(shared_ptr<Actor>(
-        new Actor(m_models->getRefNum("floor.obj"))
-        ));
     house->moveTo(XMVectorSet(-10, 0, 15, 1));
 
 #endif
@@ -56,10 +56,11 @@ SceneDemo::~SceneDemo(void)
 
 bool SceneDemo::update( float now, float timeSinceLastUpdate )
 {
-    //duck->moveTo(XMVectorSet(-1.0f, -0.2f + sin(now*2)/8, 10.0f, 0));
+    duck->moveTo(XMVectorSet(-1.0f, -0.2f + sin(now*2)/8, 10.0f, 0));
     //duck->setRollPitchYaw(-XM_PIDIV2 - XM_PIDIV4, 0);
 
-    //torus->moveTo(XMVectorSet(0, 1, 3, 1));
+    torus->moveTo(XMVectorSet(0, 1, 3, 1));
+    torus->setRollPitchYaw(now, 0);
 
     return Scene::update(now, timeSinceLastUpdate);
 }

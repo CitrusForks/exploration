@@ -93,7 +93,7 @@ private:
 	ID3D11PixelShader* m_pixelShader;
 	ID3D11InputLayout* m_layout;
 	ID3D11Buffer *m_matrixBuffer, *m_cameraBuffer, *m_lightBuffer, *m_materialBuffer;
-	ID3D11SamplerState* m_sampleState[3]; // [0]: anisotropic filtering for normal rendering, [1]: unfiltered for copying to screen, [2]: unused yet... something for shadows
+	ID3D11SamplerState* m_sampleState[4]; // [0]: anisotropic filtering for normal rendering, [1]: linear filter with border for shadows, [2]: unfiltered, wrapping, [3]: linear filter, wrapping
 };
 
 #endif

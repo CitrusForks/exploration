@@ -96,6 +96,7 @@ extern "C" {
 #  if !defined(DSFMT_UINT32_DEFINED) && !defined(SFMT_UINT32_DEFINED)
 typedef unsigned int uint32_t;
 typedef unsigned __int64 uint64_t;
+#    undef UINT64_C
 #    define UINT64_C(v) (v ## ui64)
 #    define DSFMT_UINT32_DEFINED
 #    if !defined(inline)

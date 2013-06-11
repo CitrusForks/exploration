@@ -4,7 +4,7 @@
 #include "stdafx.h"
 
 // define this to debug main shaders with VS2012:
-#define DISABLE_OFFSCREEN_BUFFER 1
+//#define DISABLE_OFFSCREEN_BUFFER here_comes_the_debugging_train_chooo_choooooo
 // 
 
 
@@ -234,7 +234,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
             soundSystem.perFrameUpdate();
 
-            scene.update(timer.sinceInit(), timer.sincePrev());
+            scene.update((float)timer.sinceInit(), (float)timer.sincePrev());
 
             if (!RenderScene(d3d, FPCamera, shaders0, timer, offScreen, &scene, projection, square, postProcess, ortho, text)) return -1;
 

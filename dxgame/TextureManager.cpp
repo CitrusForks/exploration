@@ -12,7 +12,7 @@ TextureManager::TextureManager(void)
 
 TextureManager::TextureManager( TextureManager &no )
 {
-    Errors::Cry("You can't copy TextureManager! Use a pointer! >:| Everything will break now.");
+    Errors::Cry("You can't copy TextureManager! Use a shared_tr! >:| Everything will break now.");
 }
 
 TextureManager & TextureManager::operator=( TextureManager &nope )

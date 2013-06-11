@@ -40,18 +40,18 @@ bool Scene::update( float now, float timeSinceLastUpdate )
 
 // render all actors
 // renderFunc is a function that encapsulates the entire graphics engine state needed to render a frame except for the data in Scene
-bool Scene::render( renderFunc_t renderFunc )
+bool Scene::render( renderFunc_t &renderFunc )
 {
     auto lighting = m_lighting; // copy in local scope to allow capture by lambda expression
     auto models = m_models;
+    Actor::renderFunc_t renderFuncForActor = [&models, &lighting, &renderFunc] (DirectX::CXMMATRIX world, int modelRefNum)
+    {
+        return renderFunc(world, models, modelRefNum, lighting);
+    };
 
     for (auto &i: m_actors)
     {
-        if (i) if(!i->render(
-            [&models, &lighting, &renderFunc] (DirectX::CXMMATRIX world, int modelRefNum)
-            {
-                return renderFunc(world, models, modelRefNum, lighting);
-            })) return false;
+        if (i) if(!i->render(renderFuncForActor)) return false;
     }
 
     return true;

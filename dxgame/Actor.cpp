@@ -26,7 +26,7 @@ Actor::~Actor(void)
 }
 
 
-bool Actor::render( std::function<bool(DirectX::CXMMATRIX world, int modelRefNum)> renderFunc )
+bool Actor::render( renderFunc_t &renderFunc )
 {
     return renderFunc(m_world, m_modelRefNum);
 }

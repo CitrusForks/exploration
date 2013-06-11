@@ -35,7 +35,8 @@ private:
 
 public:
 
-    bool render(std::function<bool(DirectX::CXMMATRIX world, int modelRefNum)> renderFunc);
+    typedef std::function<bool(DirectX::CXMMATRIX world, int modelRefNum)> renderFunc_t;
+    bool render(renderFunc_t &renderFunc);
 
     void moveTo(DirectX::FXMVECTOR to);
     void move(DirectX::FXMVECTOR delta);

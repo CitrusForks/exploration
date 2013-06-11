@@ -23,6 +23,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
 #include <tchar.h>
@@ -50,7 +52,7 @@
 
 #include <directxmath.h>
 
-#include "cpp_hlsl_defs.h"
+//#include "cpp_hlsl_defs.h" // tiny file which may change often, doesn't belong in precompiled headers
 #include "SSE2Aligned.h"
 
 #include "Actor.h"

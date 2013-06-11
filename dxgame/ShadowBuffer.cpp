@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "ShadowBuffer.h"
+#include "cpp_hlsl_defs.h"
 
 
 ShadowBuffer::ShadowBuffer()
@@ -11,8 +12,8 @@ ShadowBuffer::~ShadowBuffer()
 }
 
 
-int ShadowBuffer::width = 512;
-int ShadowBuffer::height = 512;
+int ShadowBuffer::width = SHADOWMAP_DIMENSIONS;
+int ShadowBuffer::height = SHADOWMAP_DIMENSIONS;
 
 bool ShadowBuffer::init( ID3D11Device *device, ID3D11DeviceContext *deviceContext, int resolutionMultiplier /*= 1*/ )
 {

@@ -2,7 +2,7 @@
 
 #include "cpp_hlsl_defs.h"
 
-// a random number function of some sort that I found on the net, ported from apparently glsl:
+// a random number function of some sort that I found on the net, which I ported from glsl:
 
 // Input: It uses texture coords as the random number seed.
 // Output: Random number: [0,1), that is between 0.0 and 0.999999... inclusive.
@@ -41,9 +41,13 @@ Texture2D shadowMap[NUM_SPOTLIGHTS+2] : register(t3);
 // so for now, this is what's happening.
 
 // anisotropic filtering sampler:
-SamplerState SampleType : register(s0);
-// unfiltered sampler:
-SamplerState SampleUnfiltered : register(s1);
+SamplerState SampleAnisotropic : register(s0);
+// linear-filtered + borders sampler:
+SamplerState SampleShadows : register(s1);
+// unfiltered
+SamplerState SampleUnfiltered : register(s2);
+// unfiltered
+SamplerState SampleLinear : register(s3);
 
 // this buffer needs to be split up into separate lights and material buffers:
 cbuffer MaterialBuffer : register(b0)
@@ -90,7 +94,7 @@ static const float PI = 3.14159265358979;
 float sampleShadowMap(float2 uv, uint which)
 {
 // because we can't use a texture array with a depth buffer, we live with this:
-#define SAMPLESHADOWMAP(i) if (i == which) return shadowMap[i].Sample(SampleUnfiltered, uv).r;
+#define SAMPLESHADOWMAP(i) if (i == which) return shadowMap[i].Sample(SampleShadows, uv).r;
 SAMPLESHADOWMAP(0)
 SAMPLESHADOWMAP(1)
 SAMPLESHADOWMAP(2)
@@ -129,6 +133,7 @@ float blurredShadow(in float4 shadowUV, in int mapNum, in float ds)
 {
     float totalShadow = 0.0f;
     // N.B., Gaussian blur kernel: http://homepages.inf.ed.ac.uk/rbf/HIPR2/gsmooth.htm
+    // could be more elegant perhaps? but this works
 
     if (isSpotlightShadow(shadowUV, mapNum, float2(0,0)))
     //{ // uncomment these braces to limit shadow only to area where the center pixel of kernel is in shadow; it's a last resort to cut down on glitches
@@ -137,11 +142,9 @@ float blurredShadow(in float4 shadowUV, in int mapNum, in float ds)
         if (isSpotlightShadow(shadowUV, mapNum, float2(-ds,-ds))) totalShadow += 16.0/273;
         if (isSpotlightShadow(shadowUV, mapNum, float2(-ds,ds))) totalShadow += 16.0/273;
         if (isSpotlightShadow(shadowUV, mapNum, float2(ds,-ds))) totalShadow += 16.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2(0,ds))) totalShadow += 26.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2(0,-ds))) totalShadow += 26.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds,0))) totalShadow += 26.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2(ds,0))) totalShadow += 26.0/273;
+
 #ifdef SIXTEEN_POINT_GAUSSIAN_KERNEL
+        // this only runs well on the 660
         if (isSpotlightShadow(shadowUV, mapNum, float2(-ds*2,0))) totalShadow += 7.0/273;
         if (isSpotlightShadow(shadowUV, mapNum, float2( ds*2,0))) totalShadow += 7.0/273;
         if (isSpotlightShadow(shadowUV, mapNum, float2(0,-ds*2))) totalShadow += 7.0/273;
@@ -152,6 +155,8 @@ float blurredShadow(in float4 shadowUV, in int mapNum, in float ds)
         if (isSpotlightShadow(shadowUV, mapNum, float2( ds*2,-ds*2))) totalShadow += 1.0/273;
         if (isSpotlightShadow(shadowUV, mapNum, float2( ds*2, ds*2))) totalShadow += 1.0/273;
 
+        if (totalShadow == 0.0f) return 1.0f; // early break
+
         if (isSpotlightShadow(shadowUV, mapNum, float2(-ds*2,-ds  ))) totalShadow += 4.0/273;
         if (isSpotlightShadow(shadowUV, mapNum, float2(-ds  ,-ds*2))) totalShadow += 4.0/273;
         if (isSpotlightShadow(shadowUV, mapNum, float2(-ds*2, ds  ))) totalShadow += 4.0/273;
@@ -161,6 +166,16 @@ float blurredShadow(in float4 shadowUV, in int mapNum, in float ds)
         if (isSpotlightShadow(shadowUV, mapNum, float2( ds*2, ds  ))) totalShadow += 4.0/273;
         if (isSpotlightShadow(shadowUV, mapNum, float2( ds  , ds*2))) totalShadow += 4.0/273;
 #endif
+    
+        if (totalShadow == 0.0f) return 1.0f; // early break
+
+        if (isSpotlightShadow(shadowUV, mapNum, float2(0,ds))) totalShadow += 26.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2(0,-ds))) totalShadow += 26.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds,0))) totalShadow += 26.0/273;
+        if (isSpotlightShadow(shadowUV, mapNum, float2(ds,0))) totalShadow += 26.0/273;
+
+
+        
     //}
 
     const float maxPossibleShadow = (41.0 + 16.0 * 4 + 26.0 * 4) / 273
@@ -202,16 +217,16 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	//return float4(0, dot(input.tangent, input.normal), 0, 1)*10; // uncomment for error visualization
 	//return float4(tangent.x, tangent.y, tangent.z, 1); // uncomment for amazing technicolor vomit shader
 
-	textureColor = diffuseTexture.Sample(SampleType, input.tex);
+	textureColor = diffuseTexture.Sample(SampleAnisotropic, input.tex);
 
-	clip(textureColor.a - 0.95); // discard transparent pixels
+	clip(textureColor.a - 0.05); // discard transparent pixels
 
 	float specularMultiplier = 1.0f;
 
 	// check the specular map
 	if (useSpecularMap)
 	{
-	    specularMultiplier = specularMap.Sample(SampleType, input.tex).r;
+	    specularMultiplier = specularMap.Sample(SampleUnfiltered, input.tex).r;
 
             if (specularColor.x == 0.0f && specularColor.y == 0.0f && specularColor.z == 0.0f) actualSpecularColor = float4(0.1, 0.1, 0.1, 0.1);
 	} 
@@ -219,17 +234,17 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 
 	float3 normal;
 
-	// make sure tangent is orthonormal (to normal)
-	// essentially subtracts any component of tangent along the direction of the normal [Luna, figure 18.6]
 	if (useNormalMap)
 	{
-		//normal = normalize(input.normal);
-		//tangent = normalize(input.tangent);
+		normal = normalize(input.normal);
+	        // make sure tangent is orthonormal (to normal)
+	        // essentially subtracts any component of tangent along the direction of the normal [Luna, figure 18.6]
 		tangent = tangent - input.normal * dot(tangent, input.normal);
+		tangent = normalize(tangent);
 		float3 binormal = normalize(cross(input.normal, tangent));
 		float3x3 tangentToWorld = float3x3(tangent, binormal, input.normal);
 
-		float3 mapped_normal = normalMap.Sample(SampleType, input.tex).xyz*2 - float3(1,1,1); // rescale the values to [-1,+1] range
+		float3 mapped_normal = normalMap.Sample(SampleAnisotropic, input.tex).xyz*2 - float3(1,1,1); // rescale the values to [-1,+1] range
 		//return mapped_normal;
 	
 		normal = normalize(mul(mapped_normal, tangentToWorld));
@@ -288,12 +303,6 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	        // Saturate the ambient and diffuse color.
 		color = saturate(color);
 
-		//a graphical representation of the slight difference between the results of interpolating view direction and interpolating world position for recalculating view direction
-		//float3 r = abs(normalize(viewDirection) - input.viewDirection); // actually, this seems broken right now
-		//float3 r = abs(normal);
-		//float4 rr = {r.x, r.y, r.z, 1.0f};
-		//return rr;
-
 		if (specularMultiplier > 0.00001f)
 		{
 			// calculate half-vector for Blinn-Phong specular model
@@ -316,11 +325,11 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 		float beamAlignment = dot(spotlightDir[i], sourceToPixel);
 		float beamCosAngle = spotlightEtc[i].x;
 
-		if (beamAlignment > 0.0 && beamAlignment > beamCosAngle)
+		if (beamAlignment > beamCosAngle)
 		{
 			// well, a spotlight could be hitting this pixel
 			// check for shadow, though
-                        float shadowFactor = blurredShadow(input.shadowUV[i], i, 1.0/512); // TODO: maybe pass the dimensions along?
+                        float shadowFactor = blurredShadow(input.shadowUV[i], i, 1.0/SHADOWMAP_DIMENSIONS); // TODO: maybe pass the dimensions along????? at least make
 
                         if (shadowFactor == 0.0f) continue;
 

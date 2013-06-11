@@ -6,4 +6,7 @@
 // maximum number of spotlights, needed for sizing arrays:
 #define NUM_SPOTLIGHTS 4
 
+// shadow map dimensions
+#define SHADOWMAP_DIMENSIONS 256
+
 #endif

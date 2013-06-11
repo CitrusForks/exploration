@@ -16,7 +16,7 @@ public:
     typedef std::function<bool(DirectX::CXMMATRIX world, shared_ptr<ModelManager> models, int modelRefNum, shared_ptr<LightsAndShadows> lighting)> renderFunc_t;
 
     // draw all actors:
-    bool Scene::render( renderFunc_t renderFunc );
+    bool Scene::render( renderFunc_t &renderFunc );
 
     virtual bool update(float now, float timeSinceLastUpdate); 
 

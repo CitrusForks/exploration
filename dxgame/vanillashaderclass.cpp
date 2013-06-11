@@ -8,6 +8,9 @@
 
 
 #include <iostream>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <memory>
 
 using namespace std;
 using namespace DirectX;
@@ -85,68 +88,54 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
     HRESULT result;
     ID3D10Blob* errorMessage = 0;
 
-    ID3D10Blob* vertexShaderBuffer = nullptr;
 
-    // Old code to compile shader at runtime:
-    //result = D3DX11CompileFromFile(vsFilename, NULL, NULL, vsFunctionName, "vs_4_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, NULL, 
-								//&vertexShaderBuffer, &errorMessage, NULL); // XXX D3DX11 is deprecated, replace this with CompileFromFile()
+    struct _stat ss;
 
-    //result = D3DCompileFromFile(vsFilename, nullptr, nullptr, vsFunctionName, "vs_4_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &vertexShaderBuffer, &errorMessage);
+    // read the vertex shader
+    _wstat(vsFilename, &ss);
 
-    // actually, how about load bytecode...
-    result = D3DReadFileToBlob(vsFilename, &vertexShaderBuffer);
-    if(FAILED(result))
+    size_t vsSize = ss.st_size;
+    if (!vsSize)
     {
-	    // If the shader failed to compile it should have writen something to the error message.
-	    if(errorMessage)
-	    {
-		    OutputShaderErrorMessage(errorMessage, hwnd, vsFilename);
-	    }
-	    // If there was nothing in the error message then it simply could not find the shader file itself.
-	    else
-	    {
-		    MessageBox(hwnd, vsFilename, L"Missing Shader File", MB_OK);
-                    char currentDir[1024];
-                    GetCurrentDirectoryA(1023, currentDir);
-                    cerr << "Was looking for shader in " << currentDir << endl;
-	    }
-
-	    return false;
+        MessageBox(hwnd, vsFilename, L"Missing Shader File", MB_OK);
+        char currentDir[1024];
+        GetCurrentDirectoryA(1023, currentDir);
+        cerr << "Was looking for shader in " << currentDir << endl;
+        return false;
     }
 
+    unique_ptr<char> vertexShaderBuffer(new char [vsSize]);
 
-    ID3D10Blob* pixelShaderBuffer = nullptr;
+    ifstream vsIn(vsFilename, ios::in | ios::binary);
+    vsIn.read(vertexShaderBuffer.get(), vsSize);
 
-    //result = D3DCompileFromFile(psFilename, NULL, NULL, psFunctionName, "ps_4_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &pixelShaderBuffer, &errorMessage); 
-    result = D3DReadFileToBlob(psFilename, &pixelShaderBuffer);
-    if(FAILED(result))
+    // now the pixel shader
+    _wstat(psFilename, &ss);
+
+    size_t psSize = ss.st_size;
+    if (!psSize)
     {
-	    // If the shader failed to compile it should have writen something to the error message.
-	    if(errorMessage)
-	    {
-		    OutputShaderErrorMessage(errorMessage, hwnd, psFilename);
-	    }
-	    // If there was  nothing in the error message then it simply could not find the file itself.
-	    else
-	    {
-		    MessageBox(hwnd, psFilename, L"Missing Shader File", MB_OK);
-                    char currentDir[1024];
-                    GetCurrentDirectoryA(1023, currentDir);
-                    cerr << "Was looking for shader in " << currentDir << endl;
-	    }
-
-	    return false;
+        MessageBox(hwnd, psFilename, L"Missing Shader File", MB_OK);
+        char currentDir[1024];
+        GetCurrentDirectoryA(1023, currentDir);
+        cerr << "Was looking for shader in " << currentDir << endl;
+        return false;
     }
+
+    unique_ptr<char> pixelShaderBuffer(new char [psSize]);
+
+    ifstream psIn(psFilename, ios::in | ios::binary);
+    psIn.read(pixelShaderBuffer.get(), psSize);
 
     // Create the vertex shader from the buffer.
-    result = device->CreateVertexShader(vertexShaderBuffer->GetBufferPointer(), vertexShaderBuffer->GetBufferSize(), NULL, &m_vertexShader);
+    result = device->CreateVertexShader(vertexShaderBuffer.get(), vsSize, NULL, &m_vertexShader);
     if(FAILED(result))
     {
 	    return false;
     }
 
     // Create the pixel shader from the buffer.
-    result = device->CreatePixelShader(pixelShaderBuffer->GetBufferPointer(), pixelShaderBuffer->GetBufferSize(), NULL, &m_pixelShader);
+    result = device->CreatePixelShader(pixelShaderBuffer.get(), psSize, NULL, &m_pixelShader);
     if(FAILED(result))
     {
 	    return false;
@@ -209,19 +198,12 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
     unsigned int numElements = sizeof(polygonLayout) / sizeof(polygonLayout[0]);
 
     // Create the vertex input layout.
-    result = device->CreateInputLayout(polygonLayout, numElements, vertexShaderBuffer->GetBufferPointer(), vertexShaderBuffer->GetBufferSize(), 
+    result = device->CreateInputLayout(polygonLayout, numElements, vertexShaderBuffer.get(), vsSize, 
 		                            &m_layout);
     if(FAILED(result))
     {
 	    return false;
     }
-
-    // Release the vertex shader buffer and pixel shader buffer since they are no longer needed.
-    vertexShaderBuffer->Release();
-    vertexShaderBuffer = 0;
-
-    pixelShaderBuffer->Release();
-    pixelShaderBuffer = 0;
 
     // Setup the description of the dynamic matrix constant buffer that is in the vertex shader.
     D3D11_BUFFER_DESC matrixBufferDesc;
@@ -278,7 +260,6 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
 
     // Create a texture sampler state description.
     D3D11_SAMPLER_DESC samplerDesc;
-    //samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
     samplerDesc.Filter = D3D11_FILTER_ANISOTROPIC;
     samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
     samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -303,9 +284,28 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
     result = device->CreateSamplerState(&samplerDesc2, m_sampleState + 1);
     if(FAILED(result))
     {
-        Errors::Cry(L"Couldn't create sampler for intermediate buffer. :/");
+        Errors::Cry(L"Couldn't create sampler. Highly unlikely! :/");
         return false;
     }
+
+    // point filter with wrapping for generic use
+    D3D11_SAMPLER_DESC samplerDesc3 = {D3D11_FILTER_MIN_MAG_MIP_POINT, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_WRAP, 0.0f, 8, D3D11_COMPARISON_ALWAYS, {1,1,1,1}, 0, D3D11_FLOAT32_MAX };
+    result = device->CreateSamplerState(&samplerDesc3, m_sampleState + 2);
+    if(FAILED(result))
+    {
+        Errors::Cry(L"Couldn't create sampler. Highly unlikely! :/");
+        return false;
+    }
+
+    // linear filter with wrapping for generic use
+    D3D11_SAMPLER_DESC samplerDesc4 = {D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_WRAP, D3D11_TEXTURE_ADDRESS_WRAP, 0.0f, 8, D3D11_COMPARISON_ALWAYS, {1,1,1,1}, 0, D3D11_FLOAT32_MAX };
+    result = device->CreateSamplerState(&samplerDesc4, m_sampleState + 3);
+    if(FAILED(result))
+    {
+        Errors::Cry(L"Couldn't create sampler. Highly unlikely! :/");
+        return false;
+    }
+
 
     cout << "initialized some shaders" << endl;
 
@@ -318,10 +318,11 @@ void VanillaShaderClass::ShutdownShader()
     // Release the sampler state.
     if(m_sampleState)
     {
-	    m_sampleState[0]->Release();
-	    m_sampleState[0] = 0;
-            m_sampleState[1]->Release();
-            m_sampleState[1] = 0;
+        for (int i = 0; i < 4; ++i) if(m_sampleState[i])
+        {
+	    m_sampleState[i]->Release();
+            m_sampleState[i] = 0;
+        }
     }
 
     // Release the matrix constant buffer.
@@ -588,7 +589,7 @@ void VanillaShaderClass::RenderShader( ID3D11DeviceContext *deviceContext, int i
     deviceContext->PSSetShader(m_pixelShader, NULL, 0);
 
     // Set the sampler state in the pixel shader.
-    if (setSampler) deviceContext->PSSetSamplers(0, 2, m_sampleState);
+    if (setSampler) deviceContext->PSSetSamplers(0, 4, m_sampleState);
 
     // Render the triangles
     deviceContext->DrawIndexed(indexCount, 0, 0);
