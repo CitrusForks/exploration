@@ -80,6 +80,12 @@ IntermediateRenderTarget::IntermediateRenderTarget(ID3D11Device *dev, ID3D11Devi
     }
 }
 
+IntermediateRenderTarget::IntermediateRenderTarget() : m_texture(nullptr), m_targetView(nullptr), m_resourceView(nullptr)
+{
+
+}
+
+
 
 IntermediateRenderTarget::~IntermediateRenderTarget(void)
 {

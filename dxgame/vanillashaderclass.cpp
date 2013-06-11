@@ -101,6 +101,7 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
         char currentDir[1024];
         GetCurrentDirectoryA(1023, currentDir);
         cerr << "Was looking for shader in " << currentDir << endl;
+        throw Errors::Fatal();
         return false;
     }
 
@@ -119,6 +120,7 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
         char currentDir[1024];
         GetCurrentDirectoryA(1023, currentDir);
         cerr << "Was looking for shader in " << currentDir << endl;
+        throw Errors::Fatal();
         return false;
     }
 
@@ -131,14 +133,14 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
     result = device->CreateVertexShader(vertexShaderBuffer.get(), vsSize, NULL, &m_vertexShader);
     if(FAILED(result))
     {
-	    return false;
+        Errors::Cry("Couldn't create shader!");
     }
 
     // Create the pixel shader from the buffer.
     result = device->CreatePixelShader(pixelShaderBuffer.get(), psSize, NULL, &m_pixelShader);
     if(FAILED(result))
     {
-	    return false;
+        Errors::Cry("Couldn't create shader!");
     }
 
     // Create the vertex input layout description.
@@ -274,7 +276,8 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
     result = device->CreateSamplerState(&samplerDesc, m_sampleState);
     if(FAILED(result))
     {
-	    return false;
+        Errors::Cry(L"Couldn't create sampler. Highly unlikely! :/");
+	return false;
     }
 
     // ..._POINT would be the logical choice here but using LINEAR eliminates shadow artifacts

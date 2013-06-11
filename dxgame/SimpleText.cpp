@@ -5,9 +5,17 @@
 IFW1Factory *SimpleText::st_factory = nullptr;
 
 
-SimpleText::SimpleText(ID3D11Device *device, wchar_t *fontName, int fontSize) : m_fontSize(fontSize), m_color(0xFFFFFFFF)
+SimpleText::SimpleText()
+{
+}
+
+
+void SimpleText::init(ID3D11Device *device, wchar_t *fontName, int fontSize)
 {
     HRESULT hr;
+
+    m_fontSize = fontSize;
+    m_color = 0xFFFFFFFF;
 
     if (st_factory == nullptr)
     {

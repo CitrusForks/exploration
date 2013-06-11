@@ -15,9 +15,10 @@ private:
     unsigned int m_color; // 0xAaBbGgRr because that's what the library uses
 
 public:
-    SimpleText(ID3D11Device *device, wchar_t *fontName, int fontSize = 24);
+    SimpleText();
     ~SimpleText(void);
 
+    void init(ID3D11Device *device, wchar_t *fontName, int fontSize = 24);
     void write(ID3D11DeviceContext *, wchar_t *message, float x, float y, int fontsize = -1);
     void setColor(float r, float g, float b, float a);
 

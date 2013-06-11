@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <codecvt>
 #include <cstring>
+#include <exception>
 #include <fstream>
 #include <functional>
 #include <iomanip>
@@ -77,3 +78,5 @@
 #include "d3dclass.h"
 #include "vanillashaderclass.h"
 #include "vertex.h"
+
+#include "Graphics.h"

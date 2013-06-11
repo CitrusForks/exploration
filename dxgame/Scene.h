@@ -18,7 +18,7 @@ public:
     // draw all actors:
     bool Scene::render( renderFunc_t &renderFunc );
 
-    virtual bool update(float now, float timeSinceLastUpdate); 
+    virtual bool update(float now, float timeSinceLastUpdate, FirstPerson &FPCamera); 
 
     int enters(shared_ptr<Actor> actor); // adds an actor, named with theater term for no good reason
     void exits(unsigned int actor); // I hope you saved that reference from the enters() call...

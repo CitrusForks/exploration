@@ -173,6 +173,7 @@
     <ClInclude Include="dxmathprint.h" />
     <ClInclude Include="Errors.h" />
     <ClInclude Include="FirstPerson.h" />
+    <ClInclude Include="Graphics.h" />
     <ClInclude Include="input.h" />
     <ClInclude Include="IntermediateRenderTarget.h" />
     <ClInclude Include="Light.h" />
@@ -210,6 +211,7 @@
     <ClCompile Include="dxmathprint.cpp" />
     <ClCompile Include="Errors.cpp" />
     <ClCompile Include="FirstPerson.cpp" />
+    <ClCompile Include="Graphics.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="IntermediateRenderTarget.cpp" />
     <ClCompile Include="LightsAndShadows.cpp" />

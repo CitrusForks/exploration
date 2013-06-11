@@ -15,6 +15,8 @@ private:
 
 public:
     IntermediateRenderTarget(ID3D11Device *dev, ID3D11DeviceContext *devCtx, int width, int height);
+    
+    IntermediateRenderTarget();
     ~IntermediateRenderTarget(void);
 
     // should be clear; this sets m_targetView as the current render target

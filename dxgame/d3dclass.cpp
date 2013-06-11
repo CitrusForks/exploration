@@ -251,7 +251,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
         unsigned creationFlags = 0;
 #if defined(_DEBUG)
         // If the project is in a debug build, enable the debug layer.
-        //creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
+        creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
 	// Create the swap chain, Direct3D device, and Direct3D device context.
