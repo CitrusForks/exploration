@@ -226,7 +226,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	// check the specular map
 	if (useSpecularMap)
 	{
-	    specularMultiplier = specularMap.Sample(SampleUnfiltered, input.tex).r;
+	    specularMultiplier = specularMap.Sample(SampleAnisotropic, input.tex).r;
 
             if (specularColor.x == 0.0f && specularColor.y == 0.0f && specularColor.z == 0.0f) actualSpecularColor = float4(0.1, 0.1, 0.1, 0.1);
 	} 
@@ -244,7 +244,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 		float3 binormal = normalize(cross(input.normal, tangent));
 		float3x3 tangentToWorld = float3x3(tangent, binormal, input.normal);
 
-		float3 mapped_normal = normalMap.Sample(SampleAnisotropic, input.tex).xyz*2 - float3(1,1,1); // rescale the values to [-1,+1] range
+		float3 mapped_normal = normalMap.Sample(SampleLinear, input.tex).xyz*2 - float3(1,1,1); // rescale the values to [-1,+1] range
 		//return mapped_normal;
 	
 		normal = normalize(mul(mapped_normal, tangentToWorld));
