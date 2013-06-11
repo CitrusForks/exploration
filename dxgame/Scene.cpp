@@ -48,7 +48,7 @@ bool Scene::render( renderFunc_t renderFunc )
     for (auto &i: m_actors)
     {
         if (i) if(!i->render(
-            [=, &renderFunc] (DirectX::CXMMATRIX world, int modelRefNum)
+            [&models, &lighting, &renderFunc] (DirectX::CXMMATRIX world, int modelRefNum)
             {
                 return renderFunc(world, models, modelRefNum, lighting);
             })) return false;

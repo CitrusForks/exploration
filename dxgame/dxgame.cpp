@@ -10,6 +10,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <strsafe.h>
 
 #include <dxgi.h>
 #include <d3d11.h>
@@ -366,7 +367,10 @@ bool RenderScene( D3DClass &d3d, FirstPerson &FPCamera, VanillaShaderClass &shad
     }
 #endif
 
-    text.write(d3d.GetDeviceContext(), L"Hello?", 0, 0);
+    //text.write(d3d.GetDeviceContext(), L"Hello?", 0, 0);
+    wchar_t fps[256];
+    StringCbPrintfW(fps, sizeof(fps), L"%.02f fps", 1.0f / (float)timer.sincePrev());
+    text.write(d3d.GetDeviceContext(), fps, 25, 25);
 
     d3d.depthOn(); // enable depth test again for normal drawing
 
