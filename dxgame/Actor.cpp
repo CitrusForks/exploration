@@ -61,10 +61,12 @@ bool Actor::update(float now, float timeSinceLastUpdate)
     return true;
 }
 
+
 void Actor::slerp( float now, float finish, float pitch, float yaw, float roll /*= 0*/ )
 {
     slerp(now, finish, XMQuaternionRotationRollPitchYaw(pitch, yaw, roll));
 }
+
 
 void Actor::slerp( float now, float finish, FXMVECTOR quaternion )
 {

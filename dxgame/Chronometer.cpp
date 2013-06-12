@@ -12,6 +12,7 @@ Chronometer::Chronometer(void) : m_prevTime(0), m_initTime(0), m_now(0)
 
     QueryPerformanceCounter( (LARGE_INTEGER*) &m_now);
     m_initTime = m_prevTime = m_now;
+    m_prevTime -= countsPerSec / 60; // fudge time for first frame
 }
 
 

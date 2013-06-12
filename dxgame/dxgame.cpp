@@ -42,7 +42,6 @@
 // is this a terrible way to specify libraries for linking? I kind of like it now.
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "d3dcompiler.lib")
 
 // extra dependencies:
 #pragma comment(lib, "lua52.lib")
@@ -90,131 +89,135 @@ float test = 0.0f; // just testing.
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-        Options::setDefaults();
-	int width = Options::intOptions["Width"], height = Options::intOptions["Height"];
+    Options::setDefaults();
+    int width = Options::intOptions["Width"], height = Options::intOptions["Height"];
 #ifdef DISABLE_OFFSCREEN_BUFFER
-	Options::intOptions["MSAACount"] = 1;
-	Options::intOptions["MSAAQuality"] = 0;
+    Options::intOptions["MSAACount"] = 1;
+    Options::intOptions["MSAAQuality"] = 0;
 #endif
 
-	wcout << L"Unicode test: проверка Unicode" << endl; // unlikely to work! need to manually set codepage in terminal
-	cout << endl; // because the above is unlikely to work
+    wcout << L"Unicode test: проверка Unicode" << endl; // unlikely to work! need to manually set codepage in terminal
+    cout << endl; // because the above is unlikely to work
 
-	HMODULE progInstance = GetModuleHandle(nullptr);
-	WNDCLASSEX wc;
+    HMODULE progInstance = GetModuleHandle(nullptr);
+    WNDCLASSEX wc;
 
-	ZeroMemory(&wc, sizeof(WNDCLASSEX));
+    ZeroMemory(&wc, sizeof(WNDCLASSEX));
 
-	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-	wc.lpfnWndProc = WndProc;
-	wc.cbClsExtra = 0;
-	wc.cbWndExtra = 0;
-	wc.hInstance = progInstance;
-	wc.hIcon = LoadIcon(NULL, IDI_WINLOGO);
-	wc.hIconSm = wc.hIcon;
-	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-	wc.lpszMenuName = NULL;
-	wc.lpszClassName = L"MainClass";
-	wc.cbSize = sizeof(WNDCLASSEX);
+    wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+    wc.lpfnWndProc = WndProc;
+    wc.cbClsExtra = 0;
+    wc.cbWndExtra = 0;
+    wc.hInstance = progInstance;
+    wc.hIcon = LoadIcon(NULL, IDI_WINLOGO);
+    wc.hIconSm = wc.hIcon;
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+    wc.lpszMenuName = NULL;
+    wc.lpszClassName = L"MainClass";
+    wc.cbSize = sizeof(WNDCLASSEX);
 
-	ATOM wcAtom = RegisterClassEx(&wc); // register for class, do not waitlist. 
-	if (!wcAtom)
-	{
-		cout << "Error in RegisterClassEx()" << endl;
-	}
+    ATOM wcAtom = RegisterClassEx(&wc); // register for class, do not waitlist. 
+    if (!wcAtom)
+    {
+	Errors::Cry("Error in RegisterClassEx()");
+    }
 
-	HWND window = CreateWindowEx(WS_EX_APPWINDOW, L"MainClass", L"TODO: come up with title", WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP, 25, 25, width, height, HWND_DESKTOP, 0, progInstance, 0);
-	if (!window)
-	{
-		reportError("Error in CreateWindowEx() ");
-	}
+    HWND window = CreateWindowEx(WS_EX_APPWINDOW, L"MainClass", L"TODO: come up with title", WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP, 25, 25, width, height, HWND_DESKTOP, 0, progInstance, 0);
+    if (!window)
+    {
+	reportError("Error in CreateWindowEx() ");
+    }
 
-	// Bring the window up on the screen and set it as main focus.
-	ShowWindow(window, SW_SHOW);
-	SetForegroundWindow(window);
-	SetFocus(window);
-
-
-        // we're lazy about loading files for now, just get everything from the data directory:
-        SetCurrentDirectoryA(".\\data");
-
-        // bring up actual game-related objects:
-
-        // DirectInput wrapper
-        Input input; input.Initialize(progInstance, window, width, height);
+    // Bring the window up on the screen and set it as main focus.
+    ShowWindow(window, SW_SHOW);
+    SetForegroundWindow(window);
+    SetFocus(window);
 
 
-        // Sound wraps FMOD for now and needs some work
-        Sound soundSystem;
+    // we're lazy about loading files for now, just get everything from the data directory:
+    SetCurrentDirectoryA(".\\data");
 
-        // this is how sounds are loaded:
-        int beepverb = soundSystem.loadSound("beepverb.wav");
+    // bring up actual game-related objects:
 
-        Graphics gEngine(width, height, window, progInstance);
+    // DirectInput wrapper
+    Input input; input.Initialize(progInstance, window, width, height);
 
-        SceneDemo scene(gEngine.getD3D());
 
-        Chronometer timer;
+    // Sound wraps FMOD for now and needs some work
+    Sound soundSystem;
 
-	MSG msg;
-	ZeroMemory(&msg, sizeof(MSG)); // clear message structure
+    // this is how sounds are loaded:
+    int beepverb = soundSystem.loadSound("beepverb.wav");
+
+    Graphics gEngine(width, height, window, progInstance);
+
+    SceneDemo scene(gEngine.getD3D());
+
+    Chronometer timer;
+
+    lua_State *L = luaL_newstate();
+
+    MSG msg;
+    ZeroMemory(&msg, sizeof(MSG)); // clear message structure
 	
-        float angle = 0.0f;
-	bool done = false;
-	while (!done)
-	{
-            // Handle the windows messages.
-            if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+    cout << "Starting!!!" << endl;
+
+    float angle = 0.0f;
+    bool done = false;
+    while (!done)
+    {
+        // Handle the windows messages.
+        if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+        {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+
+            // If windows signals to end the application then exit out.
+            if(msg.message == WM_QUIT)
             {
-                TranslateMessage(&msg);
-                DispatchMessage(&msg);
-
-                // If windows signals to end the application then exit out.
-                if(msg.message == WM_QUIT)
-                {
-                    done = true;
-                }
-
-                continue; // ... all the messages! before we draw a new frame even
+                done = true;
             }
 
+            continue; // ... all the messages! before we draw a new frame even
+        }
 
-            timer.Sample(); // read timer and update variables
 
-            input.Frame(); // read input and update state
+        input.Frame(); // read input and update state
 
-            gEngine.getCamera().perFrameUpdate(timer.sincePrev(), input); // move the camera 
-            // XXX should the above update be somewhere specific?
+        gEngine.getCamera().perFrameUpdate(timer.sincePrev(), input); // move the camera 
+        // XXX should the above update be somewhere specific?
 
-            soundSystem.perFrameUpdate();
+        soundSystem.perFrameUpdate();
 
-            scene.update((float)timer.sinceInit(), (float)timer.sincePrev(), gEngine.getCamera());
+        scene.update((float)timer.sinceInit(), (float)timer.sincePrev(), gEngine.getCamera());
 
-            if (!gEngine.RenderScene(timer, &scene)) return -1;
+        if (!gEngine.RenderScene(timer, &scene)) return -1;
             
-            //Sleep(10); // don't cook the CPU yet
-            angle += (float)(M_PI) * (float)timer.sincePrev();
-            test = angle;
+        //Sleep(10); // don't cook the CPU yet
+        angle += (float)(M_PI) * (float)timer.sincePrev();
+        test = angle;
 
-            static double last_honked = 0.0;
-            if (input.IsPressed(DIK_E) && timer.sinceInit() - last_honked > 0.5)
-            {
-                soundSystem.play(beepverb);
-                last_honked = timer.sinceInit();
-            }
+        static double last_honked = 0.0;
+        if (input.IsPressed(DIK_E) && timer.sinceInit() - last_honked > 0.5)
+        {
+            soundSystem.play(beepverb);
+            last_honked = timer.sinceInit();
+        }
 
 
-            if (input.IsPressed(DIK_ESCAPE)) done = true;
+        if (input.IsPressed(DIK_ESCAPE)) done = true;
 
-            if (input.IsPressed(DIK_LALT) && input.IsPressed(DIK_F4)) done = true; // be nice
-	}
+        if (input.IsPressed(DIK_LALT) && input.IsPressed(DIK_F4)) done = true; // be nice
 
-	DestroyWindow(window);
-	UnregisterClass(L"MainClass", progInstance);
+        timer.Sample(); // read timer and update variables
+    }
 
-	return 0;
+    lua_close(L);
+
+    DestroyWindow(window);
+    UnregisterClass(L"MainClass", progInstance);
+
+    return 0;
 }
-
-
 

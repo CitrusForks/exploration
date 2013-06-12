@@ -43,6 +43,7 @@
 
 // external lib deps:
 #include <lua.hpp>
+#include <lunafive.hpp>
 #include <fmod.hpp>
 #include "dSFMT.h"
 

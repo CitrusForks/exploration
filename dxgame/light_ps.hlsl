@@ -120,7 +120,6 @@ float isSpotlightShadow(float4 lightClipSpaceCoordinates, uint whichShadow, floa
     else return false;
 }
 
-//#define SIXTEEN_POINT_GAUSSIAN_KERNEL yes_please
 
 //
 // shadow sampler with approximated Gaussian blur
@@ -143,7 +142,9 @@ float blurredShadow(in float4 shadowUV, in int mapNum, in float ds)
         if (isSpotlightShadow(shadowUV, mapNum, float2(-ds,ds))) totalShadow += 16.0/273;
         if (isSpotlightShadow(shadowUV, mapNum, float2(ds,-ds))) totalShadow += 16.0/273;
 
-#ifdef SIXTEEN_POINT_GAUSSIAN_KERNEL
+//#define FIVE_BY_FIVE_GAUSSIAN_KERNEL yes_please
+
+#ifdef FIVE_BY_FIVE_GAUSSIAN_KERNEL
         // this only runs well on the 660
         if (isSpotlightShadow(shadowUV, mapNum, float2(-ds*2,0))) totalShadow += 7.0/273;
         if (isSpotlightShadow(shadowUV, mapNum, float2( ds*2,0))) totalShadow += 7.0/273;
@@ -179,7 +180,7 @@ float blurredShadow(in float4 shadowUV, in int mapNum, in float ds)
     //}
 
     const float maxPossibleShadow = (41.0 + 16.0 * 4 + 26.0 * 4) / 273
-#ifdef SIXTEEN_POINT_GAUSSIAN_KERNEL
+#ifdef FIVE_BY_FIVE_GAUSSIAN_KERNEL
         + (7.0 * 4 + 4.0 + 4.0 * 8) / 273
 #endif
         ;
@@ -281,13 +282,13 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 
             if (uv.x > 0.01 && uv.x < 0.99 && uv.y > 0.01 && uv.y < 0.99) // are the coordinates in the map?
             {
-                ds = 1.0/2048; // high LOD map dimension
+                ds = 1.0/(SHADOWMAP_DIMENSIONS * DIRECTIONAL_SHADOW_MULTIPLIER_LOD1); // high LOD map dimension
                 //color.r = 1.0;
             } else
             {
                 mapNum = NUM_SPOTLIGHTS;
                 //uv = float2(input.shadowUV[mapNum].x * 0.5 + 0.5, -0.5 * input.shadowUV[mapNum].y + 0.5);
-                ds = 1.0/4096; // low LOD map dimension
+                ds = 1.0/(SHADOWMAP_DIMENSIONS * DIRECTIONAL_SHADOW_MULTIPLIER_WIDE); // low LOD map dimension
                 //color.g = 1.0;
             }
             

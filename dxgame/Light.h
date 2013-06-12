@@ -25,7 +25,7 @@ struct Light
     bool enabled;
 
     Light(void) : position(0,0,0,0), direction(0,-1,0), halfAngle((float)M_PI*(18.0f/180.0f)), cosHalfAngle(cos(halfAngle)), constantAttenuation(0.95f), linearAttenuation(0),
-        quadraticAttenuation(0.05f), color(1,1,1,1), enabled(false)
+        quadraticAttenuation(0.025f), color(1,1,1,1), enabled(false)
     {
         updateProjection();
     }

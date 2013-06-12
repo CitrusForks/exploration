@@ -11,6 +11,7 @@
 using namespace DirectX;
 using namespace std;
 
+// actual initialization is done here
 LightsAndShadows::LightsAndShadows(D3DClass &d3d) : sunlight( 255.0f / 255.0f, 255.0f / 255.0f, 251.0f / 255.0f, 1.0f ), blue(0, 0, 1.0f, 1.0f )
 {
     // shadowShaders contains a cut-down pixel shader to facilitate generating a shadow map from a depth buffer
@@ -29,8 +30,8 @@ LightsAndShadows::LightsAndShadows(D3DClass &d3d) : sunlight( 255.0f / 255.0f, 2
     }
 
     // shadow maps for directional lights:
-    shadows[shadows.size()-2].init(d3d.GetDevice(), d3d.GetDeviceContext(), 8); // 4Kx4K texture... kinda hefty, this is for the sweeping 100mx100m view
-    shadows[shadows.size()-1].init(d3d.GetDevice(), d3d.GetDeviceContext(), 4); // this is for whatever's right in front of the player, approximately
+    shadows[shadows.size()-2].init(d3d.GetDevice(), d3d.GetDeviceContext(), DIRECTIONAL_SHADOW_MULTIPLIER_WIDE); // 4Kx4K texture... kinda hefty, this is for the sweeping 100mx100m view
+    shadows[shadows.size()-1].init(d3d.GetDevice(), d3d.GetDeviceContext(), DIRECTIONAL_SHADOW_MULTIPLIER_LOD1); // this is for whatever's right in front of the player, approximately
 
     lightDirection = XMVector3Normalize(XMVectorSet(0.1f,  -0.2f, 1.0f, 0.0f)); // directional light; N.B., still need to call pointMoonlight()
 
@@ -85,7 +86,7 @@ void LightsAndShadows::updateGPU( ID3D11DeviceContext *devCtx, VanillaShaderClas
 // set spotlight data; position and direction are mandatory, other values have defaults
 // the view*projection matrix is updated uatomatically from the position and direction
 // position and direction are in world coordinates
-void LightsAndShadows::setSpotlight( int which, DirectX::FXMVECTOR position, DirectX::FXMVECTOR direction, float beamHalfAngle /*= (float)M_PI * 15.0f/180.f*/, float constantAttenuation /*= 0.75f*/, float linearAttenuation /*= 0.0f*/, float quadraticAttenuation /*= 0.05f*/ )
+void LightsAndShadows::setSpotlight( int which, DirectX::FXMVECTOR position, DirectX::FXMVECTOR direction, float beamHalfAngle /*= (float)M_PI * 15.0f/180.f*/, float constantAttenuation /*= 0.75f*/, float linearAttenuation /*= 0.0f*/, float quadraticAttenuation /*= 0.025f*/ )
 {
     assert(which < NUM_SPOTLIGHTS); // for directional lights use pointMoonlight()
 
@@ -104,7 +105,7 @@ void LightsAndShadows::pointMoonlight( DirectX::FXMVECTOR newDirection, FirstPer
     skyCamPos = XMVectorFloor(skyCamPos + XMVectorSet(0.5f, 0.5f, 0.5f, 0.0f) - newDirection * 90);
 
     XMMATRIX directionalShadowOrtho = XMMatrixLookToLH(skyCamPos, 
-        newDirection, XMVectorSet(0, 0, 1, 0)) * XMMatrixOrthographicLH(100, 100, 0.1f, 1000); // view * orthographic projection, for directional light
+        newDirection, XMVectorSet(0, 0, 1, 0)) * XMMatrixOrthographicLH(90, 90, 0.1f, 1000); // view * orthographic projection, for directional light
     // N.B., "up" should be orthogonal to lightDirection, or at least not parallel because a crossproduct is performed
 
     XMStoreFloat4x4(&lights[NUM_SPOTLIGHTS].projection, directionalShadowOrtho);
@@ -112,10 +113,10 @@ void LightsAndShadows::pointMoonlight( DirectX::FXMVECTOR newDirection, FirstPer
     // high LOD view for directional shadow, focused on the player's vicinity
     skyCamPos = FPCamera.getEyePosition();
     skyCamPos = XMVectorFloor(skyCamPos  + XMVectorSet(0.5f, 0.5f, 0.5f, 0.0f) - newDirection * 90 + FPCamera.getForwardVector()*3.5);
-    directionalShadowOrtho = XMMatrixLookToLH(skyCamPos, 
-        newDirection, XMVectorSet(0, 0, 1, 0)) * XMMatrixOrthographicLH(7, 7, 0.1f, 1000); // view * orthographic projection, for directional light
+    XMMATRIX directionalShadowOrtho2 = XMMatrixLookToLH(skyCamPos, 
+        newDirection, XMVectorSet(0, 0, 1, 0)) * XMMatrixOrthographicLH(9.5f, 9.5f, 0.1f, 1000); // view * orthographic projection, for directional light
 
-    XMStoreFloat4x4(&lights[NUM_SPOTLIGHTS+1].projection, directionalShadowOrtho);
+    XMStoreFloat4x4(&lights[NUM_SPOTLIGHTS+1].projection, directionalShadowOrtho2);
 }
 
 
@@ -150,7 +151,7 @@ bool LightsAndShadows::renderShadowMaps( D3DClass &d3d,
     }
 
     //
-    // The directional light shadowmaps may be lighting a very large outdoor area, so they may require higher resolutions.
+    // The directional light shadowmaps may be lighting a very large outdoor area, so they require higher resolutions.
     //
     D3D11_VIEWPORT viewport2 = { 0.0f, 0.0f, (float)shadows[NUM_SPOTLIGHTS].m_width, (float)shadows[NUM_SPOTLIGHTS].m_height, 0.0f, 1.0f };
     d3d.GetDeviceContext()->RSSetViewports(1, &viewport2);

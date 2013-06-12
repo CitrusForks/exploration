@@ -418,7 +418,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
         rasterDesc.FrontCounterClockwise = false;
         rasterDesc.MultisampleEnable = true;
         rasterDesc.ScissorEnable = false;
-        rasterDesc.SlopeScaledDepthBias = 8.0f; // also here! 
+        rasterDesc.SlopeScaledDepthBias = 4.0f; // also here! 
 
         // really create it
         result = m_device->CreateRasterizerState(&rasterDesc, &m_biasRasterState);
@@ -428,33 +428,18 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
         }
         
 
-
+#if 0
 	// Setup the viewport for rendering.
 	D3D11_VIEWPORT viewport;
-        viewport.Width = (float)1024; //screenWidth; // * 2; // x2 for supersampling test
-        viewport.Height = (float)1024; //screenHeight; // * 2;
+        viewport.Width = (float)1024; 
+        viewport.Height = (float)1024;
         viewport.MinDepth = 0.0f;
         viewport.MaxDepth = 1.0f;
         viewport.TopLeftX = 0.0f;
         viewport.TopLeftY = 0.0f;
 
 	// Create the viewport.
-        m_deviceContext->RSSetViewports(1, &viewport);
-
-        // d3dmatrix stuff that I'm not using:
-#if 0
-	// Setup the projection matrix.
-	fieldOfView = (float)D3DX_PI / 4.0f;
-	screenAspect = (float)screenWidth / (float)screenHeight;
-
-	// Create the projection matrix for 3D rendering.
-	D3DXMatrixPerspectiveFovLH(&m_projectionMatrix, fieldOfView, screenAspect, screenNear, screenDepth);
-
-        // Initialize the world matrix to the identity matrix.
-        D3DXMatrixIdentity(&m_worldMatrix);
-
-	// Create an orthographic projection matrix for 2D rendering.
-	D3DXMatrixOrthoLH(&m_orthoMatrix, (float)screenWidth, (float)screenHeight, screenNear, screenDepth);
+        //m_deviceContext->RSSetViewports(1, &viewport); // not used
 #endif
 
     return true;

@@ -4,7 +4,6 @@
 #include "stdafx.h"
 #include "vanillashaderclass.h"
 #include <directxmath.h>
-#include <d3dcompiler.h>
 
 
 #include <iostream>
@@ -86,7 +85,6 @@ bool VanillaShaderClass::Render( ID3D11DeviceContext *deviceContext, int indexCo
 bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wchar_t *vsFilename, wchar_t *psFilename, bool multiStreaming /*= false*/ )
 {
     HRESULT result;
-    ID3D10Blob* errorMessage = 0;
 
 
     struct _stat ss;
@@ -371,46 +369,6 @@ void VanillaShaderClass::ShutdownShader()
     return;
 }
 
-
-void VanillaShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND hwnd, WCHAR* shaderFilename)
-{
-	char* compileErrors;
-	unsigned long bufferSize, i;
-	ofstream fout;
-
-
-	// Get a pointer to the error message text buffer.
-	compileErrors = (char*)(errorMessage->GetBufferPointer());
-
-	// Get the length of the message.
-	bufferSize = errorMessage->GetBufferSize();
-
-	// Open a file to write the error message to.
-	fout.open("shader-error.txt");
-
-	cerr << "Error compiling shader:";
-
-	// Write out the error message.
-	for(i=0; i<bufferSize; i++)
-	{
-		fout << compileErrors[i];
-		cerr << compileErrors[i];
-	}
-
-        cerr << endl;
-
-	// Close the file.
-	fout.close();
-
-	// Release the error message.
-	errorMessage->Release();
-	errorMessage = 0;
-
-	// Pop a message up on the screen to notify the user to check the text file for compile errors.
-	MessageBox(hwnd, L"Error compiling shader.  Check shader-error.txt for message.", shaderFilename, MB_OK);
-
-	return;
-}
 
 // this method mainly sets matrices and textures for the Render method; private
 bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, 
