@@ -39,19 +39,15 @@ bool Scene::update( float now, float timeSinceLastUpdate, FirstPerson &FPCamera 
 }
 
 // render all actors
-// renderFunc is a function that encapsulates the entire graphics engine state needed to render a frame except for the data in Scene
+// renderFunc is a function that encapsulates the entire graphics engine state needed to render a frame except for the data in Scene and Actor[s]
 bool Scene::render( renderFunc_t &renderFunc )
 {
-    auto lighting = m_lighting; // copy in local scope to allow capture by lambda expression
-    auto models = m_models;
-    Actor::renderFunc_t renderFuncForActor = [=, &renderFunc] (DirectX::CXMMATRIX world, int modelRefNum)
-    {
-        return renderFunc(world, models, modelRefNum, lighting);
-    };
+    using namespace std::placeholders;
+    Actor::renderFunc_t partialBind = std::bind(renderFunc, _1, m_models, _2, m_lighting);
 
     for (auto &i: m_actors)
     {
-        if (i) if(!i->render(renderFuncForActor)) return false;
+        if (i) if(!i->render(partialBind)) return false;
     }
 
     return true;

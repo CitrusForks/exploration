@@ -43,6 +43,7 @@ Graphics::Graphics( Graphics & )
 Graphics & Graphics::operator=( Graphics & )
 {
     Errors::Cry("You may not assign the Graphics object with operator= ! Try using a shared_ptr<>");
+    return *this;
 }
 
 
