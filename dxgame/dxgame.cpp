@@ -96,7 +96,7 @@ int _tmain(int argc, _TCHAR* argv[])
     Options::intOptions["MSAAQuality"] = 0;
 #endif
 
-    wcout << L"Unicode test: проверка Unicode" << endl; // unlikely to work! need to manually set codepage in terminal
+    wcout << L"Unicode test: проверка Unicode" << endl; // unlikely to work! need to manually set codepage in terminal so have fun with that
     cout << endl; // because the above is unlikely to work
 
     HMODULE progInstance = GetModuleHandle(nullptr);
@@ -152,7 +152,11 @@ int _tmain(int argc, _TCHAR* argv[])
 
     Graphics gEngine(width, height, window, progInstance);
 
-    SceneDemo scene(gEngine.getD3D());
+    shared_ptr<TextureManager> tm = make_shared<TextureManager>();
+    shared_ptr<ModelManager> mm = make_shared<ModelManager>(gEngine.getD3D());
+
+    //SceneDemo scene(gEngine.getD3D());
+    SceneDemo *scene = nullptr;
 
     Chronometer timer;
 
@@ -182,6 +186,7 @@ int _tmain(int argc, _TCHAR* argv[])
             continue; // ... all the messages! before we draw a new frame even
         }
 
+        if (!scene) scene = new SceneDemo(gEngine.getD3D(), mm, tm);
 
         input.Frame(); // read input and update state
 
@@ -190,11 +195,11 @@ int _tmain(int argc, _TCHAR* argv[])
 
         soundSystem.perFrameUpdate();
 
-        scene.update((float)timer.sinceInit(), (float)timer.sincePrev(), gEngine.getCamera());
+        scene->update((float)timer.sinceInit(), (float)timer.sincePrev(), gEngine.getCamera());
 
-        if (!gEngine.RenderScene(timer, &scene)) return -1;
+        if (!gEngine.RenderScene(timer, scene)) return -1;
             
-        //Sleep(10); // don't cook the CPU yet
+        Sleep(1); // for luck
         angle += (float)(M_PI) * (float)timer.sincePrev();
         test = angle;
 
@@ -212,6 +217,8 @@ int _tmain(int argc, _TCHAR* argv[])
 
         timer.Sample(); // read timer and update variables
     }
+
+    delete scene;
 
     lua_close(L);
 

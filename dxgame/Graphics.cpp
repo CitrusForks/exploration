@@ -154,7 +154,7 @@ bool Graphics::RenderScene( Chronometer &timer, Scene *scene)
     //text.write(d3d.GetDeviceContext(), L"Hello?", 0, 0);
     wchar_t fps[256];
     StringCbPrintfW(fps, sizeof(fps), L"%.02f fps", 1.0f / (float)timer.sincePrev());
-    text.write(d3d.GetDeviceContext(), fps, 25, 25);
+    //text.write(d3d.GetDeviceContext(), fps, 25, 25);
 
     d3d.depthOn(); // enable depth test again for normal drawing
 

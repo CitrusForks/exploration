@@ -40,6 +40,7 @@
 
 #include <dxgi.h>
 #include <d3d11.h>
+#include <dxgidebug.h>
 
 // external lib deps:
 #include <lua.hpp>
@@ -71,6 +72,7 @@
 #include "Options.h"
 #include "Scene.h"
 #include "SceneDemo.h"
+#include "ScriptedScene.h"
 #include "SimpleMesh.h"
 #include "SimpleText.h"
 #include "Sound.h"

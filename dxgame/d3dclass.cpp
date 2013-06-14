@@ -5,6 +5,7 @@
 #include "stdafx.h"
 
 #include "d3dclass.h"
+#include <dxgidebug.h>
 
 #include <iostream>
 #include <string>
@@ -252,6 +253,9 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 #if defined(_DEBUG)
         // If the project is in a debug build, enable the debug layer.
         creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
+        ID3D11Debug *debug;
+        m_device->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&debug));
+        //debug->ReportLiveDeviceObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
 #endif
 
 	// Create the swap chain, Direct3D device, and Direct3D device context.
@@ -508,21 +512,15 @@ void D3DClass::Shutdown()
 
 void D3DClass::BeginScene( bool clear /*= true*/, float red /*= 0.0f*/, float green /*= 0.0f*/, float blue /*= 0.0f*/, float alpha /*= 0.0f*/ )
 {
-	float color[4];
+    float color[4] = {0,0,0,0};
 
-	// Setup the color to clear the buffer to.
-	color[0] = red;
-	color[1] = green;
-	color[2] = blue;
-	color[3] = alpha;
-
-	// Clear the back buffer.
-	if (clear) m_deviceContext->ClearRenderTargetView(m_renderTargetView, color);
+    // Clear the back buffer. (if not using off-screen buffer)
+    if (clear) m_deviceContext->ClearRenderTargetView(m_renderTargetView, color);
     
-	// Clear the depth buffer. (always for now)
-	m_deviceContext->ClearDepthStencilView(m_depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+    // Clear the depth buffer. (always)
+    m_deviceContext->ClearDepthStencilView(m_depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-	return;
+    return;
 }
 
 

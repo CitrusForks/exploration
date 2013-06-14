@@ -386,8 +386,8 @@ bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext
     //D3DXMatrixTranspose(&viewMatrix, &viewMatrix);
     //D3DXMatrixTranspose(&projectionMatrix, &projectionMatrix);
 
-    deviceContext->VSSetShader(m_vertexShader, NULL, 0); // TODO change this to an "effect?" or are effects going out of style?
-    deviceContext->PSSetShader(m_pixelShader, NULL, 0);
+    //deviceContext->VSSetShader(m_vertexShader, NULL, 0); // TODO change this to an "effect?" or are effects going out of style?
+    //deviceContext->PSSetShader(m_pixelShader, NULL, 0);
 
 
     // Lock the constant buffer so it can be written to.
@@ -447,8 +447,8 @@ bool VanillaShaderClass::SetPSMaterial( ID3D11DeviceContext *deviceContext, Dire
     D3D11_MAPPED_SUBRESOURCE mappedResource;
     MaterialBufferType* dataPtr;
 
-    deviceContext->VSSetShader(m_vertexShader, NULL, 0); // TODO change this to an "effect?" or are effects going out of style?
-    deviceContext->PSSetShader(m_pixelShader, NULL, 0);
+    //deviceContext->VSSetShader(m_vertexShader, NULL, 0); // TODO change this to an "effect?" or are effects going out of style?
+    //deviceContext->PSSetShader(m_pixelShader, NULL, 0);
 
     result = deviceContext->Map(m_materialBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
     if (FAILED(result))
@@ -490,8 +490,8 @@ bool VanillaShaderClass::SetPSLights( ID3D11DeviceContext *deviceContext, const 
     D3D11_MAPPED_SUBRESOURCE mappedResource;
     LightBufferType* dataPtr;
 
-    deviceContext->VSSetShader(m_vertexShader, NULL, 0); // TODO change this to an "effect?" or are effects going out of style?
-    deviceContext->PSSetShader(m_pixelShader, NULL, 0);  // XXX Will this be a hit on performance? Perhaps make a separate function to set these once?
+    //deviceContext->VSSetShader(m_vertexShader, NULL, 0); // TODO change this to an "effect?" or are effects going out of style?
+    //deviceContext->PSSetShader(m_pixelShader, NULL, 0);  // XXX Will this be a hit on performance? Perhaps make a separate function to set these once?
 
 
     result = deviceContext->Map(m_lightBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);

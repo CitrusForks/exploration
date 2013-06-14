@@ -19,7 +19,7 @@ public:
     // draw all actors:
     bool Scene::render( renderFunc_t &renderFunc );
 
-    virtual bool update(float now, float timeSinceLastUpdate, FirstPerson &FPCamera); 
+    virtual bool update(float now, float timeSinceLastUpdate, FirstPerson &FPCamera); // XXX the dependence on FirstPerson bugs me... make a generic camera interface instead?
 
     int enters(shared_ptr<Actor> actor); // adds an actor, named with theater term for no good reason
     void exits(unsigned int actor); // I hope you saved that reference from the enters() call...
