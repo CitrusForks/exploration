@@ -114,7 +114,7 @@ void LightsAndShadows::pointMoonlight( DirectX::FXMVECTOR newDirection, FirstPer
     skyCamPos = FPCamera.getEyePosition();
     skyCamPos = XMVectorFloor(skyCamPos  + XMVectorSet(0.5f, 0.5f, 0.5f, 0.0f) - newDirection * 90 + FPCamera.getForwardVector()*3.5);
     XMMATRIX directionalShadowOrtho2 = XMMatrixLookToLH(skyCamPos, 
-        newDirection, XMVectorSet(0, 0, 1, 0)) * XMMatrixOrthographicLH(9.5f, 9.5f, 0.1f, 1000); // view * orthographic projection, for directional light
+        newDirection, XMVectorSet(0, 0, 1, 0)) * XMMatrixOrthographicLH(6.0f, 6.0f, 0.1f, 1000); // view * orthographic projection, for directional light
 
     XMStoreFloat4x4(&lights[NUM_SPOTLIGHTS+1].projection, directionalShadowOrtho2);
 }

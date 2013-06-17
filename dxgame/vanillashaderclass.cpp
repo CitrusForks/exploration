@@ -22,9 +22,7 @@ VanillaShaderClass::VanillaShaderClass()
 	m_matrixBuffer = 0;
         m_lightBuffer = 0;
         m_cameraBuffer = 0;
-	m_sampleState[0] = 0;
-        m_sampleState[1] = 0;
-        m_sampleState[2] = 0;
+        ZeroMemory(m_sampleState, sizeof(m_sampleState));
 }
 
 
@@ -109,23 +107,36 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
     vsIn.read(vertexShaderBuffer.get(), vsSize);
 
     // now the pixel shader
-    _wstat(psFilename, &ss);
-
-    size_t psSize = ss.st_size;
-    if (!psSize)
+    if (psFilename)
     {
-        MessageBox(hwnd, psFilename, L"Missing Shader File", MB_OK);
-        char currentDir[1024];
-        GetCurrentDirectoryA(1023, currentDir);
-        cerr << "Was looking for shader in " << currentDir << endl;
-        throw Errors::Fatal();
-        return false;
+        // we may not want a pixel shader, in case of shadow maps
+        // XXX that doesn't work...
+        _wstat(psFilename, &ss);
+
+        size_t psSize = ss.st_size;
+        if (!psSize)
+        {
+            MessageBox(hwnd, psFilename, L"Missing Shader File", MB_OK);
+            char currentDir[1024];
+            GetCurrentDirectoryA(1023, currentDir);
+            cerr << "Was looking for shader in " << currentDir << endl;
+            throw Errors::Fatal();
+            return false;
+        }
+
+        unique_ptr<char> pixelShaderBuffer(new char [psSize]);
+
+        ifstream psIn(psFilename, ios::in | ios::binary);
+        psIn.read(pixelShaderBuffer.get(), psSize);
+
+        // Create the pixel shader from the buffer.
+        result = device->CreatePixelShader(pixelShaderBuffer.get(), psSize, NULL, &m_pixelShader);
+        if(FAILED(result))
+        {
+            Errors::Cry("Couldn't create shader!");
+        }
     }
 
-    unique_ptr<char> pixelShaderBuffer(new char [psSize]);
-
-    ifstream psIn(psFilename, ios::in | ios::binary);
-    psIn.read(pixelShaderBuffer.get(), psSize);
 
     // Create the vertex shader from the buffer.
     result = device->CreateVertexShader(vertexShaderBuffer.get(), vsSize, NULL, &m_vertexShader);
@@ -134,16 +145,9 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
         Errors::Cry("Couldn't create shader!");
     }
 
-    // Create the pixel shader from the buffer.
-    result = device->CreatePixelShader(pixelShaderBuffer.get(), psSize, NULL, &m_pixelShader);
-    if(FAILED(result))
-    {
-        Errors::Cry("Couldn't create shader!");
-    }
-
     // Create the vertex input layout description.
     // This setup needs to match the Vertex structure
-    // XXX Is this really a good place to define it then?
+    // XXX Is this really a good place to define it then? Do we really need to redefine it for every shader if it's identical?
     D3D11_INPUT_ELEMENT_DESC polygonLayout[6];
     polygonLayout[0].SemanticName = "POSITION";
     polygonLayout[0].SemanticIndex = 0;
@@ -192,7 +196,6 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
     polygonLayout[5].AlignedByteOffset = multiStreaming ? 0 : D3D11_APPEND_ALIGNED_ELEMENT;
     polygonLayout[5].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
     polygonLayout[5].InstanceDataStepRate = 0;
-
 
     // Get a count of the elements in the layout.
     unsigned int numElements = sizeof(polygonLayout) / sizeof(polygonLayout[0]);
@@ -281,7 +284,6 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
     // ..._POINT would be the logical choice here but using LINEAR eliminates shadow artifacts
     // it's a non-anisotropic sampler for the copy to the swap chain and for sampling shadow maps etc.
     D3D11_SAMPLER_DESC samplerDesc2 = {D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER, 0.0f, 8, D3D11_COMPARISON_ALWAYS, {1,1,1,1}, 0, D3D11_FLOAT32_MAX };
-
     result = device->CreateSamplerState(&samplerDesc2, m_sampleState + 1);
     if(FAILED(result))
     {
@@ -307,6 +309,15 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
         return false;
     }
 
+    // sample+compare state for alternate shadow map treatment
+    D3D11_SAMPLER_DESC samplerDesc5 = {D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_BORDER, 0.0f, 8, D3D11_COMPARISON_LESS, {1,1,1,1}, 0, D3D11_FLOAT32_MAX };
+    result = device->CreateSamplerState(&samplerDesc5, m_sampleState + 4);
+    if(FAILED(result))
+    {
+        Errors::Cry(L"Couldn't create sampler. Highly unlikely! :/");
+        return false;
+    }
+
 
     cout << "initialized some shaders" << endl;
 
@@ -319,7 +330,7 @@ void VanillaShaderClass::ShutdownShader()
     // Release the sampler state.
     if(m_sampleState)
     {
-        for (int i = 0; i < 4; ++i) if(m_sampleState[i])
+        for (int i = 0; i < 5; ++i) if(m_sampleState[i])
         {
 	    m_sampleState[i]->Release();
             m_sampleState[i] = 0;
@@ -550,7 +561,7 @@ void VanillaShaderClass::RenderShader( ID3D11DeviceContext *deviceContext, int i
     deviceContext->PSSetShader(m_pixelShader, NULL, 0);
 
     // Set the sampler state in the pixel shader.
-    if (setSampler) deviceContext->PSSetSamplers(0, 4, m_sampleState);
+    if (setSampler) deviceContext->PSSetSamplers(0, 5, m_sampleState);
 
     // Render the triangles
     deviceContext->DrawIndexed(indexCount, 0, 0);

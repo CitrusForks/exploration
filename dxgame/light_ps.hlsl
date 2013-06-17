@@ -49,6 +49,23 @@ SamplerState SampleUnfiltered : register(s2);
 // unfiltered
 SamplerState SampleLinear : register(s3);
 
+// from http://msdn.microsoft.com/en-us/library/windows/desktop/bb509644%28v=vs.85%29.aspx (modified)
+SamplerComparisonState FilterShadows : register(s4);
+#if 0
+// this doesn't seem to work, thank you documentation example:
+{
+   // sampler state
+   Filter = MIN_MAG_LINEAR_MIP_POINT;
+   AddressU = BORDER;
+   AddressV = BORDER;
+   BorderColor = 0.0;
+
+   // sampler comparison state
+   ComparisonFunc = LESS;
+   ComparisonFilter = COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+};
+#endif
+
 // this buffer needs to be split up into separate lights and material buffers:
 cbuffer MaterialBuffer : register(b0)
 {
@@ -85,7 +102,7 @@ struct PixelInputType
 	float3 normal : NORMAL;
 	float3 tangent : TANGENT;
 	float3 viewDirection : VIEWDIR;
-	float4 shadowUV[NUM_SPOTLIGHTS+2] : SHADOWUV;
+	float4 shadowUV[NUM_SPOTLIGHTS+2] : SHADOWUV; // actually UV + z + w
 };
 
 
@@ -107,7 +124,27 @@ return 0.0;
 }
 
 
-float isSpotlightShadow(float4 lightClipSpaceCoordinates, uint whichShadow, float2 jitter)
+
+float filteredShadow(in float4 lightCoords, in uint whichShadow, float2 dummy)
+{
+#define SAMPLESHADOWMAP(i) if (i == whichShadow) return shadowMap[i].SampleCmpLevelZero(FilterShadows, \
+     float2(0.5 * lightCoords.x / lightCoords.w + 0.5, -0.5 * lightCoords.y / lightCoords.w + 0.5), \
+         lightCoords.z/lightCoords.w);
+SAMPLESHADOWMAP(0)
+SAMPLESHADOWMAP(1)
+SAMPLESHADOWMAP(2)
+SAMPLESHADOWMAP(3)
+SAMPLESHADOWMAP(4)
+SAMPLESHADOWMAP(5)
+#undef SAMPLESHADOWMAP
+return 0.0;
+}
+
+
+
+// helper function for blurredShadow()
+// samples shadowmap at the appropriate coordinates + jitter, compares against z/w, returns true if location is in shadow
+bool isSpotlightShadow(float4 lightClipSpaceCoordinates, uint whichShadow, float2 jitter)
 {
     float shadowSample = sampleShadowMap(
             jitter + float2(
@@ -116,7 +153,7 @@ float isSpotlightShadow(float4 lightClipSpaceCoordinates, uint whichShadow, floa
         whichShadow
     );
 
-    if (shadowSample < lightClipSpaceCoordinates.z / lightClipSpaceCoordinates.w) return true; // clip -> NDC via divide by w and this matches the data in the data in the map buffer
+    if (shadowSample < lightClipSpaceCoordinates.z / lightClipSpaceCoordinates.w) return true; // clip -> viewport via divide by w and this matches the data in the map buffer
     else return false;
 }
 
@@ -128,52 +165,52 @@ float isSpotlightShadow(float4 lightClipSpaceCoordinates, uint whichShadow, floa
 //
 // mapNum is which shadow map to sample
 // ds is the distance between the centers of two pixels along one axis, generally 1/length_of_side (that is, width of height; shadow map is presumed to be a square)
-float blurredShadow(in float4 shadowUV, in int mapNum, in float ds)
+float blurredShadow(in float4 lightCoord, in int mapNum, in float ds)
 {
     float totalShadow = 0.0f;
     // N.B., Gaussian blur kernel: http://homepages.inf.ed.ac.uk/rbf/HIPR2/gsmooth.htm
     // could be more elegant perhaps? but this works
 
-    if (isSpotlightShadow(shadowUV, mapNum, float2(0,0)))
+    if (isSpotlightShadow(lightCoord, mapNum, float2(0,0)))
     //{ // uncomment these braces to limit shadow only to area where the center pixel of kernel is in shadow; it's a last resort to cut down on glitches
         totalShadow += 41.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2(ds,ds))) totalShadow += 16.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds,-ds))) totalShadow += 16.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds,ds))) totalShadow += 16.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2(ds,-ds))) totalShadow += 16.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2(ds,ds))) totalShadow += 16.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2(-ds,-ds))) totalShadow += 16.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2(-ds,ds))) totalShadow += 16.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2(ds,-ds))) totalShadow += 16.0/273;
 
 //#define FIVE_BY_FIVE_GAUSSIAN_KERNEL yes_please
 
 #ifdef FIVE_BY_FIVE_GAUSSIAN_KERNEL
         // this only runs well on the 660
-        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds*2,0))) totalShadow += 7.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2( ds*2,0))) totalShadow += 7.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2(0,-ds*2))) totalShadow += 7.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2(0, ds*2))) totalShadow += 7.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2(-ds*2,0))) totalShadow += 7.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2( ds*2,0))) totalShadow += 7.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2(0,-ds*2))) totalShadow += 7.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2(0, ds*2))) totalShadow += 7.0/273;
 
-        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds*2,-ds*2))) totalShadow += 1.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds*2, ds*2))) totalShadow += 1.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2( ds*2,-ds*2))) totalShadow += 1.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2( ds*2, ds*2))) totalShadow += 1.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2(-ds*2,-ds*2))) totalShadow += 1.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2(-ds*2, ds*2))) totalShadow += 1.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2( ds*2,-ds*2))) totalShadow += 1.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2( ds*2, ds*2))) totalShadow += 1.0/273;
 
         if (totalShadow == 0.0f) return 1.0f; // early break
 
-        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds*2,-ds  ))) totalShadow += 4.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds  ,-ds*2))) totalShadow += 4.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds*2, ds  ))) totalShadow += 4.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds  , ds*2))) totalShadow += 4.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2( ds*2,-ds  ))) totalShadow += 4.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2( ds  ,-ds*2))) totalShadow += 4.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2( ds*2, ds  ))) totalShadow += 4.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2( ds  , ds*2))) totalShadow += 4.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2(-ds*2,-ds  ))) totalShadow += 4.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2(-ds  ,-ds*2))) totalShadow += 4.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2(-ds*2, ds  ))) totalShadow += 4.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2(-ds  , ds*2))) totalShadow += 4.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2( ds*2,-ds  ))) totalShadow += 4.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2( ds  ,-ds*2))) totalShadow += 4.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2( ds*2, ds  ))) totalShadow += 4.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2( ds  , ds*2))) totalShadow += 4.0/273;
 #endif
     
         if (totalShadow == 0.0f) return 1.0f; // early break
 
-        if (isSpotlightShadow(shadowUV, mapNum, float2(0,ds))) totalShadow += 26.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2(0,-ds))) totalShadow += 26.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2(-ds,0))) totalShadow += 26.0/273;
-        if (isSpotlightShadow(shadowUV, mapNum, float2(ds,0))) totalShadow += 26.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2(0,ds))) totalShadow += 26.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2(0,-ds))) totalShadow += 26.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2(-ds,0))) totalShadow += 26.0/273;
+        if (isSpotlightShadow(lightCoord, mapNum, float2(ds,0))) totalShadow += 26.0/273;
 
 
         
@@ -197,6 +234,33 @@ float blurredShadow(in float4 shadowUV, in int mapNum, in float ds)
 
     return shadowMultiplier;
 }
+
+// similar to above but uses filteredShadow() to sample shadow map
+float blurredFilteredShadow(in float4 lightCoord, in int mapNum, in float ds)
+{
+    float shadowMultiplier;
+    // N.B., Gaussian blur kernel: http://homepages.inf.ed.ac.uk/rbf/HIPR2/gsmooth.htm
+    // could be more elegant perhaps? but this works
+
+    shadowMultiplier = filteredShadow(lightCoord, mapNum, float2(0,0)) * 41.0/273;
+    shadowMultiplier += filteredShadow(lightCoord, mapNum, float2(ds,ds)) * 16.0/273;
+    shadowMultiplier += filteredShadow(lightCoord, mapNum, float2(-ds,-ds)) * 16.0/273;
+    shadowMultiplier += filteredShadow(lightCoord, mapNum, float2(-ds,ds)) * 16.0/273;
+    shadowMultiplier += filteredShadow(lightCoord, mapNum, float2(ds,-ds)) * 16.0/273;
+    
+    if (shadowMultiplier > 41.0/273 + 48.0/273) return 1.0f; // early break
+
+    shadowMultiplier += filteredShadow(lightCoord, mapNum, float2(0,ds)) * 26.0/273;
+    shadowMultiplier += filteredShadow(lightCoord, mapNum, float2(0,-ds)) * 26.0/273;
+    shadowMultiplier += filteredShadow(lightCoord, mapNum, float2(-ds,0)) * 26.0/273;
+    shadowMultiplier += filteredShadow(lightCoord, mapNum, float2(ds,0)) * 26.0/273;
+
+
+    const float maxPossibleShadow = (41.0 + 16.0 * 4 + 26.0 * 4) / 273;
+
+    return saturate(shadowMultiplier / maxPossibleShadow);
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Pixel Shader
@@ -275,6 +339,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 
             float totalShadow = 0;
             uint mapNum = NUM_SPOTLIGHTS+1;
+            float shadowFactor;
 
             // get shadowmap coordinates in local high def shadowmap:
             float2 uv = float2(0.5 * input.shadowUV[mapNum].x / input.shadowUV[mapNum].w +
@@ -284,17 +349,18 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
             {
                 ds = 1.0/(SHADOWMAP_DIMENSIONS * DIRECTIONAL_SHADOW_MULTIPLIER_LOD1); // high LOD map dimension
                 //color.r = 1.0;
+                shadowFactor = blurredShadow(input.shadowUV[mapNum], mapNum, ds);
             } else
             {
                 mapNum = NUM_SPOTLIGHTS;
                 //uv = float2(input.shadowUV[mapNum].x * 0.5 + 0.5, -0.5 * input.shadowUV[mapNum].y + 0.5);
                 ds = 1.0/(SHADOWMAP_DIMENSIONS * DIRECTIONAL_SHADOW_MULTIPLIER_WIDE); // low LOD map dimension
                 //color.g = 1.0;
+                shadowFactor = filteredShadow(input.shadowUV[mapNum], mapNum, ds);
             }
             
             //return sampleShadowMap(input.shadowUV[NUM_SPOTLIGHTS+1], NUM_SPOTLIGHTS+1);
 
-            float shadowFactor = blurredShadow(input.shadowUV[mapNum], mapNum, ds);
 
             if (shadowFactor > 0.0f)
             {
@@ -330,7 +396,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 		{
 			// well, a spotlight could be hitting this pixel
 			// check for shadow, though
-                        float shadowFactor = blurredShadow(input.shadowUV[i], i, 1.0/SHADOWMAP_DIMENSIONS); // TODO: maybe pass the dimensions along????? at least make
+                        float shadowFactor = filteredShadow(input.shadowUV[i], i, 1.0/SHADOWMAP_DIMENSIONS); // TODO: maybe pass the dimensions along????? at least make
 
                         if (shadowFactor == 0.0f) continue;
 

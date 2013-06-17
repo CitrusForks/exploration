@@ -253,8 +253,6 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 #if defined(_DEBUG)
         // If the project is in a debug build, enable the debug layer.
         creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
-        ID3D11Debug *debug;
-        m_device->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&debug));
         //debug->ReportLiveDeviceObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
 #endif
 
@@ -266,6 +264,13 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
             Errors::Cry("Could not initialize device! Crashing now?");
             return false;
 	}
+
+#if defined(_DEBUG)
+        ID3D11Debug *debug;
+        m_device->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&debug));
+#endif
+
+        m_device->SetPrivateData(WKPDID_D3DDebugObjectName, 6, "device");
 
 	// Get the pointer to the back buffer.
 	result = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&backBufferPtr);

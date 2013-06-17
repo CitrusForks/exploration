@@ -47,6 +47,12 @@ Graphics & Graphics::operator=( Graphics & )
 }
 
 
+namespace FPS
+{
+    const int frameTotal = 16;
+    int frame = 0;
+    float timeAt[frameTotal];
+}
 
 Graphics::~Graphics(void)
 {
@@ -153,8 +159,16 @@ bool Graphics::RenderScene( Chronometer &timer, Scene *scene)
 
     //text.write(d3d.GetDeviceContext(), L"Hello?", 0, 0);
     wchar_t fps[256];
-    StringCbPrintfW(fps, sizeof(fps), L"%.02f fps", 1.0f / (float)timer.sincePrev());
-    //text.write(d3d.GetDeviceContext(), fps, 25, 25);
+
+    float tenFramesAgo = FPS::timeAt[FPS::frame % FPS::frameTotal];
+    FPS::timeAt[FPS::frame % FPS::frameTotal] = (float)timer.sinceInit();
+
+    if (FPS::frame > FPS::frameTotal - 1)
+    {
+        StringCbPrintfW(fps, sizeof(fps), L"%.02f fps", ((float)FPS::frameTotal) / (timer.sinceInit() - tenFramesAgo));
+        text.write(d3d.GetDeviceContext(), fps, 25, 25);
+    }
+    ++FPS::frame;
 
     d3d.depthOn(); // enable depth test again for normal drawing
 
