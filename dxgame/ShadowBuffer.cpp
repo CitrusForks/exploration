@@ -31,7 +31,7 @@ bool ShadowBuffer::init( ID3D11Device *device, ID3D11DeviceContext *deviceContex
     depthBufferDesc.Height = m_height;
     depthBufferDesc.MipLevels = 1;
     depthBufferDesc.ArraySize = 1;
-    depthBufferDesc.Format = DXGI_FORMAT_R16_TYPELESS;
+    depthBufferDesc.Format = DXGI_FORMAT_R32_TYPELESS;
     depthBufferDesc.SampleDesc.Count = 1;
     depthBufferDesc.SampleDesc.Quality = 0;
     depthBufferDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -52,7 +52,7 @@ bool ShadowBuffer::init( ID3D11Device *device, ID3D11DeviceContext *deviceContex
     ZeroMemory(&depthStencilViewDesc, sizeof(depthStencilViewDesc));
 
     // Set up the depth stencil view description.
-    depthStencilViewDesc.Format = DXGI_FORMAT_D16_UNORM;
+    depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;
     depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS; // D3D11_DSV_DIMENSION_TEXTURE2D;
     depthStencilViewDesc.Texture2D.MipSlice = 0;
 
@@ -65,7 +65,7 @@ bool ShadowBuffer::init( ID3D11Device *device, ID3D11DeviceContext *deviceContex
     }
 
     D3D11_SHADER_RESOURCE_VIEW_DESC resourceDesc;
-    resourceDesc.Format = DXGI_FORMAT_R16_UNORM; // the formats must match or the call will fail; which raises the question, why force us to specify it multiple times then?
+    resourceDesc.Format = DXGI_FORMAT_R32_FLOAT; // the formats must match or the call will fail; which raises the question, why force us to specify it multiple times then?
     resourceDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
     resourceDesc.Texture2D.MostDetailedMip = 0; // not sure about this
     resourceDesc.Texture2D.MipLevels = -1; // or this    

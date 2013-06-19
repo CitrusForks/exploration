@@ -125,10 +125,10 @@ return 0.0;
 
 
 
-float filteredShadow(in float4 lightCoords, in uint whichShadow, float2 dummy)
+float filteredShadow(in float4 lightCoords, in uint whichShadow, float2 jitter)
 {
 #define SAMPLESHADOWMAP(i) if (i == whichShadow) return shadowMap[i].SampleCmpLevelZero(FilterShadows, \
-     float2(0.5 * lightCoords.x / lightCoords.w + 0.5, -0.5 * lightCoords.y / lightCoords.w + 0.5), \
+     float2(0.5 * lightCoords.x / lightCoords.w + 0.5 + jitter.x, -0.5 * lightCoords.y / lightCoords.w + 0.5 + jitter.y), \
          lightCoords.z/lightCoords.w);
 SAMPLESHADOWMAP(0)
 SAMPLESHADOWMAP(1)
@@ -341,22 +341,21 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
             uint mapNum = NUM_SPOTLIGHTS+1;
             float shadowFactor;
 
-            // get shadowmap coordinates in local high def shadowmap:
-            float2 uv = float2(0.5 * input.shadowUV[mapNum].x / input.shadowUV[mapNum].w +
-                0.5, -0.5 * input.shadowUV[mapNum].y + 0.5);
+            // get shadowmap coordinates in local high def shadowmap (NDC):
+            float2 uv = float2(0.5 * input.shadowUV[mapNum].x +
+                0.5, -0.5 * input.shadowUV[mapNum].y  + 0.5);
 
             if (uv.x > 0.01 && uv.x < 0.99 && uv.y > 0.01 && uv.y < 0.99) // are the coordinates in the map?
             {
                 ds = 1.0/(SHADOWMAP_DIMENSIONS * DIRECTIONAL_SHADOW_MULTIPLIER_LOD1); // high LOD map dimension
-                //color.r = 1.0;
-                shadowFactor = blurredShadow(input.shadowUV[mapNum], mapNum, ds);
+                shadowFactor = blurredFilteredShadow(input.shadowUV[mapNum], mapNum, ds);
             } else
             {
                 mapNum = NUM_SPOTLIGHTS;
                 //uv = float2(input.shadowUV[mapNum].x * 0.5 + 0.5, -0.5 * input.shadowUV[mapNum].y + 0.5);
                 ds = 1.0/(SHADOWMAP_DIMENSIONS * DIRECTIONAL_SHADOW_MULTIPLIER_WIDE); // low LOD map dimension
                 //color.g = 1.0;
-                shadowFactor = filteredShadow(input.shadowUV[mapNum], mapNum, ds);
+                shadowFactor = filteredShadow(input.shadowUV[mapNum], mapNum, float2(0,0));
             }
             
             //return sampleShadowMap(input.shadowUV[NUM_SPOTLIGHTS+1], NUM_SPOTLIGHTS+1);
@@ -398,7 +397,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 			// check for shadow, though
                         float shadowFactor = filteredShadow(input.shadowUV[i], i, 1.0/SHADOWMAP_DIMENSIONS); // TODO: maybe pass the dimensions along????? at least make
 
-                        if (shadowFactor == 0.0f) continue;
+                        if (shadowFactor < 1.0 / 512) continue; // too dark to see but can't rely on PCF returning exact 0.0f, I bet
 
 			float3 toLight = -sourceToPixel;
 			float spotlightIntensity = dot(normal, toLight);
