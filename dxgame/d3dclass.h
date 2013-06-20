@@ -56,7 +56,7 @@ public:
         void depthOn();
         void depthOff();
 
-        void setDepthBias(bool onOrOffOrWhatever);
+        void setDepthBias(bool setBias, bool highBias = false);
 
         HWND getWindow() { return m_window; }
 
@@ -72,7 +72,7 @@ private:
 	ID3D11DepthStencilState *m_depthStencilState;
         ID3D11DepthStencilState *m_depthStencilDisabledState;
 	ID3D11DepthStencilView *m_depthStencilView;
-	ID3D11RasterizerState *m_rasterState, *m_biasRasterState;
+	ID3D11RasterizerState *m_rasterState, *m_biasRasterState, *m_highBiasRasterState;
 	DirectX::XMFLOAT4X4 m_projectionMatrix;
 	DirectX::XMFLOAT4X4 m_orthoMatrix;
 

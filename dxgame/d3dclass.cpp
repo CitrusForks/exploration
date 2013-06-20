@@ -395,7 +395,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	m_deviceContext->OMSetRenderTargets(1, &m_renderTargetView, nullptr /*m_depthStencilView*/);
 
 	// Setup the raster description which will determine how and what polygons will be drawn.
-	D3D11_RASTERIZER_DESC rasterDesc;
+	D3D11_RASTERIZER_DESC rasterDesc, biasRasterDesc, highBiasRasterDesc;
 	rasterDesc.AntialiasedLineEnable = false;
 	rasterDesc.CullMode = D3D11_CULL_BACK;
 	rasterDesc.DepthBias = 0;
@@ -406,6 +406,8 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	rasterDesc.MultisampleEnable = true;
 	rasterDesc.ScissorEnable = false;
 	rasterDesc.SlopeScaledDepthBias = 0.0f;
+
+        biasRasterDesc = highBiasRasterDesc = rasterDesc;
 
 	// Create the rasterizer state from the description we just filled out.
 	result = m_device->CreateRasterizerState(&rasterDesc, &m_rasterState);
@@ -418,24 +420,33 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	m_deviceContext->RSSetState(m_rasterState);
 
         // Create a rasterizer state with depth bias for drawing shadow maps
-        rasterDesc.AntialiasedLineEnable = false;
-        rasterDesc.CullMode = D3D11_CULL_BACK;
-        rasterDesc.DepthBias = 10; // XXX need a good value here
-        rasterDesc.DepthBiasClamp = 1.0f; // here too
-        rasterDesc.DepthClipEnable = false;
-        rasterDesc.FillMode = D3D11_FILL_SOLID;
-        rasterDesc.FrontCounterClockwise = false;
-        rasterDesc.MultisampleEnable = false;
-        rasterDesc.ScissorEnable = false;
-        rasterDesc.SlopeScaledDepthBias = 10.0f; // also here! 
+        biasRasterDesc.CullMode = D3D11_CULL_BACK;
+        biasRasterDesc.DepthBias = 1; // XXX need a good value here
+        biasRasterDesc.DepthBiasClamp = 12345.0f; // here too
+        biasRasterDesc.MultisampleEnable = false;
+        biasRasterDesc.SlopeScaledDepthBias = 8.0f; // also here! 
 
         // really create it
-        result = m_device->CreateRasterizerState(&rasterDesc, &m_biasRasterState);
+        result = m_device->CreateRasterizerState(&biasRasterDesc, &m_biasRasterState);
         if(FAILED(result))
         {
             return false;
         }
-        
+
+        // and another one with even more bias
+        highBiasRasterDesc.CullMode = D3D11_CULL_BACK;
+        highBiasRasterDesc.DepthBias = 1; 
+        highBiasRasterDesc.DepthBiasClamp = 12345.0f; 
+        highBiasRasterDesc.MultisampleEnable = false;
+        highBiasRasterDesc.SlopeScaledDepthBias = 33.0f;
+
+        // really create it
+        result = m_device->CreateRasterizerState(&highBiasRasterDesc, &m_highBiasRasterState);
+        if(FAILED(result))
+        {
+            return false;
+        }
+
 
 #if 0
 	// Setup the viewport for rendering.
@@ -610,9 +621,9 @@ void D3DClass::depthOff()
 
 
 // set rasterizer state to one of two choices based on parameter
-void D3DClass::setDepthBias( bool onOrOffOrWhatever )
+void D3DClass::setDepthBias( bool setBias, bool highBias /*= false*/ )
 {
-    m_deviceContext->RSSetState(onOrOffOrWhatever ? m_biasRasterState : m_rasterState);
+    m_deviceContext->RSSetState(setBias ? ( highBias ? m_highBiasRasterState : m_biasRasterState ) : m_rasterState);
 }
 
 

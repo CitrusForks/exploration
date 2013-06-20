@@ -415,7 +415,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 		{
 			// well, a spotlight could be hitting this pixel
 			// check for shadow, though
-                        float shadowFactor = filteredShadow(input.shadowUV[i], i, 1.0/SHADOWMAP_DIMENSIONS); // TODO: maybe pass the dimensions along????? at least make
+                        float shadowFactor = blurredFilteredShadow(input.shadowUV[i], i, 1.0/SHADOWMAP_DIMENSIONS); // TODO: maybe pass the dimensions along????? at least make
 
                         if (shadowFactor < 1.0 / 512) continue; // too dark to see but can't rely on PCF returning exact 0.0f, I bet
 
