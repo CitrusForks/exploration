@@ -30,7 +30,7 @@ LightsAndShadows::LightsAndShadows(D3DClass &d3d) : sunlight( 255.0f / 255.0f, 2
     }
 
     // shadow maps for directional lights:
-    shadows[shadows.size()-2].init(d3d.GetDevice(), d3d.GetDeviceContext(), DIRECTIONAL_SHADOW_MULTIPLIER_WIDE); // 4Kx4K texture... kinda hefty, this is for the sweeping 100mx100m view
+    shadows[shadows.size()-2].init(d3d.GetDevice(), d3d.GetDeviceContext(), DIRECTIONAL_SHADOW_MULTIPLIER_WIDE); // large texture for the sweeping 100mx100m view
     shadows[shadows.size()-1].init(d3d.GetDevice(), d3d.GetDeviceContext(), DIRECTIONAL_SHADOW_MULTIPLIER_LOD1); // this is for whatever's right in front of the player, approximately
 
     lightDirection = XMVector3Normalize(XMVectorSet(0.1f,  -0.2f, 1.0f, 0.0f)); // directional light; N.B., still need to call pointMoonlight()
