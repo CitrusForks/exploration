@@ -3,11 +3,6 @@
 
 #include "stdafx.h"
 
-// define this to debug main shaders with VS2012:
-//#define DISABLE_OFFSCREEN_BUFFER here_comes_the_debugging_train_chooo_choooooo
-// 
-
-
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <strsafe.h>

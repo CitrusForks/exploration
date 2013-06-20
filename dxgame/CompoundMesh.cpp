@@ -1,7 +1,5 @@
-// This loader reads a 3D object with libassimp and dumps it all into one indexed buffer. 
-// That saves on draw calls but makes it impossible to set materials per mesh. Instead, 
-// materials would have to be sent with every vertex, approximately doubling the memory 
-// required for vertex data. 
+// This loader reads a 3D object with libassimp and duplicates its mesh tree with SimpleMesh objects.
+// This seems like the conventional approach. It should make it easier to implement animation.
 
 #include "StdAfx.h"
 #include "CompoundMesh.h"

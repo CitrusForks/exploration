@@ -1,5 +1,5 @@
 Texture2D shaderTexture;
-SamplerState SampleType : register(s3); // register 2 contains the non-filtering sampler, registers 1 and 3 have different linear ones
+SamplerState SampleType : register(s3); // register 2 contains the non-filtering sampler, register 3 has a linear-filtering one
 
 //
 // Globals -- shared with main shader for C++ code reuse but we probably only use time here
@@ -40,7 +40,7 @@ float distanceSq(float4 A, float4 B)
 ////////////////////////////////////////////////////////////////////////////////
 float4 PostProcPixelShader(PixelInputType input) : SV_TARGET
 {
-	float2 baseOffset;
+	float2 baseOffset; // from the center, that is
 	const float2 Half = {0.5, 0.5};
 
 	float2 ghostImageOffset;
@@ -52,11 +52,11 @@ float4 PostProcPixelShader(PixelInputType input) : SV_TARGET
 #if 0
 	// wavy ghost image effect
 	float4 textureColor = shaderTexture.Sample(SampleType, tex);
-	float darkness = 1.0 - saturate(distance(textureColor, float4(0,0,0,0))/1.5);
+	//float darkness = 1.0 - saturate(distance(textureColor, float4(0,0,0,0))/1.5);
 
 	ghostImageOffset = baseOffset * 0.01;
-	ghostImageOffset.x += 0.01 * cos(ghostImageOffset.x * 1000 + time*7) * darkness;
-	ghostImageOffset.y += 0.01 * cos(ghostImageOffset.y * 1000 + time*11) * darkness;
+	ghostImageOffset.x += 0.01 * cos(ghostImageOffset.x * 1000 + time*7) /* * darkness */;
+	ghostImageOffset.y += 0.01 * cos(ghostImageOffset.y * 1000 + time*11) /* * darkness */;
 
 	//ghost2 = baseOffset * 0.03 * sin(time*3.5);
 	
@@ -73,7 +73,7 @@ float4 PostProcPixelShader(PixelInputType input) : SV_TARGET
 	textureColor -= shaderTexture.Sample(SampleType, tex);
 #endif
 
-#if 1
+#if 0
 	// chromatic aberration
 	float4 textureColor;
 	textureColor.x = shaderTexture.Sample(SampleType, tex - baseOffset * 0.01).x; // red is smudged outward
@@ -81,13 +81,13 @@ float4 PostProcPixelShader(PixelInputType input) : SV_TARGET
 	textureColor.z = shaderTexture.Sample(SampleType, tex).z;
 #endif
 
-#if 0
+#if 1
 	// strange distortion?
 	float4 textureColor;
 
-	tex += baseOffset * pow(distance(input.tex, Half), 3) * 0.5;
+	tex += baseOffset * pow(distance(input.tex, Half), 4) * 0.9;
 
-	if (tex.x > 0.9 || tex.x < 0.01 || tex.y > 0.9 || tex.y < 0.01) return float4(0,0,0,0);
+	if (tex.x > 0.999 || tex.x < 0.001 || tex.y > 0.999 || tex.y < 0.001) return float4(0,0,0,0); // XXX the proper way to do this is with a border sampler
 
 	textureColor = shaderTexture.Sample(SampleType, tex);
 #endif

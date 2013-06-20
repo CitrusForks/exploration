@@ -108,34 +108,54 @@ struct PixelInputType
 
 static const float PI = 3.14159265358979;
 
-float sampleShadowMap(float2 uv, uint which)
+// use Gather to find the deepest relevant sample on the shadow map in an effort to avoid self-shadowing artifacts
+// XXX fails in practice because blur samples fall off the edge of the object on the shadow map; solution unclear
+float sampleShadowMapWithGather(float2 uv, uint which)
 {
+    float4 sample = float4(1,1,1,1);
 // because we can't use a texture array with a depth buffer, we live with this:
-#define SAMPLESHADOWMAP(i) if (i == which) return shadowMap[i].Sample(SampleShadows, uv).r;
+//#define SAMPLESHADOWMAP(i) if (i == which) return shadowMap[i].Sample(SampleShadows, uv).r;
+#define SAMPLESHADOWMAP(i) if (i == which) sample = shadowMap[i].Gather(SampleShadows, uv);
+SAMPLESHADOWMAP(4)
+SAMPLESHADOWMAP(5)
 SAMPLESHADOWMAP(0)
 SAMPLESHADOWMAP(1)
 SAMPLESHADOWMAP(2)
 SAMPLESHADOWMAP(3)
-SAMPLESHADOWMAP(4)
-SAMPLESHADOWMAP(5)
 #undef SAMPLESHADOWMAP
 // :|
-return 0.0; 
+    return max(max(sample.r, sample.g), max(sample.b, sample.a));
+}
+
+
+float sampleShadowMap(float2 uv, uint which)
+{
+// because we can't use a texture array with a depth buffer, we live with this:
+#define SAMPLESHADOWMAP(i) if (i == which) return shadowMap[i].Sample(SampleShadows, uv).r;
+SAMPLESHADOWMAP(4)
+SAMPLESHADOWMAP(5)
+SAMPLESHADOWMAP(0)
+SAMPLESHADOWMAP(1)
+SAMPLESHADOWMAP(2)
+SAMPLESHADOWMAP(3)
+#undef SAMPLESHADOWMAP
+// :|
 }
 
 
 
 float filteredShadow(in float4 lightCoords, in uint whichShadow, float2 jitter)
 {
-#define SAMPLESHADOWMAP(i) if (i == whichShadow) return shadowMap[i].SampleCmpLevelZero(FilterShadows, \
-     float2(0.5 * lightCoords.x / lightCoords.w + 0.5 + jitter.x, -0.5 * lightCoords.y / lightCoords.w + 0.5 + jitter.y), \
-         lightCoords.z/lightCoords.w);
+    float2 uv = float2(0.5 * lightCoords.x / lightCoords.w + 0.5 + jitter.x, -0.5 * lightCoords.y / lightCoords.w + 0.5 + jitter.y);
+    float z = lightCoords.z / lightCoords.w;
+#define SAMPLESHADOWMAP(i) \
+    if (i == whichShadow) return shadowMap[i].SampleCmpLevelZero(FilterShadows, uv, z);
+SAMPLESHADOWMAP(4)
+SAMPLESHADOWMAP(5)
 SAMPLESHADOWMAP(0)
 SAMPLESHADOWMAP(1)
 SAMPLESHADOWMAP(2)
 SAMPLESHADOWMAP(3)
-SAMPLESHADOWMAP(4)
-SAMPLESHADOWMAP(5)
 #undef SAMPLESHADOWMAP
 return 0.0;
 }
@@ -327,7 +347,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	// Initialize the specular color.
 	specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
 
-	// Invert the light direction for calculations.
+	// Invert the light direction for calculations. XXX why not just store it inverted?
         lightDir = -lightDirection;
 
         // Calculate the amount of light on this pixel.
@@ -348,14 +368,14 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
             if (uv.x > 0.01 && uv.x < 0.99 && uv.y > 0.01 && uv.y < 0.99) // are the coordinates in the map?
             {
                 ds = 1.0/(SHADOWMAP_DIMENSIONS * DIRECTIONAL_SHADOW_MULTIPLIER_LOD1); // high LOD map dimension
-                shadowFactor = blurredFilteredShadow(input.shadowUV[mapNum], mapNum, ds);
+                shadowFactor = blurredShadow(input.shadowUV[mapNum], mapNum, ds);
             } else
             {
                 mapNum = NUM_SPOTLIGHTS;
                 //uv = float2(input.shadowUV[mapNum].x * 0.5 + 0.5, -0.5 * input.shadowUV[mapNum].y + 0.5);
                 ds = 1.0/(SHADOWMAP_DIMENSIONS * DIRECTIONAL_SHADOW_MULTIPLIER_WIDE); // low LOD map dimension
                 //color.g = 1.0;
-                shadowFactor = filteredShadow(input.shadowUV[mapNum], mapNum, float2(0,0));
+                shadowFactor = filteredShadow(input.shadowUV[mapNum], mapNum, ds);
             }
             
             //return sampleShadowMap(input.shadowUV[NUM_SPOTLIGHTS+1], NUM_SPOTLIGHTS+1);
