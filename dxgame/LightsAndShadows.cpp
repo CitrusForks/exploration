@@ -111,10 +111,10 @@ void LightsAndShadows::pointMoonlight( DirectX::FXMVECTOR newDirection, FirstPer
     XMStoreFloat4x4(&lights[NUM_SPOTLIGHTS].projection, directionalShadowOrtho);
 
     // high LOD view for directional shadow, focused on the player's vicinity
-    skyCamPos = FPCamera.getEyePosition();
-    skyCamPos = XMVectorFloor(skyCamPos  + XMVectorSet(0.5f, 0.5f, 0.5f, 0.0f) - newDirection * 90 + FPCamera.getForwardVector()*3.5);
+    skyCamPos = FPCamera.getEyePosition() + FPCamera.getForwardVector()*3.5;
+    skyCamPos = XMVectorFloor(skyCamPos  + XMVectorSet(0.5f, 0.5f, 0.5f, 0.0f) - newDirection * 90);
     XMMATRIX directionalShadowOrtho2 = XMMatrixLookToLH(skyCamPos, 
-        newDirection, XMVectorSet(0, 0, 1, 0)) * XMMatrixOrthographicLH(6.0f, 6.0f, 0.1f, 1000); // view * orthographic projection, for directional light
+        newDirection, XMVectorSet(0, 0, 1, 0)) * XMMatrixOrthographicLH(9.0f, 9.0f, 0.1f, 1000); // view * orthographic projection, for directional light
 
     XMStoreFloat4x4(&lights[NUM_SPOTLIGHTS+1].projection, directionalShadowOrtho2);
 }
@@ -135,7 +135,7 @@ bool LightsAndShadows::renderShadowMaps( D3DClass &d3d,
     // Set up the viewport for rendering at shadow map resolution
     D3D11_VIEWPORT viewport = { 0.0f, 0.0f, (float)ShadowBuffer::width, (float)ShadowBuffer::height, 0.0f, 1.0f };
     d3d.GetDeviceContext()->RSSetViewports(1, &viewport);
-    d3d.setDepthBias(true);
+    d3d.setDepthBias(true, true);
 
     // re-render scene once for every shadow
     auto light = lights.begin();
@@ -153,6 +153,7 @@ bool LightsAndShadows::renderShadowMaps( D3DClass &d3d,
     //
     // The directional light shadowmaps may be lighting a very large outdoor area, so they require higher resolutions.
     //
+    d3d.setDepthBias(true, false);
     D3D11_VIEWPORT viewport2 = { 0.0f, 0.0f, (float)shadows[NUM_SPOTLIGHTS].m_width, (float)shadows[NUM_SPOTLIGHTS].m_height, 0.0f, 1.0f };
     d3d.GetDeviceContext()->RSSetViewports(1, &viewport2);
 
@@ -162,9 +163,11 @@ bool LightsAndShadows::renderShadowMaps( D3DClass &d3d,
     XMMATRIX view = XMLoadFloat4x4(&(lights[NUM_SPOTLIGHTS].projection));
     if (!doRenderCalls(shadowShaders, view, XMMatrixIdentity(), lights)) return false;
 
-    // next map
+    // next map is the high detail one; we set a rasterizer with a higher bias to beat down shadow acne artifacts
     D3D11_VIEWPORT viewport3 = { 0.0f, 0.0f, (float)shadows[NUM_SPOTLIGHTS+1].m_width, (float)shadows[NUM_SPOTLIGHTS+1].m_height, 0.0f, 1.0f };
     d3d.GetDeviceContext()->RSSetViewports(1, &viewport3);
+
+    d3d.setDepthBias(true, true);
 
     shadows[NUM_SPOTLIGHTS+1].setAsRenderTarget(d3d.GetDeviceContext());
     shadows[NUM_SPOTLIGHTS+1].clear(d3d.GetDeviceContext());
