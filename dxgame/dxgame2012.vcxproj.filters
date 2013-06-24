@@ -135,6 +135,9 @@
     <ClInclude Include="ScriptedScene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="LuaSharedPointerActorWrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -222,6 +225,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ScriptedScene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LuaSharedPointerActorWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

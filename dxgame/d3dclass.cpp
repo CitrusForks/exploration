@@ -438,7 +438,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
         highBiasRasterDesc.DepthBias = 1; 
         highBiasRasterDesc.DepthBiasClamp = 12345.0f; 
         highBiasRasterDesc.MultisampleEnable = false;
-        highBiasRasterDesc.SlopeScaledDepthBias = 33.0f;
+        highBiasRasterDesc.SlopeScaledDepthBias = 12.0f;
 
         // really create it
         result = m_device->CreateRasterizerState(&highBiasRasterDesc, &m_highBiasRasterState);

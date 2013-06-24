@@ -17,7 +17,8 @@ const Luna<ScriptedScene>::FunctionType ScriptedScene::methods[] =
     {"exits", &ScriptedScene::l_exits},
     {"enters", &ScriptedScene::l_enters},
     {"configureLight", &ScriptedScene::l_configureLight},
-    {"moveLight", &ScriptedScene::l_moveLight}
+    {"moveLight", &ScriptedScene::l_moveLight},
+    {0,0}
 };
 
 
