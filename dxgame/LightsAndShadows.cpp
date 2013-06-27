@@ -75,6 +75,8 @@ void LightsAndShadows::setFlashlight( FirstPerson &FPCamera, float beamHalfAngle
     // re: the above transpose; view matrix is the inverse of what we want to transform a vector extending from the eye and the 3x3 excerpt of the view matrix for a normal transform is orthogonal so the inverse is the transpose
 
     lights[whichLight].setHalfAngle(beamHalfAngle);
+
+    lights[whichLight].color = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f); // red light for testing color
 }
 
 // this mainly calls the appropriate shader method to store data in the pixel shader's constant buffer for lights

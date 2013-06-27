@@ -57,9 +57,10 @@ private:
         DirectX::XMFLOAT3 lightDirection;
         float time;
         DirectX::XMFLOAT4 cameraPos;
-        DirectX::XMFLOAT4 spotlightPos[NUM_SPOTLIGHTS];
-        DirectX::XMFLOAT4 spotlightDir[NUM_SPOTLIGHTS];
+        DirectX::XMFLOAT4 spotlightPos[NUM_SPOTLIGHTS]; // positions
+        DirectX::XMFLOAT4 spotlightDir[NUM_SPOTLIGHTS]; // directions
         DirectX::XMFLOAT4 spotlightEtc[NUM_SPOTLIGHTS]; // arrays are packed into 4-float elements anyway so this is {Cos(angle), constant attenuation, linear attenuation, quadratic attenuation}
+        DirectX::XMFLOAT4 spotlightCol[NUM_SPOTLIGHTS]; // colors
         DirectX::XMFLOAT4 ambientLight; // for the whole scene
         DirectX::XMFLOAT4 diffuseLight;
         unsigned int numLights;

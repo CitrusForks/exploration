@@ -526,11 +526,13 @@ bool VanillaShaderClass::SetPSLights( ID3D11DeviceContext *deviceContext, const 
             dataPtr->spotlightEtc[j].y = i->constantAttenuation;
             dataPtr->spotlightEtc[j].z = i->linearAttenuation;
             dataPtr->spotlightEtc[j].w = i->quadraticAttenuation;
+            dataPtr->spotlightCol[j] = i->color;
         } else
         {
             dataPtr->spotlightPos[j] = XMFLOAT4(0,0,0,0);
             dataPtr->spotlightDir[j] = XMFLOAT4(0,0,0,0);
             dataPtr->spotlightEtc[j] = XMFLOAT4(0,0,0,0);
+            dataPtr->spotlightCol[j] = XMFLOAT4(0,0,0,0);
         }
 
     }

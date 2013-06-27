@@ -13,7 +13,7 @@
 #define DIRECTIONAL_SHADOW_MULTIPLIER_LOD1 4
 
 // define this to debug main shaders with VS2012:
-#define DISABLE_OFFSCREEN_BUFFER debug_debug_debug
+//#define DISABLE_OFFSCREEN_BUFFER debug_debug_debug
 // 
 
 

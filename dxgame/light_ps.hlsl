@@ -86,6 +86,7 @@ cbuffer LightBuffer : register(b1)
 	float4 spotlightPos[NUM_SPOTLIGHTS];  // spotlights!
 	float4 spotlightDir[NUM_SPOTLIGHTS];  // float3 would take up 4 floats anyway, might as well make it explicit
 	float4 spotlightEtc[NUM_SPOTLIGHTS];  // arrays are packed into 4-float elements anyway so this is {Cos(angle), constant attenuation, linear, quadratic}
+        float4 spotlightCol[NUM_SPOTLIGHTS];  // spotlight color!
         float4 ambientLight; // color
         float4 diffuseLight; // color, can also encode intensity obviously
 	uint numLights;        
@@ -436,7 +437,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 
 				spotlightIntensity *= fallOff * diffuseColor * attenuation; 
 
-				color = color + spotlightIntensity;
+				color = color + spotlightCol[i] * spotlightIntensity;
 
 				if (specularMultiplier > 0.0000001f)
 				{
