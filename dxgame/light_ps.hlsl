@@ -409,7 +409,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 		float distToLight = distance(input.worldPos, spotlightPos[i]);
 		sourceToPixel = sourceToPixel / distToLight; // not sure whether the HLSL compiler will optimize distance(), normalize() like so; TODO: check asm output? :/
 
-		float beamAlignment = dot(spotlightDir[i], sourceToPixel);
+		float beamAlignment = dot(spotlightDir[i].xyz, sourceToPixel);
 		float beamCosAngle = spotlightEtc[i].x;
 
 		if (beamAlignment > beamCosAngle)
@@ -435,9 +435,9 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 				//float fallOff = sin(PI/1.3 * (beamAlignment-beamCosAngle)/(1-beamCosAngle)); // this gives a slightly darker spot in the middle of the light, like an old flashlight
                                 float fallOff = 1.0 - pow(1.7 * (beamAlignment-beamCosAngle)/(1-beamCosAngle) - 1, 2); // so does this but with a parabola; no sin() might be faster? also, the closer that 1.7 term is to 2, the darker the spot in the middle
 
-				spotlightIntensity *= fallOff * diffuseColor * attenuation; 
+				spotlightIntensity *= fallOff * attenuation; 
 
-				color = color + spotlightCol[i] * spotlightIntensity;
+				color = color + spotlightCol[i] * diffuseColor * spotlightIntensity;
 
 				if (specularMultiplier > 0.0000001f)
 				{
