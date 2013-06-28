@@ -3,6 +3,9 @@
 #include <memory>
 #include "Actor.h"
 
+using namespace std;
+using namespace DirectX;
+
 const char LuaSharedPointerActorWrapper::className[] = "Actor";
 
 const Luna<LuaSharedPointerActorWrapper>::FunctionType LuaSharedPointerActorWrapper::methods[] = 
@@ -14,14 +17,4 @@ const Luna<LuaSharedPointerActorWrapper>::PropertyType LuaSharedPointerActorWrap
 {
     {0,0}
 };
-
-
-LuaSharedPointerActorWrapper::LuaSharedPointerActorWrapper(shared_ptr<Actor> actor) : m_actor(actor)
-{
-}
-
-
-LuaSharedPointerActorWrapper::~LuaSharedPointerActorWrapper(void)
-{
-}
 
