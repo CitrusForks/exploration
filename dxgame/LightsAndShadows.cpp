@@ -76,7 +76,7 @@ void LightsAndShadows::setFlashlight( FirstPerson &FPCamera, float beamHalfAngle
 
     lights[whichLight].setHalfAngle(beamHalfAngle);
 
-    lights[whichLight].color = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f); // red light for testing color
+    lights[whichLight].color = XMFLOAT4(1.0f, 197.0f / 255, 143.0f / 255, 1.0f); // 40W tungsten from http://planetpixelemporium.com/tutorialpages/light.html
 }
 
 // this mainly calls the appropriate shader method to store data in the pixel shader's constant buffer for lights
