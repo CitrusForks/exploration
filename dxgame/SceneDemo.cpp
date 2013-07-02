@@ -56,7 +56,7 @@ SceneDemo::~SceneDemo(void)
 
 bool SceneDemo::update( float now, float timeSinceLastUpdate, FirstPerson &FPCamera )
 {
-    duck->moveTo(XMVectorSet(-1.0f, timeSinceLastUpdate, 10.0f, 0));
+    duck->moveTo(XMVectorSet(-1.0f, timeSinceLastUpdate*10, 10.0f, 0));
     //duck->setRollPitchYaw(-XM_PIDIV2 - XM_PIDIV4, 0);
 
     torus->moveTo(XMVectorSet(0, 1, 3, 1));
