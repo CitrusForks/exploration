@@ -33,7 +33,6 @@
 #include "LightsAndShadows.h"
 #include "Light.h"
 #include "Graphics.h"
-#include "LuaSharedPointerActorWrapper.h"
 
 // is this a terrible way to specify libraries for linking? I kind of like it now.
 #pragma comment(lib, "d3d11.lib")
@@ -47,6 +46,7 @@
 
 using namespace std;
 using namespace DirectX;
+using namespace Luna;
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
 {
@@ -191,8 +191,8 @@ int _tmain(int argc, _TCHAR* argv[])
     lua_State *L = luaL_newstate();
     lua_pushlightuserdata(L, (void*)&(gEngine.getD3D()));
     lua_setglobal(L, "d3d"); // store d3d for objects initialized from Lua; this seems really clunky :|
-    Luna<ScriptedScene>::Register(L); // "Scene" object
-    Luna<LuaSharedPointerActorWrapper>::Register(L); // "Actor" object
+    LunaShare<ScriptedScene>::Register(L); // "Scene" object
+    //Luna<LuaSharedPointerActorWrapper>::Register(L); // "Actor" object
 
     if (luaL_dostring(L, "scene = Scene()"))
     {
@@ -201,7 +201,12 @@ int _tmain(int argc, _TCHAR* argv[])
     }
 
     lua_getglobal(L, "scene");
-    ScriptedScene *scene = static_cast<ScriptedScene*>(luaL_checkudata(L, -1, "Scene"));
+    assert(lua_isuserdata(L, -1));
+    shared_ptr<ScriptedScene>* udata = static_cast<shared_ptr<ScriptedScene>*>(lua_touserdata(L, -1));
+    assert(udata);
+    assert(*udata);
+    shared_ptr<ScriptedScene> scene = nullptr;
+    scene = *udata;
     lua_pop(L, 1);
 
     scene->replaceManagers(mm, tm); // doing this rather than going through all the effort to store two new shared_ptr<> types in Lua state
@@ -242,7 +247,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
         scene->update((float)timer.sinceInit(), (float)timer.sincePrev(), gEngine.getCamera());
 
-        if (!gEngine.RenderScene(timer, scene)) return -1;
+        if (!gEngine.RenderScene(timer, scene.get())) return -1;
             
         Sleep(1); // for luck
         angle += (float)(M_PI) * (float)timer.sincePrev();
@@ -263,8 +268,7 @@ int _tmain(int argc, _TCHAR* argv[])
         timer.Sample(); // read timer and update variables
     }
 
-    delete scene;
-
+    scene = nullptr;
     lua_close(L);
 
     DestroyWindow(window);

@@ -1,21 +1,22 @@
 #include "stdafx.h"
 #include "ScriptedScene.h"
-#include <lunafive.hpp>
-
+#include "LunaShare.hpp"
+#include "ScriptedActor.h"
 
 using namespace std;
+using namespace Luna;
 
 const char ScriptedScene::className[] = "Scene"; // not "ScriptedScene" in the interest of brevity; bad idea? not sure..
 
 // properties accessible from Lua:
-const Luna<ScriptedScene>::PropertyType ScriptedScene::properties[] = 
+const LunaShare<ScriptedScene>::PropertyType ScriptedScene::properties[] = 
 {
     {0,0}
 };
 
 
 // methods accessible from Lua:
-const Luna<ScriptedScene>::FunctionType ScriptedScene::methods[] = 
+const LunaShare<ScriptedScene>::FunctionType ScriptedScene::methods[] = 
 {
     {"exits", &ScriptedScene::l_exits},
     {"enters", &ScriptedScene::l_enters},
@@ -48,17 +49,30 @@ ScriptedScene::~ScriptedScene(void)
 }
 
 
+// Scene:enters(Actor a)
+// returns int reference to actor; useful for retrieving the object from Scene later and calling exits()
 int ScriptedScene::l_enters( lua_State *L )
 {
     int sp = lua_gettop(L);
+    
     // add actor
-    // assert correct stack depth
-    return 0; // number of results
+    shared_ptr<Actor> *u = static_cast<shared_ptr<Actor> *>(luaL_checkudata(L, 1, ScriptedActor::className)); // using luaL_checkudata() over luaL_testudata() here for simplicity; it shouldn't be that hard to pass a valid object to this thing
+    int refNum = enters(*u);
+
+    assert(lua_gettop(L) == sp); // assert correct stack depth
+
+    lua_pushinteger(L, refNum);
+
+    return 1; // number of results
 }
 
 
 int ScriptedScene::l_exits( lua_State *L )
 {
+    unsigned i = (unsigned int) luaL_checkinteger(L, 1);
+
+    exits(i);
+
     return 0; // number of results
 }
 

@@ -135,10 +135,10 @@
     <ClInclude Include="ScriptedScene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="LuaSharedPointerActorWrapper.h">
+    <ClInclude Include="LunaShare.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="LunaShare.hpp">
+    <ClInclude Include="ScriptedActor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -230,7 +230,7 @@
     <ClCompile Include="ScriptedScene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="LuaSharedPointerActorWrapper.cpp">
+    <ClCompile Include="ScriptedActor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

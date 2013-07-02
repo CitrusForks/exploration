@@ -174,7 +174,7 @@
     <ClInclude Include="IntermediateRenderTarget.h" />
     <ClInclude Include="Light.h" />
     <ClInclude Include="LightsAndShadows.h" />
-    <ClInclude Include="LuaSharedPointerActorWrapper.h" />
+    <ClInclude Include="ScriptedActor.h" />
     <ClInclude Include="LunaShare.hpp" />
     <ClInclude Include="ModelManager.h" />
     <ClInclude Include="objloader.hpp" />
@@ -214,7 +214,7 @@
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="IntermediateRenderTarget.cpp" />
     <ClCompile Include="LightsAndShadows.cpp" />
-    <ClCompile Include="LuaSharedPointerActorWrapper.cpp" />
+    <ClCompile Include="ScriptedActor.cpp" />
     <ClCompile Include="ModelManager.cpp" />
     <ClCompile Include="objloader.cpp" />
     <ClCompile Include="Options.cpp" />

@@ -2,6 +2,12 @@
 
 #include "lua.hpp"
 #include <string.h> // For strlen
+#include <sstream>
+
+namespace Luna
+{
+
+using namespace std;
 
 template < class T > class LunaShare {
   public:
@@ -27,13 +33,13 @@ template < class T > class LunaShare {
     Retrieves a wrapped class from the arguments passed to the func, specified by narg (position).
     This func will raise an exception if the argument is not of the correct type.
 */
-    static T* check(lua_State * L, int narg)
-	{
-		T** obj = static_cast <T **>(luaL_checkudata(L, narg, T::className));
-		if ( !obj )
-			return nullptr; // lightcheck returns nullptr if not found.
-		return *obj;		// pointer to T object
-	}
+    static shared_ptr<T> check(lua_State * L, int narg)
+    {
+	shared_ptr<T> *obj = static_cast <shared_ptr<T> *>(luaL_checkudata(L, narg, T::className));
+	if ( !obj )
+		return nullptr; // lightcheck returns nullptr if not found.
+	return *obj;		// pointer to T object
+    }
 
 /*
   @ lightcheck
@@ -46,11 +52,12 @@ template < class T > class LunaShare {
     This func will return nullptr if the argument is not of the correct type.  Useful for supporting
     multiple types of arguments passed to the func
 */ 
-	static T* lightcheck(lua_State * L, int narg) {
-		T** obj = static_cast <T **>(luaL_testudata(L, narg, T::className));
-		if ( !obj )
-			return nullptr; // lightcheck returns nullptr if not found.
-		return *obj;		// pointer to T object
+    static shared_ptr<T> *lightcheck(lua_State * L, int narg) 
+    {
+        shared_ptr<T> *obj = static_cast <shared_ptr<T> *>(luaL_testudata(L, narg, T::className));
+        if ( !obj )
+	        return nullptr; // lightcheck returns nullptr if not found.
+        return *obj;		// pointer to T object
     }
 
 /*
@@ -120,13 +127,13 @@ template < class T > class LunaShare {
     * L - Lua State
 */
     static int constructor(lua_State * L)
-	{
-		void* a = lua_newuserdata(L, sizeof(shared_ptr<T>)); // Push value = userdata
-                new (a) shared_ptr<T>(new T(L)); // not using make_shared because we need new() to allocate aligned T
+    {
+        void* a = lua_newuserdata(L, sizeof(shared_ptr<T>)); // Push value = userdata
+        new (a) shared_ptr<T>(new T(L)); // not using make_shared because we need new() to allocate aligned T
 		
-		luaL_getmetatable(L, T::className); 		// Fetch global metatable T::classname
-		lua_setmetatable(L, -2);
-		return 1;
+        luaL_getmetatable(L, T::className); 		// Fetch global metatable T::classname
+        lua_setmetatable(L, -2);
+        return 1;
     }
 
 /*
@@ -139,14 +146,14 @@ template < class T > class LunaShare {
     Loads an instance of the class into the Lua stack, and provides you a pointer so you can modify it.
 */
     static void push(lua_State * L, shared_ptr<T> instance )
-	{
-		shared_ptr<T> *a = (shared_ptr<T> *) lua_newuserdata(L, sizeof(shared_ptr<T>)); // Create userdata
-                new (a) shared_ptr<T>();
-		*a = instance;
+    {
+        shared_ptr<T> *a = (shared_ptr<T> *) lua_newuserdata(L, sizeof(shared_ptr<T>)); // Create userdata
+        new (a) shared_ptr<T>();
+        *a = instance;
 		
-		luaL_getmetatable(L, T::className);
+        luaL_getmetatable(L, T::className);
 		
-		lua_setmetatable(L, -2);
+        lua_setmetatable(L, -2);
     }
 
 /*
@@ -162,9 +169,9 @@ template < class T > class LunaShare {
 		
 		if (lua_isnumber(L, -1)) { // Check if we got a valid index
 			
-			int _index = lua_tonumber(L, -1);
+			int _index = (int)lua_tonumber(L, -1);
 			
-			T** obj = static_cast<T**>(lua_touserdata(L, 1));
+			shared_ptr<T> *obj = static_cast<shared_ptr<T> *>(lua_touserdata(L, 1));
 			
 			lua_pushvalue(L, 3);
 			
@@ -180,7 +187,7 @@ template < class T > class LunaShare {
 			lua_remove(L,1); // Remove userdata
 			lua_remove(L,1); // Remove [key]
 			
-			return ((*obj)->*(T::properties[_index].getter)) (L);
+			return ((*obj).get()->*(T::properties[_index].getter)) (L);
 		}
 		
 		return 1;
@@ -201,9 +208,9 @@ template < class T > class LunaShare {
 		if ( lua_isnumber(L, -1) ) // Check if we got a valid index
 		{
 			
-			int _index = lua_tonumber(L, -1);
+			int _index = (int)lua_tonumber(L, -1);
 			
-			T** obj = static_cast<T**>(lua_touserdata(L, 1));
+			shared_ptr<T> *obj = static_cast<shared_ptr<T> *>(lua_touserdata(L, 1));
 			
 			if( !obj || !*obj )
 			{
@@ -213,9 +220,11 @@ template < class T > class LunaShare {
 			
 			if( _index >> 8 ) // Try to set a func
 			{
-				char c[128];
-				sprintf( c , "Trying to set the method [%s] of class [%s]" , (*obj)->T::methods[_index ^ ( 1 << 8 ) ].name , T::className );
-				luaL_error( L , c );
+				//char c[128];
+                                std::stringstream s;
+				//sprintf( c , "Trying to set the method [%s] of class [%s]" , (*obj)->T::methods[_index ^ ( 1 << 8 ) ].name , T::className );
+                                s << "Trying to set the method [" << (*obj)->T::methods[_index ^ ( 1 << 8 ) ].name << "] of class [" << T::className << "]";
+				luaL_error( L , s.str().c_str() );
 				return 0;
 			}
 			
@@ -223,7 +232,7 @@ template < class T > class LunaShare {
 			lua_remove(L,1); // Remove userdata
 			lua_remove(L,1); // Remove [key]
 			
-			return ((*obj)->*(T::properties[_index].setter)) (L);
+			return ((*obj).get()->*(T::properties[_index].setter)) (L);
 		}
 		
 		return 0;
@@ -235,11 +244,11 @@ template < class T > class LunaShare {
     * L - Lua State
 */
     static int function_dispatch(lua_State * L)
-	{
-		int i = (int) lua_tonumber(L, lua_upvalueindex(1));
-		T** obj = static_cast < T ** >(lua_touserdata(L, lua_upvalueindex(2)));
+    {
+        int i = (int) lua_tonumber(L, lua_upvalueindex(1));
+        shared_ptr<T> *obj = static_cast < shared_ptr<T> * >(lua_touserdata(L, lua_upvalueindex(2)));
 		
-		return ((*obj)->*(T::methods[i].func)) (L);
+        return ((*obj).get()->*(T::methods[i].func)) (L);
     }
 
 /*
@@ -247,26 +256,26 @@ template < class T > class LunaShare {
   Arguments:
     * L - Lua State
 */
-    static int gc_obj(lua_State * L)
-	{
-		T** obj = static_cast < T ** >(lua_touserdata(L, -1));
+        static int gc_obj(lua_State * L)
+        {
+            shared_ptr<T> *obj = static_cast < shared_ptr<T> * >(lua_touserdata(L, -1));
 		
-		if( obj && *obj )
-			delete(*obj);
+            if( obj && *obj ) (*obj)->~T();
 		
-		return 0;
-    }
+            return 0;
+        }
 	
 	static int to_string(lua_State* L)
 	{
-		T** obj = static_cast<T**>(lua_touserdata(L, -1));
+	    shared_ptr<T> *obj = static_cast< shared_ptr<T> * >(lua_touserdata(L, -1));
 		
-		if( obj )
-			lua_pushfstring(L, "%s (%p)", T::className, (void*)*obj);
-		else
-			lua_pushstring(L,"Empty object");
+	    if( obj )
+		    lua_pushfstring(L, "%s (%p)", T::className, (void*)(*obj).get());
+	    else
+		    lua_pushstring(L,"Empty object");
 		
-		return 1;
+	    return 1;
 	}
 };
 
+}

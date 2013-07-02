@@ -55,6 +55,8 @@ public:
     // set m_sceneID; only Scene is likely to have that information, let it be set apart from construction
     void setID(int id) { m_sceneID = id; }
 
+    Actor();
+    void init(int modelRefNum, DirectX::CXMMATRIX correction = DirectX::XMMatrixIdentity());
     Actor(int modelRefNum, DirectX::CXMMATRIX correction = DirectX::XMMatrixIdentity());
     virtual ~Actor(void);
 

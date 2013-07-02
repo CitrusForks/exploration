@@ -2,7 +2,7 @@
 
 #include "scene.h"
 #include <lua.hpp>
-#include <lunafive.hpp>
+#include "LunaShare.hpp"
 
 class ScriptedScene :
     public Scene
@@ -10,8 +10,8 @@ class ScriptedScene :
 public:
 
     static const char className[];
-    static const Luna<ScriptedScene>::PropertyType properties[];
-    static const Luna<ScriptedScene>::FunctionType methods[];
+    static const Luna::LunaShare<ScriptedScene>::PropertyType properties[];
+    static const Luna::LunaShare<ScriptedScene>::FunctionType methods[];
 
     ScriptedScene(lua_State *LL);
     ~ScriptedScene(void);

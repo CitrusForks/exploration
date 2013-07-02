@@ -17,7 +17,21 @@ Actor::Actor(int modelRefNum, DirectX::CXMMATRIX correction /* = XMMatrixIdentit
     m_position = XMVectorSet(0, 0, 0, 0);
     m_rotation = XMQuaternionIdentity();
     updateWorldMatrix();
+}
 
+void Actor::init(int modelRefNum, DirectX::CXMMATRIX correction /* = DirectX::XMMatrixIdentity */)
+{
+    m_modelRefNum = modelRefNum;
+    m_lastRoll = m_lastYaw = m_lastPitch = 0.0f;
+    m_correction = correction;
+    m_position = XMVectorSet(0, 0, 0, 0);
+    m_rotation = XMQuaternionIdentity();
+    updateWorldMatrix();
+}
+
+Actor::Actor()
+{
+    m_modelRefNum = -1;
 }
 
 
@@ -28,6 +42,7 @@ Actor::~Actor(void)
 
 bool Actor::render( renderFunc_t &renderFunc )
 {
+    if (m_modelRefNum == -1) Errors::Cry("Attempt to render uninitialized Actor object");
     return renderFunc(m_world, m_modelRefNum);
 }
 

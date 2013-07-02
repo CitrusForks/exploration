@@ -44,7 +44,7 @@
 
 // external lib deps:
 #include <lua.hpp>
-#include <lunafive.hpp>
+#include "LunaShare.hpp"
 #include <fmod.hpp>
 #include "dSFMT.h"
 
