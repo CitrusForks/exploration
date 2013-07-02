@@ -18,6 +18,21 @@ dxgame.vcxproj.filters
     and the filters. This association is used in the IDE to show grouping of files with
     similar extensions under a specific node (for e.g. ".cpp" files are associated with the
     "Source Files" filter).
+    
+actor.cpp
+    A CompoundMesh and its transformations. Essentially, this is a single instance of an object in the game world.
+    
+chronometer.cpp
+    A simple timer.
+    
+complexmesh.cpp
+    Not used. Loads complex model into single vertex buffer which seems impractical for anything complex, ironically.
+    
+compoundmesh.cpp
+    Models are loaded here.
+
+dsfmt.c
+    Well-known SIMD-optimized Mersenne Twister implementation, for later.
 
 dxgame.cpp
     This is the main application source file. It actually contains _tmain() and the code
@@ -26,22 +41,66 @@ dxgame.cpp
 d3dclass.cpp
     This file contains code to intialize D3D and retains the ID3D11Device and ID3D11DeviceContext pointers.
     It's a modified version of the rastertek.com tutorial file.
+
+errors.cpp
+    This is a collection of helper functions to display error message boxes.
     
+firstperson.cpp
+    This ia a camera, including transforms input handling.
+    
+graphics.cpp
+    This class is the graphics engine, basically. It initializes d3dclass and some other necessary structures.
+
+input.cpp
+    Input encapsulation.
+    
+intermediaterendertarget.cpp
+    This is an off-screen texture to be used as a render target. This can be copied to the screen via 
+    the postprocessing shader for some effects.
+
+lightsandshadows.cpp
+    Light positions, related constant buffers. 
+
+loadedtexture.cpp
+    This class holds a texture buffer loaded with WICTextureLoader, nothing fancy. 
+    DDSTextureLoader may be trivially substituted.
+
+modelmanager.cpp
+    This is a collection of ComplexModel objects. It's the cache of loaded models, really.
+
 objloader.cpp
     This is a .obj loader that I ported from grilliards; it was originally from an OpenGL tutorial.
+
+options.cpp
+    Runtime-configurable options.
+
+scene.cpp
+    This is a collection of Actor objects which may be rendered as a set.
+
+scenedemo.cpp
+    This is a scene with a house, a duck, a floor, a torus, a tree, and a human model. It's mainly for testing.
+
+scriptedactor.cpp
+    Lua hooks for Actor (TODO)
+    
+scriptedscene.cpp
+    Lua hooks for Scene (TODO)
+    
+shadowbuffer.cpp
+    Holds the actual buffer for a single shadowmap. Rendering code is in LightsAndShadows.
 
 simplemesh.cpp
     Another port from grilliards. I modified to use xnamath and render itself with D3D. DirectX rendering code
     is again modified from the rastertek tutorials. The xnamath knowledge is from Frank Luna's book.
+
+SimpleText.cpp
+    A wrapper for a decent library to draw text.
     
-textureclas.cpp
-    Modified rastertek.com file to load a texture and retain the ID3D11ShaderResourceView pointer.
-    Currently modified to use MS's WICTextureLoader.cpp. If load times become relevant, the DDS loader 
-    should be easy to adapt.
-    
-textureshaderclass.cpp
-    Heavily modified rastertek.com file to hold on to compiled shaders and the constant buffers that feed them.
-    TODO: rename
+Sound.cpp
+    A wrapper for FMOD; nothing complicated yet.
+
+vanillashaders.cpp
+    Heavily modified rastertek.com file to hold compiled shader references and some of the constant buffers that feed them.
     
 vboindexer.cpp
     Another grilliards source file ported from glm to xnamath. Not sure if useful.
@@ -49,7 +108,8 @@ vboindexer.cpp
 vertex.h
     The Vertex struct. I see no reason not to have it in its own header; it's used all over the place.
     
-
+WICTextureLoader.cpp
+    This is from Microsoft.
 
 /////////////////////////////////////////////////////////////////////////////
 Other standard files:
@@ -67,11 +127,12 @@ http://insurrectionx.deviantart.com/art/damask-wallpaper-85958835
 TODO:
 done: Refactor texture minder.
 done: Normal maps.
-Specular maps?
-Shadow maps!
-Actor, Scene
+done: Specular maps?
+done: Shadow maps!
+done: Actor, Scene
+Lua hooks
 Game state
-Environment maps? how do? 
+Environment maps? static or dynamic?
 Lua control of actors?
 Level generator?
 3D sound... actually make use of FMOD
