@@ -15,6 +15,9 @@ void Cry(wchar_t *msg)
 {
     MessageBoxW(window, msg, L"Error!", MB_OK);
     std::wcerr << msg << std::endl;
+#if _DEBUG
+    DebugBreak();
+#endif
 
     throw(Fatal());
 }
@@ -23,6 +26,9 @@ void Cry(char *msg)
 {
     MessageBoxA(window, msg, "Error!", MB_OK);
     std::cerr << msg << std::endl;
+#if _DEBUG
+    DebugBreak();
+#endif
 
     throw(Fatal());
 }
@@ -34,6 +40,9 @@ void Cry(char *msg, char *moreMsg)
 
     ss << msg << moreMsg;
     Errors::Cry((char*)ss.str().c_str());
+#if _DEBUG
+    DebugBreak();
+#endif
 
     throw(Fatal());
 }

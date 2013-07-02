@@ -8,7 +8,7 @@
 using namespace DirectX;
 using namespace std;
 
-SceneDemo::SceneDemo(D3DClass &d3d, shared_ptr<ModelManager> models, shared_ptr<TextureManager> textures)
+SceneDemo::SceneDemo(D3DClass *d3d, shared_ptr<ModelManager> models, shared_ptr<TextureManager> textures)
     : Scene(d3d, nullptr, models, textures)
 {
 

@@ -18,3 +18,8 @@ const Luna<LuaSharedPointerActorWrapper>::PropertyType LuaSharedPointerActorWrap
     {0,0}
 };
 
+LuaSharedPointerActorWrapper::LuaSharedPointerActorWrapper( lua_State *LL )
+{
+
+}
+

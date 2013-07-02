@@ -15,5 +15,7 @@ public:
     int l_moveTo(lua_State *L); // arg: x, y, z
     int l_setRollPitchYaw(lua_State *L); // arg: roll, pitch, yaw
     int l_slerp(lua_State *L); // arg: roll, pitch, yaw
+
+    LuaSharedPointerActorWrapper(lua_State *LL);
 };
 
