@@ -175,6 +175,7 @@
     <ClInclude Include="Light.h" />
     <ClInclude Include="LightsAndShadows.h" />
     <ClInclude Include="LuaSharedPointerActorWrapper.h" />
+    <ClInclude Include="LunaShare.hpp" />
     <ClInclude Include="ModelManager.h" />
     <ClInclude Include="objloader.hpp" />
     <ClInclude Include="Options.h" />
