@@ -9,19 +9,32 @@
 #include "TextureManager.h"
 
 
-Scene::Scene(D3DClass &d3d, shared_ptr<LightsAndShadows> lighting /* = nullptr */, shared_ptr<ModelManager> models /* = nullptr */, shared_ptr<TextureManager> textures /* = nullptr */)
-    : m_d3d(d3d)
+void Scene::init(D3DClass *d3d, shared_ptr<LightsAndShadows> lighting /* = nullptr */, shared_ptr<ModelManager> models /* = nullptr */, shared_ptr<TextureManager> textures /* = nullptr */)
 {
 
-    m_models = models ? models : make_shared<ModelManager>(d3d);
+    m_models = models ? models : make_shared<ModelManager>(*d3d);
     m_textures = textures ? textures : make_shared<TextureManager>();
-    m_lighting = lighting ? lighting : shared_ptr<LightsAndShadows>(new LightsAndShadows(d3d));
+    m_lighting = lighting ? lighting : shared_ptr<LightsAndShadows>(new LightsAndShadows(*d3d));
+    m_d3d = d3d;
+}
+
+
+Scene::Scene()
+{
+
+}
+
+
+Scene::Scene( D3DClass *d3d, shared_ptr<LightsAndShadows> lighting /*= nullptr*/, shared_ptr<ModelManager> models /*= nullptr*/, shared_ptr<TextureManager> textures /*= nullptr*/ )
+{
+    init(d3d, lighting, models, textures);
 }
 
 
 Scene::~Scene(void)
 {
 }
+
 
 bool Scene::update( float now, float timeSinceLastUpdate, FirstPerson &FPCamera )
 {
@@ -64,4 +77,10 @@ void Scene::exits( unsigned int actor )
 {
     assert(actor < (m_actors.size()));
     m_actors[actor] = nullptr;
+}
+
+void Scene::replaceManagers( std::shared_ptr<ModelManager> mm, std::shared_ptr<TextureManager> tm )
+{
+    m_textures = tm;
+    m_models = mm;
 }

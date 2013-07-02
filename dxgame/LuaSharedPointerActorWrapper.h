@@ -10,5 +10,6 @@ public:
     static const Luna<LuaSharedPointerActorWrapper>::PropertyType properties[];
     static const Luna<LuaSharedPointerActorWrapper>::FunctionType methods[];
 
+    LuaSharedPointerActorWrapper(lua_State *LL);
 };
 

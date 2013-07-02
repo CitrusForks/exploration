@@ -13,7 +13,7 @@ public:
     static const Luna<ScriptedScene>::PropertyType properties[];
     static const Luna<ScriptedScene>::FunctionType methods[];
 
-    ScriptedScene(lua_State *LL, D3DClass &d3d);
+    ScriptedScene(lua_State *LL);
     ~ScriptedScene(void);
 
     // Lua-centric methods:

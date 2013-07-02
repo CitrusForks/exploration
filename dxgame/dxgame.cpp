@@ -33,6 +33,7 @@
 #include "LightsAndShadows.h"
 #include "Light.h"
 #include "Graphics.h"
+#include "LuaSharedPointerActorWrapper.h"
 
 // is this a terrible way to specify libraries for linking? I kind of like it now.
 #pragma comment(lib, "d3d11.lib")
@@ -79,6 +80,38 @@ void reportError(const char *prefix)
 	FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, error, 0, errorStr, 255, nullptr);
 	cout << prefix << errorStr << endl;
 }
+
+
+static void stackDump (lua_State *L) {
+    int i;
+    int top = lua_gettop(L);
+    for (i = 1; i <= top; i++) {  /* repeat for each level */
+        int t = lua_type(L, i);
+        switch (t) {
+
+        case LUA_TSTRING:  /* strings */
+            printf("`%s'", lua_tostring(L, i));
+            break;
+
+        case LUA_TBOOLEAN:  /* booleans */
+            printf(lua_toboolean(L, i) ? "true" : "false");
+            break;
+
+        case LUA_TNUMBER:  /* numbers */
+            printf("%g", lua_tonumber(L, i));
+            break;
+
+        default:  /* other values */
+            printf("%s", lua_typename(L, t));
+            break;
+
+        }
+        printf("  ");  /* put a separator */
+    }
+    printf("\n");  /* end the listing */
+}
+
+
 
 float test = 0.0f; // just testing.
 
@@ -151,11 +184,28 @@ int _tmain(int argc, _TCHAR* argv[])
     shared_ptr<ModelManager> mm = make_shared<ModelManager>(gEngine.getD3D());
 
     //SceneDemo scene(gEngine.getD3D());
-    SceneDemo *scene = nullptr;
+    //SceneDemo *scene = nullptr;
 
     Chronometer timer;
 
     lua_State *L = luaL_newstate();
+    lua_pushlightuserdata(L, (void*)&(gEngine.getD3D()));
+    lua_setglobal(L, "d3d"); // store d3d for objects initialized from Lua; this seems really clunky :|
+    Luna<ScriptedScene>::Register(L); // "Scene" object
+    Luna<LuaSharedPointerActorWrapper>::Register(L); // "Actor" object
+
+    if (luaL_dostring(L, "scene = Scene()"))
+    {
+        stackDump(L);
+        Errors::Cry("Could not instantiate a Scene object from Lua");
+    }
+
+    lua_getglobal(L, "scene");
+    ScriptedScene *scene = static_cast<ScriptedScene*>(luaL_checkudata(L, -1, "Scene"));
+    lua_pop(L, 1);
+
+    scene->replaceManagers(mm, tm); // doing this rather than going through all the effort to store two new shared_ptr<> types in Lua state
+    // TODO: perhaps what's needed is a generic templated method of storing a shared_ptr<> in Lua userdata; check boost-dependent library for this?
 
     MSG msg;
     ZeroMemory(&msg, sizeof(MSG)); // clear message structure
@@ -181,7 +231,7 @@ int _tmain(int argc, _TCHAR* argv[])
             continue; // ... all the messages! before we draw a new frame even
         }
 
-        if (!scene) scene = new SceneDemo(gEngine.getD3D(), mm, tm);
+        //if (!scene) scene = new SceneDemo(&(gEngine.getD3D()), mm, tm);
 
         input.Frame(); // read input and update state
 
