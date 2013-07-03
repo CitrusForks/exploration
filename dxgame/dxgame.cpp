@@ -43,10 +43,10 @@
 #pragma comment(lib, "FW1FontWrapper.lib")
 #pragma comment(lib, "assimp.lib")
 
-
 using namespace std;
 using namespace DirectX;
 using namespace Luna;
+
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
 {
@@ -189,12 +189,13 @@ int _tmain(int argc, _TCHAR* argv[])
     Chronometer timer;
 
     lua_State *L = luaL_newstate();
+    luaL_openlibs(L); // NOTE: This is not sandboxed.
     lua_pushlightuserdata(L, (void*)&(gEngine.getD3D()));
     lua_setglobal(L, "d3d"); // store d3d for objects initialized from Lua; this seems really clunky :|
     LunaShare<ScriptedScene>::Register(L); // "Scene" object
     //Luna<LuaSharedPointerActorWrapper>::Register(L); // "Actor" object
 
-    if (luaL_dostring(L, "scene = Scene()"))
+    if (luaL_dostring(L, "scene = Scene(); print(scene)"))
     {
         stackDump(L);
         Errors::Cry("Could not instantiate a Scene object from Lua");
