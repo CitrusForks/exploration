@@ -134,10 +134,14 @@ template < class T > class LunaShare {
     static int constructor(lua_State * L)
     {
         void* a = lua_newuserdata(L, sizeof(shared_ptr<T>)); // Push value = userdata
+        assert(a == lua_touserdata(L, -1));
         new (a) shared_ptr<T>(new T(L)); // not using make_shared because we need new() to allocate aligned T
-		
+	
         luaL_getmetatable(L, T::className); 		// Fetch global metatable T::classname
         lua_setmetatable(L, -2);
+
+        assert(lua_isuserdata(L, 1));
+
         return 1;
     }
 

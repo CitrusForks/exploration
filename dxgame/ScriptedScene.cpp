@@ -32,6 +32,7 @@ ScriptedScene::ScriptedScene(lua_State *LL) : L(LL)
 
     lua_getglobal(L, "d3d");
     d3d = static_cast<D3DClass *>(lua_touserdata(L, -1));
+    lua_pop(L, 1); // pop d3d
 
     if (d3d == nullptr) 
     {
