@@ -1,5 +1,10 @@
 #pragma once
 
+//
+// This is a modified version of LunaFive, converted to store shared_ptr<T> rather than T* in userdata 
+// The original LunaFive is here: http://lua-users.org/wiki/LunaFive
+//
+
 #include "lua.hpp"
 #include <string.h> // For strlen
 #include <sstream>
