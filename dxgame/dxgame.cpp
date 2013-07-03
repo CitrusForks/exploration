@@ -33,6 +33,7 @@
 #include "LightsAndShadows.h"
 #include "Light.h"
 #include "Graphics.h"
+#include "ScriptedActor.h"
 
 // is this a terrible way to specify libraries for linking? I kind of like it now.
 #pragma comment(lib, "d3d11.lib")
@@ -193,13 +194,15 @@ int _tmain(int argc, _TCHAR* argv[])
     lua_pushlightuserdata(L, (void*)&(gEngine.getD3D()));
     lua_setglobal(L, "d3d"); // store d3d for objects initialized from Lua; this seems really clunky :|
     LunaShare<ScriptedScene>::Register(L); // "Scene" object
-    //Luna<LuaSharedPointerActorWrapper>::Register(L); // "Actor" object
+    LunaShare<ScriptedActor>::Register(L); // "Actor" object
 
     if (luaL_dostring(L, "scene = Scene(); print(scene)"))
     {
         stackDump(L);
         Errors::Cry("Could not instantiate a Scene object from Lua");
     }
+
+    luaL_dostring(L, "actor = Actor(); print(actor); actor:moveTo(1,2,3); actor = nil");
 
     lua_getglobal(L, "scene");
     assert(lua_isuserdata(L, -1));

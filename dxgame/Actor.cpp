@@ -39,7 +39,7 @@ Actor::~Actor(void)
 {
 }
 
-
+// accepts a function that renders a model, calls it its world tranform matrix and its model refnum
 bool Actor::render( renderFunc_t &renderFunc )
 {
     if (m_modelRefNum == -1) Errors::Cry("Attempt to render uninitialized Actor object");
