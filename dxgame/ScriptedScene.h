@@ -21,6 +21,7 @@ public:
     int l_exits(lua_State *L);  // removes an actor
     int l_moveLight(lua_State *L);
     int l_configureLight(lua_State *L);
+    int l_getModel(lua_State *L);
 
 private:
     lua_State *L;

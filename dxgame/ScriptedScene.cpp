@@ -22,6 +22,7 @@ const LunaShare<ScriptedScene>::FunctionType ScriptedScene::methods[] =
     {"enters", &ScriptedScene::l_enters},
     {"configureLight", &ScriptedScene::l_configureLight},
     {"moveLight", &ScriptedScene::l_moveLight},
+    {"getModel", &ScriptedScene::l_getModel},
     {0,0}
 };
 
@@ -87,4 +88,16 @@ int ScriptedScene::l_moveLight( lua_State *L )
 int ScriptedScene::l_configureLight( lua_State *L )
 {
     return 0; // as always, number of results
+}
+
+
+int ScriptedScene::l_getModel( lua_State *L )
+{
+    const char * const modelName = luaL_checkstring(L, -1);
+
+    int refNum = m_models->getRefNum(modelName);
+
+    lua_pushinteger(L, refNum);
+
+    return 1;
 }
