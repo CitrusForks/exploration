@@ -196,6 +196,9 @@ int _tmain(int argc, _TCHAR* argv[])
     LunaShare<ScriptedScene>::Register(L); // "Scene" object
     LunaShare<ScriptedActor>::Register(L); // "Actor" object
 
+    shared_ptr<ScriptedScene> scene = nullptr;
+
+#if 0
     if (luaL_dostring(L, "scene = Scene(); print(scene)"))
     {
         stackDump(L);
@@ -204,22 +207,25 @@ int _tmain(int argc, _TCHAR* argv[])
 
     luaL_dostring(L, "actor = Actor(); print(actor); actor:moveTo(1,2,3); actor = nil");
 
-    lua_getglobal(L, "scene");
-    assert(lua_isuserdata(L, -1));
-    shared_ptr<ScriptedScene>* udata = static_cast<shared_ptr<ScriptedScene>*>(lua_touserdata(L, -1));
-    assert(udata);
-    assert(*udata);
-    shared_ptr<ScriptedScene> scene = nullptr;
-    scene = *udata;
-    lua_pop(L, 1);
 
     scene->replaceManagers(mm, tm); // doing this rather than going through all the effort to store two new shared_ptr<> types in Lua state
     // TODO: perhaps what's needed is a generic templated method of storing a shared_ptr<> in Lua userdata; check boost-dependent library for this?
+#endif
 
     MSG msg;
     ZeroMemory(&msg, sizeof(MSG)); // clear message structure
 	
     cout << "Starting!!!" << endl;
+
+    luaL_dofile(L, "Start.lua");
+
+    lua_getglobal(L, "scene");
+    assert(lua_isuserdata(L, -1));
+    shared_ptr<ScriptedScene>* udata = static_cast<shared_ptr<ScriptedScene>*>(lua_touserdata(L, -1));
+    assert(udata);
+    assert(*udata);
+    scene = *udata;
+    lua_pop(L, 1);
 
     float angle = 0.0f;
     bool done = false;
