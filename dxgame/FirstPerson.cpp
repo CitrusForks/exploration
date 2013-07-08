@@ -131,7 +131,6 @@ XMVECTOR FirstPerson::getPosition()
 XMVECTOR FirstPerson::getEyePosition()
 {
     return XMLoadFloat4(&m_position) + XMVectorSet(0.0f, m_crouching ? m_height/1.5f : m_height, 0.0f, 0.0f); 
-;
 }
 
 
@@ -147,5 +146,13 @@ void FirstPerson::setPosition(FXMVECTOR to)
 XMVECTOR FirstPerson::getForwardVector()
 {
     return XMVector3Normalize(XMVector3Rotate(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), XMQuaternionRotationRollPitchYaw(0.0f, m_heading, 0.0f))); // the quaternion is used just to prove to myself that I can use a quaternion
+}
+
+
+// point the camera somewhere, e.g., for initial setup
+void FirstPerson::setYawPitch( float yaw, float pitch /*= 0.0f*/ )
+{
+    m_heading = yaw;
+    m_pitch = pitch;
 }
 

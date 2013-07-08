@@ -37,8 +37,12 @@ ScriptedScene::ScriptedScene(lua_State *LL) : L(LL)
 
     if (d3d == nullptr) 
     {
-        Errors::Cry("Must set d3d on Lua stack :(");
+        Errors::Cry("Must set d3d in Lua global namespace; the engine should be doing this automatically :(");
     }
+
+    shared_ptr<ScriptedCamera> *camera = (shared_ptr<ScriptedCamera> *) luaL_checkudata(L, 1, ScriptedCamera::className);
+
+    FPCam = *camera;
 
     cout << "ScriptedScene initializing!" << endl;
 
@@ -68,7 +72,7 @@ int ScriptedScene::l_enters( lua_State *L )
     return 1; // number of results
 }
 
-
+// remove an object from the world
 int ScriptedScene::l_exits( lua_State *L )
 {
     unsigned i = (unsigned int) luaL_checkinteger(L, 1);
@@ -78,7 +82,7 @@ int ScriptedScene::l_exits( lua_State *L )
     return 0; // number of results
 }
 
-
+// should lights even be separate from objects? Hmm?
 int ScriptedScene::l_moveLight( lua_State *L )
 {
     return 0; // number of results
@@ -100,4 +104,21 @@ int ScriptedScene::l_getModel( lua_State *L )
     lua_pushinteger(L, refNum);
 
     return 1;
+}
+
+
+bool ScriptedScene::update( float now, float timeSinceLastUpdate, std::shared_ptr<FirstPerson> dummy /*= nullptr*/ )
+{
+    lua_getglobal(L, "update");
+    if (!lua_isfunction(L, -1)) Errors::Cry("Lua script needs an update() function.");
+
+    lua_pushnumber(L, now);
+    lua_pushnumber(L, timeSinceLastUpdate);
+
+    if (lua_pcall(L, 2, 0, 0) != 0)
+    {
+        Errors::Cry((char*)lua_tostring(L, -1));
+    }
+
+    return 0;
 }

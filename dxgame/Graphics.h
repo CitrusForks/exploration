@@ -10,6 +10,7 @@
 #include "Chronometer.h"
 #include "Scene.h"
 #include "SimpleText.h"
+#include <memory>
 
 class Graphics :
     public SSE2Aligned
@@ -25,7 +26,12 @@ public:
     Graphics &operator=(Graphics &); // anti-assignment operator
 
     D3DClass &getD3D() { return d3d; }
-    FirstPerson &getCamera() { return FPCamera; }
+    std::shared_ptr<ScriptedCamera> getCamera() { return FPCamera; }
+
+    // FirstPerson handles input for an FPS view and returns a view matrix or other related data
+    std::shared_ptr<ScriptedCamera> FPCamera; // the camera is properly a part of the scene but it could be initialized in this class too
+
+
 
 private:
     DirectX::XMMATRIX projection;
@@ -37,9 +43,6 @@ private:
 
     // text renderer
     SimpleText text;
-
-    // FirstPerson handles input for an FPS view and returns a view matrix or other related data
-    FirstPerson FPCamera;
 
     // Assimp loads almost any 3D format though it's a bit slow sometimes; still useful:
     Assimp::Importer modelImporter; // this object will own the memory allocated for the models it loads; when it's destroyed, memory is automatically deallocated

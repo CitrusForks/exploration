@@ -9,6 +9,10 @@
 #include <string.h> // For strlen
 #include <sstream>
 
+#ifndef NO_LUA_STACKDUMP
+extern void stackDump(lua_State *L);
+#endif
+
 namespace Luna
 {
 
@@ -140,7 +144,13 @@ template < class T > class LunaShare {
         luaL_getmetatable(L, T::className); 		// Fetch global metatable T::classname
         lua_setmetatable(L, -2);
 
-        assert(lua_isuserdata(L, 1));
+#ifndef NO_LUA_STACKDUMP
+        if (!lua_isuserdata(L, -1))
+        {
+            cerr << "Serious error in Lua object construction." << endl;
+            stackDump(L);
+        }
+#endif
 
         return 1;
     }

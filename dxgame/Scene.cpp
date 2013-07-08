@@ -36,7 +36,7 @@ Scene::~Scene(void)
 }
 
 
-bool Scene::update( float now, float timeSinceLastUpdate, FirstPerson &FPCamera )
+bool Scene::update( float now, float timeSinceLastUpdate, std::shared_ptr<FirstPerson> unused )
 {
     for (auto &i: m_actors)
     {

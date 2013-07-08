@@ -74,6 +74,7 @@
 #include "Scene.h"
 #include "SceneDemo.h"
 #include "ScriptedActor.h"
+#include "ScriptedCamera.h"
 #include "ScriptedScene.h"
 #include "SimpleMesh.h"
 #include "SimpleText.h"

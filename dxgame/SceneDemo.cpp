@@ -54,7 +54,7 @@ SceneDemo::~SceneDemo(void)
 {
 }
 
-bool SceneDemo::update( float now, float timeSinceLastUpdate, FirstPerson &FPCamera )
+bool SceneDemo::update( float now, float timeSinceLastUpdate, shared_ptr<FirstPerson> FPCamera )
 {
     duck->moveTo(XMVectorSet(-1.0f, timeSinceLastUpdate*10, 10.0f, 0));
     //duck->setRollPitchYaw(-XM_PIDIV2 - XM_PIDIV4, 0);
@@ -62,8 +62,8 @@ bool SceneDemo::update( float now, float timeSinceLastUpdate, FirstPerson &FPCam
     torus->moveTo(XMVectorSet(0, 1, 3, 1));
     torus->setRollPitchYaw(now, 0);
 
-    m_lighting->setFlashlight(FPCamera, XMConvertToRadians(25.0f/2));
-    m_lighting->pointMoonlight(XMVector3Normalize(XMVectorSet(0.1f,  -0.2f, 1.0f, 0.0f)), FPCamera);
+    m_lighting->setFlashlight(*FPCamera, XMConvertToRadians(25.0f/2));
+    m_lighting->pointMoonlight(XMVector3Normalize(XMVectorSet(0.1f,  -0.2f, 1.0f, 0.0f)), *FPCamera);
 
     return Scene::update(now, timeSinceLastUpdate, FPCamera);
 }

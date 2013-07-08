@@ -8,18 +8,19 @@
 
 class FirstPerson
 {
-private:
+protected:
     DirectX::XMFLOAT4 m_position;
     float m_height;
-    float m_heading; // aka yaw, perhaps
+    float m_heading; // aka yaw
     float m_pitch; // looking up at the ceiling, are we?
 
     bool m_crouching; // need to cache this
 
     int m_mouse_x, m_mouse_y;
+
 public:
     FirstPerson(void);
-    ~FirstPerson(void);
+    virtual ~FirstPerson(void);
 
     void perFrameUpdate(double timeElapsed, Input &input);
 
@@ -29,6 +30,7 @@ public:
     DirectX::XMVECTOR getPosition();
     DirectX::XMVECTOR getEyePosition();
     void setPosition(DirectX::FXMVECTOR to);
+    void setYawPitch(float yaw, float pitch = 0.0f);
 
     float getMoveSpeed(Input &input); // with modifiers
 

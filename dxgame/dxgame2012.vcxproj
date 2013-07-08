@@ -183,6 +183,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneDemo.h" />
+    <ClInclude Include="ScriptedCamera.h" />
     <ClInclude Include="ScriptedScene.h" />
     <ClInclude Include="ShadowBuffer.h" />
     <ClInclude Include="SimpleMesh.h" />
@@ -221,6 +222,7 @@
     <ClCompile Include="Options.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneDemo.cpp" />
+    <ClCompile Include="ScriptedCamera.cpp" />
     <ClCompile Include="ScriptedScene.cpp" />
     <ClCompile Include="ShadowBuffer.cpp" />
     <ClCompile Include="SimpleMesh.cpp" />

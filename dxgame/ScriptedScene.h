@@ -3,6 +3,7 @@
 #include "scene.h"
 #include <lua.hpp>
 #include "LunaShare.hpp"
+#include <memory>
 
 class ScriptedScene :
     public Scene
@@ -13,17 +14,22 @@ public:
     static const Luna::LunaShare<ScriptedScene>::PropertyType properties[];
     static const Luna::LunaShare<ScriptedScene>::FunctionType methods[];
 
+    std::shared_ptr<ScriptedCamera> FPCam;
+
     ScriptedScene(lua_State *LL);
     ~ScriptedScene(void);
 
+    virtual bool update(float now, float timeSinceLastUpdate, std::shared_ptr<FirstPerson> dummy = nullptr); // same header as Scene; still thinking about camera object handling 
+
+
     // Lua-centric methods:
-    int l_enters(lua_State *L); // adds an actor TODO: come up with precise parameter lists
+    int l_enters(lua_State *L); // adds an actor 
     int l_exits(lua_State *L);  // removes an actor
-    int l_moveLight(lua_State *L);
-    int l_configureLight(lua_State *L);
-    int l_getModel(lua_State *L);
+    int l_moveLight(lua_State *L); // moves a light; NOTE perhaps make lights their own objects in Lua as well? Though this is easier, of course.
+    int l_configureLight(lua_State *L);  // set RGB value, orientation, and beam angle for light
+    int l_getModel(lua_State *L); // look up a model by name in the ModelManager; this is a shortcut to avoid turning ModelManager into its own Lua object
 
 private:
-    lua_State *L;
+    lua_State *L; // caching this value but perhaps it's terrible style? TODO.
 };
 

@@ -141,6 +141,9 @@
     <ClInclude Include="ScriptedActor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ScriptedCamera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -231,6 +234,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ScriptedActor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ScriptedCamera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

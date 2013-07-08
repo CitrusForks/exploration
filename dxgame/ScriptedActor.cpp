@@ -27,6 +27,7 @@ const LunaShare<ScriptedActor>::PropertyType ScriptedActor::properties[] =
 
 ScriptedActor::ScriptedActor( lua_State *L )
 {
+    int sp = lua_gettop(L);
     int modelRefNum = 0;
 
     if (lua_isnumber(L, -1))
@@ -35,6 +36,7 @@ ScriptedActor::ScriptedActor( lua_State *L )
     }
 
     init(modelRefNum);
+    assert(sp == lua_gettop(L));
 }
 
 int ScriptedActor::l_moveTo( lua_State *L )

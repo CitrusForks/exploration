@@ -83,10 +83,11 @@ void reportError(const char *prefix)
 }
 
 
-static void stackDump (lua_State *L) {
+void stackDump (lua_State *L) {
     int i;
     int top = lua_gettop(L);
     for (i = 1; i <= top; i++) {  /* repeat for each level */
+        printf("[%d] ", i);
         int t = lua_type(L, i);
         switch (t) {
 
@@ -195,6 +196,7 @@ int _tmain(int argc, _TCHAR* argv[])
     lua_setglobal(L, "d3d"); // store d3d for objects initialized from Lua; this seems really clunky :|
     LunaShare<ScriptedScene>::Register(L); // "Scene" object
     LunaShare<ScriptedActor>::Register(L); // "Actor" object
+    LunaShare<ScriptedCamera>::Register(L); // "Camera" object
 
     shared_ptr<ScriptedScene> scene = nullptr;
 
@@ -227,6 +229,8 @@ int _tmain(int argc, _TCHAR* argv[])
     scene = *udata;
     lua_pop(L, 1);
 
+    gEngine.FPCamera = scene->FPCam;
+
     float angle = 0.0f;
     bool done = false;
     while (!done)
@@ -250,12 +254,12 @@ int _tmain(int argc, _TCHAR* argv[])
 
         input.Frame(); // read input and update state
 
-        gEngine.getCamera().perFrameUpdate(timer.sincePrev(), input); // move the camera 
+        gEngine.getCamera()->perFrameUpdate(timer.sincePrev(), input); // move the camera 
         // XXX should the above update be somewhere specific?
 
         soundSystem.perFrameUpdate();
 
-        scene->update((float)timer.sinceInit(), (float)timer.sincePrev(), gEngine.getCamera());
+        scene->update((float)timer.sinceInit(), (float)timer.sincePrev()); 
 
         if (!gEngine.RenderScene(timer, scene.get())) return -1;
             

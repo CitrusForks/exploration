@@ -6,7 +6,7 @@ using namespace std;
 using namespace DirectX;
 
 
-Graphics::Graphics(int width, int height, HWND window, HMODULE progInstance) : FPCamera()
+Graphics::Graphics(int width, int height, HWND window, HMODULE progInstance)
 {
     // D3DClass wraps some of the more tedious aspects of DirectX, we need that:
     d3d.Initialize(width, height, true, window, false, 32, 1.0f);
@@ -18,7 +18,7 @@ Graphics::Graphics(int width, int height, HWND window, HMODULE progInstance) : F
     offScreen = IntermediateRenderTarget(d3d.GetDevice(), d3d.GetDeviceContext(), width, height);
     if (!offScreen.getResourceViewAndResolveMSAA(d3d.GetDeviceContext()))
     {
-        Errors::Cry("Couldn't initialize off-screen buffer; something muts be really wrong. Do you have a graphics card installed?");
+        Errors::Cry("Couldn't initialize off-screen buffer; something must be really wrong. Do you have a graphics card installed?");
     }
 
     shaders0.InitializeShader(d3d.GetDevice(), window, L"light_vs.cso",  L"light_ps.cso");
@@ -33,6 +33,8 @@ Graphics::Graphics(int width, int height, HWND window, HMODULE progInstance) : F
     {
         return;
     }
+
+    FPCamera = make_shared<ScriptedCamera>(); // the camera object is cheap to initialize, redundancy won't hurt 
 }
 
 Graphics::Graphics( Graphics & )
@@ -91,7 +93,7 @@ bool Graphics::RenderScene( Chronometer &timer, Scene *scene)
 #endif
 
 
-    lighting->updateGPU(d3d.GetDeviceContext(), shaders0, (float)timer.sinceInit(), FPCamera.getEyePosition());
+    lighting->updateGPU(d3d.GetDeviceContext(), shaders0, (float)timer.sinceInit(), FPCamera->getEyePosition());
 
     if (!lighting->renderShadowMaps(d3d, [&](VanillaShaderClass &shader, CXMMATRIX view, CXMMATRIX projection, std::vector<Light> &lights)
     {
@@ -112,9 +114,9 @@ bool Graphics::RenderScene( Chronometer &timer, Scene *scene)
     D3D11_VIEWPORT viewportMain = { 0.0f, 0.0f,  (float)Options::intOptions["Width"], (float)Options::intOptions["Height"], 0.0f, 1.0f};
     d3d.GetDeviceContext()->RSSetViewports(1, &viewportMain);
 
-    XMMATRIX view = FPCamera.getViewMatrix();
+    XMMATRIX view = FPCamera->getViewMatrix();
 
-    shaders0.setVSCameraBuffer(d3d.GetDeviceContext(), FPCamera.getEyePosition(), (float)timer.sinceInit(), 0);
+    shaders0.setVSCameraBuffer(d3d.GetDeviceContext(), FPCamera->getEyePosition(), (float)timer.sinceInit(), 0);
 
 
 #ifndef DISABLE_OFFSCREEN_BUFFER
