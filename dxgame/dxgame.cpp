@@ -219,7 +219,11 @@ int _tmain(int argc, _TCHAR* argv[])
 	
     cout << "Starting!!!" << endl;
 
-    luaL_dofile(L, "Start.lua");
+    if (luaL_dofile(L, "Start.lua"))
+    {
+        // error! :(
+        Errors::Cry((char*) lua_tostring(L, -1));
+    }
 
     lua_getglobal(L, "scene");
     assert(lua_isuserdata(L, -1));

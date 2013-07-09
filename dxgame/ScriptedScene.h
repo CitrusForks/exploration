@@ -28,6 +28,7 @@ public:
     int l_moveLight(lua_State *L); // moves a light; NOTE perhaps make lights their own objects in Lua as well? Though this is easier, of course.
     int l_configureLight(lua_State *L);  // set RGB value, orientation, and beam angle for light
     int l_getModel(lua_State *L); // look up a model by name in the ModelManager; this is a shortcut to avoid turning ModelManager into its own Lua object
+    int l_pointMoonlight(lua_State *L); // sets the direction of the directional light source. TODO: need to set its color and have the option to disable it for indoor scenes
 
 private:
     lua_State *L; // caching this value but perhaps it's terrible style? TODO.

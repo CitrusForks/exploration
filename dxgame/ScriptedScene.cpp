@@ -5,6 +5,7 @@
 
 using namespace std;
 using namespace Luna;
+using namespace DirectX;
 
 const char ScriptedScene::className[] = "Scene"; // not "ScriptedScene" in the interest of brevity; bad idea? not sure..
 
@@ -22,6 +23,7 @@ const LunaShare<ScriptedScene>::FunctionType ScriptedScene::methods[] =
     {"enters", &ScriptedScene::l_enters},
     {"configureLight", &ScriptedScene::l_configureLight},
     {"moveLight", &ScriptedScene::l_moveLight},
+    {"pointMoonlight", &ScriptedScene::l_pointMoonlight},
     {"getModel", &ScriptedScene::l_getModel},
     {0,0}
 };
@@ -62,7 +64,7 @@ int ScriptedScene::l_enters( lua_State *L )
     int sp = lua_gettop(L);
     
     // add actor
-    shared_ptr<Actor> *u = static_cast<shared_ptr<Actor> *>(luaL_checkudata(L, 1, ScriptedActor::className)); // using luaL_checkudata() over luaL_testudata() here for simplicity; it shouldn't be that hard to pass a valid object to this thing
+    shared_ptr<Actor> *u = static_cast<shared_ptr<Actor> *>(luaL_checkudata(L, 2, ScriptedActor::className)); // using luaL_checkudata() over luaL_testudata() here for simplicity; it shouldn't be that hard to pass a valid object to this thing
     int refNum = enters(*u);
 
     assert(lua_gettop(L) == sp); // assert correct stack depth
@@ -82,15 +84,36 @@ int ScriptedScene::l_exits( lua_State *L )
     return 0; // number of results
 }
 
-// should lights even be separate from objects? Hmm?
+// arguments: index, pos_x, pos_y, pos_z, [optional: dir_x, dir_y, dir_z]
 int ScriptedScene::l_moveLight( lua_State *L )
 {
+    int idx = luaL_checkinteger(L, 2);
+
+    XMVECTOR pos = XMVectorSet((float)luaL_checknumber(L, 3), (float)luaL_checknumber(L, 4), (float)luaL_checknumber(L, 5), 1);
+    XMVECTOR dir = (lua_gettop(L) == 8) ? XMVectorSet((float)luaL_checknumber(L, 4), (float)luaL_checknumber(L, 5), (float)luaL_checknumber(L, 6), 1) :
+        XMLoadFloat3(&(m_lighting->getLights()[idx].direction)); // XXX this shouldn't be necessary perhaps?
+
+    m_lighting->getLights()[idx].move(pos, dir);
+
     return 0; // number of results
 }
 
 
 int ScriptedScene::l_configureLight( lua_State *L )
 {
+//void LightsAndShadows::setSpotlight( int which, DirectX::FXMVECTOR position, DirectX::FXMVECTOR direction, float beamHalfAngle /*= (float)M_PI * 15.0f/180.f*/, float constantAttenuation /*= 0.75f*/, float linearAttenuation /*= 0.0f*/, float quadraticAttenuation /*= 0.025f*/ )
+
+    int idx = luaL_checkinteger(L, 2);
+
+    m_lighting->setSpotlight(idx, 
+        XMVectorSet((float)luaL_checknumber(L, 3), (float)luaL_checknumber(L, 4), (float)luaL_checknumber(L, 5), 1),
+        XMVectorSet((float)luaL_checknumber(L, 4), (float)luaL_checknumber(L, 5), (float)luaL_checknumber(L, 6), 1),
+        (float)luaL_checknumber(L, 7),
+        (float)luaL_checknumber(L, 8),
+        (float)luaL_checknumber(L, 9),
+        (float)luaL_checknumber(L, 10)
+        );
+
     return 0; // as always, number of results
 }
 
@@ -100,6 +123,11 @@ int ScriptedScene::l_getModel( lua_State *L )
     const char * const modelName = luaL_checkstring(L, -1);
 
     int refNum = m_models->getRefNum(modelName);
+
+    if (!refNum)
+    {
+        cerr << "Could not load " << modelName << endl;
+    }
 
     lua_pushinteger(L, refNum);
 
@@ -119,6 +147,15 @@ bool ScriptedScene::update( float now, float timeSinceLastUpdate, std::shared_pt
     {
         Errors::Cry((char*)lua_tostring(L, -1));
     }
+
+    return 0;
+}
+
+int ScriptedScene::l_pointMoonlight( lua_State *L )
+{
+    XMVECTOR dir = XMVector3Normalize(XMVectorSet((float)luaL_checknumber(L, 2), (float)luaL_checknumber(L, 3), (float)luaL_checknumber(L, 4), 0));
+
+    m_lighting->pointMoonlight(dir, *FPCam);
 
     return 0;
 }

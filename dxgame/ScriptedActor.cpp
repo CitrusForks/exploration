@@ -30,12 +30,37 @@ ScriptedActor::ScriptedActor( lua_State *L )
     int sp = lua_gettop(L);
     int modelRefNum = 0;
 
-    if (lua_isnumber(L, -1))
+    modelRefNum = luaL_checkinteger(L, 1);
+
+    XMMATRIX correction = XMMatrixIdentity();
+
+    if (lua_gettop(L) >= 5)
     {
-        modelRefNum = (int)lua_tonumber(L, -1);
+        // correctional rotation: axis, angle
+        correction *= XMMatrixRotationAxis(XMVectorSet((float)luaL_checknumber(L, 2), (float)luaL_checknumber(L, 3), (float)luaL_checknumber(L, 4), 0), // axis
+            (float)luaL_checknumber(L, 5)); // angle
+
+        if (lua_gettop(L) >= 6)
+        {
+            // correctional rescale, by a single factor to keep this uniform
+            float scale = (float)luaL_checknumber(L, 6);
+            if (!scale)
+            {
+                cerr << "Scale factor of 0.0f is probably an error." << endl;
+            }
+
+            correction *= XMMatrixScaling(scale, scale, scale);
+        }
+
+        if (lua_gettop(L) >= 9)
+        {
+            // correctional offset
+
+            correction *= XMMatrixTranslation((float)luaL_checknumber(L, 7), (float)luaL_checknumber(L, 8), (float)luaL_checknumber(L, 9));
+        }
     }
 
-    init(modelRefNum);
+    init(modelRefNum, correction);
     assert(sp == lua_gettop(L));
 }
 
