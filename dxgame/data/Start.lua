@@ -57,6 +57,18 @@ duck2 = newDuck()
 scene:enters(duck2)
 duck2:moveTo(3, 0, 3)
 
+ducks = {}
+xnum = 23
+ynum = 22
+for x = 1, xnum do
+	for y = 1, ynum do
+		d = newDuck()
+		scene:enters(d)
+		d:moveTo(x*4 - xnum*2, 2, y*4 - ynum*2)
+		ducks[#ducks + 1] = d
+	end
+end
+
 torus = Actor(scene:getModel("torus.obj"))
 scene:enters(torus)
 torus:moveTo(0, 1, 3)
@@ -79,7 +91,7 @@ chekov:moveTo(0, 0, 7)
 scene:pointMoonlight(0.1, -0.2, 1.0)
 
 
-
+i = 0
 
 -- tada.
 
@@ -87,6 +99,15 @@ scene:pointMoonlight(0.1, -0.2, 1.0)
 -- anything really interesting:
 
 function update(now, timeSinceLastFrame)
+	scene:updateFlashlight(0) -- light 0 is a flashlight
+
+	i = i + 1
+	if (i > 9) then
+		-- this call also updates the cascading shadow map setup:
+		scene:pointMoonlight(0.1, -0.2, 1.0)
+		i = 0
+	end
+
 	duck:moveTo(-3, math.sin(now), 3) -- bobbing duck
 	torus:setRollPitchYaw(now, now, 0) -- spinning torus
 end

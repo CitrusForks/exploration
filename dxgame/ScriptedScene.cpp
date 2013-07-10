@@ -25,6 +25,7 @@ const LunaShare<ScriptedScene>::FunctionType ScriptedScene::methods[] =
     {"moveLight", &ScriptedScene::l_moveLight},
     {"pointMoonlight", &ScriptedScene::l_pointMoonlight},
     {"getModel", &ScriptedScene::l_getModel},
+    {"updateFlashlight", &ScriptedScene::l_updateFlashlight},
     {0,0}
 };
 
@@ -117,7 +118,8 @@ int ScriptedScene::l_configureLight( lua_State *L )
     return 0; // as always, number of results
 }
 
-
+// takes the name of a 3D object file as an argument
+// returns model index
 int ScriptedScene::l_getModel( lua_State *L )
 {
     const char * const modelName = luaL_checkstring(L, -1);
@@ -134,7 +136,7 @@ int ScriptedScene::l_getModel( lua_State *L )
     return 1;
 }
 
-
+// runs the update(now, sinceLastFrame) function in the Lua global namespace
 bool ScriptedScene::update( float now, float timeSinceLastUpdate, std::shared_ptr<FirstPerson> dummy /*= nullptr*/ )
 {
     lua_getglobal(L, "update");
@@ -150,12 +152,30 @@ bool ScriptedScene::update( float now, float timeSinceLastUpdate, std::shared_pt
 
     return 0;
 }
-
+// 3 arguments, x y z, establishing a vector parallel to the directional light in the scene
 int ScriptedScene::l_pointMoonlight( lua_State *L )
 {
     XMVECTOR dir = XMVector3Normalize(XMVectorSet((float)luaL_checknumber(L, 2), (float)luaL_checknumber(L, 3), (float)luaL_checknumber(L, 4), 0));
 
     m_lighting->pointMoonlight(dir, *FPCam);
+
+    return 0;
+}
+
+// takes the index of the spotlight to move to current correct flashlight position
+// and an optional beam halfangle
+int ScriptedScene::l_updateFlashlight( lua_State *L )
+{
+    int idx = luaL_checkinteger(L, 2);
+    float beamHalfAngle = (float)(M_PI * 15.0 / 180);
+
+
+    if (lua_gettop(L) == 3)
+    {
+        beamHalfAngle = (float)luaL_checknumber(L, 3);
+    }
+
+    m_lighting->updateFlashlight(*FPCam, beamHalfAngle, idx);
 
     return 0;
 }

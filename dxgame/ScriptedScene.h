@@ -29,6 +29,7 @@ public:
     int l_configureLight(lua_State *L);  // set RGB value, orientation, and beam angle for light
     int l_getModel(lua_State *L); // look up a model by name in the ModelManager; this is a shortcut to avoid turning ModelManager into its own Lua object
     int l_pointMoonlight(lua_State *L); // sets the direction of the directional light source. TODO: need to set its color and have the option to disable it for indoor scenes
+    int l_updateFlashlight(lua_State *L); // sets the position of a spotlight to the correct position to act as the player's flashlight; must run every update 
 
 private:
     lua_State *L; // caching this value but perhaps it's terrible style? TODO.

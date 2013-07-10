@@ -42,7 +42,7 @@ public:
     LightsAndShadows &operator = (LightsAndShadows & nope); 
    
 
-    void setFlashlight(FirstPerson &FPCamera, float beamHalfAngle = (float)M_PI * 15.0f/180.f, int whichLight = 0 );
+    void updateFlashlight(FirstPerson &FPCamera, float beamHalfAngle = (float)M_PI * 15.0f/180.f, int whichLight = 0 );
     void setSpotlight( int which, DirectX::FXMVECTOR position, DirectX::FXMVECTOR direction, float beamHalfAngle = (float)M_PI * 15.0f/180.f, float constantAttenuation = 0.75f, float linearAttenuation = 0.0f, float quadraticAttenuation = 0.05f);
 
     void pointMoonlight(DirectX::FXMVECTOR newDirection, FirstPerson &FPCamera);

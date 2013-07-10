@@ -63,7 +63,7 @@ LightsAndShadows::~LightsAndShadows(void)
 
 // set a spotlight, index 0 by default, to act as the player's flashlight
 // TODO: add a spotlight model with a mesh and add a spotlight to that instead
-void LightsAndShadows::setFlashlight( FirstPerson &FPCamera, float beamHalfAngle /*= (float)M_PI * 15.0f/180.f*/, int whichLight /*= 0 */ )
+void LightsAndShadows::updateFlashlight( FirstPerson &FPCamera, float beamHalfAngle /*= (float)M_PI * 15.0f/180.f*/, int whichLight /*= 0 */ )
 {
     assert(whichLight < NUM_SPOTLIGHTS);
 

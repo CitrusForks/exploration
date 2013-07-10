@@ -62,7 +62,7 @@ bool SceneDemo::update( float now, float timeSinceLastUpdate, shared_ptr<FirstPe
     torus->moveTo(XMVectorSet(0, 1, 3, 1));
     torus->setRollPitchYaw(now, 0);
 
-    m_lighting->setFlashlight(*FPCamera, XMConvertToRadians(25.0f/2));
+    m_lighting->updateFlashlight(*FPCamera, XMConvertToRadians(25.0f/2));
     m_lighting->pointMoonlight(XMVector3Normalize(XMVectorSet(0.1f,  -0.2f, 1.0f, 0.0f)), *FPCamera);
 
     return Scene::update(now, timeSinceLastUpdate, FPCamera);
