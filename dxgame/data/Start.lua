@@ -57,11 +57,13 @@ duck2 = newDuck()
 scene:enters(duck2)
 duck2:moveTo(3, 0, 3)
 
+-- 121 ducks
+-- if you remove the stepping value of 2, it's 506 ducks
 ducks = {}
 xnum = 23
 ynum = 22
-for x = 1, xnum do
-	for y = 1, ynum do
+for x = 1, xnum, 2 do
+	for y = 1, ynum, 2 do
 		d = newDuck()
 		scene:enters(d)
 		d:moveTo(x*4 - xnum*2, 2, y*4 - ynum*2)

@@ -24,6 +24,8 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+#include <DirectXCollision.h>
+
 using namespace std;
 using namespace DirectX;
 
@@ -103,11 +105,27 @@ bool CompoundMesh::load(ID3D11Device* device, ID3D11DeviceContext *devCtx, Textu
 
     cout << modelFileName << " loaded with " << indexCount << " total indices." << endl;
 
+    aiVector3D min, max;
+
+    get_bounding_box(&min, &max);
+
+    bBoxMin.x = min.x; // too tired to make this copy clever right now; it's not important.
+    bBoxMin.y = min.y;
+    bBoxMin.z = min.z;
+    bBoxMin.w = 1;
+
+    bBoxMax.x = max.x;
+    bBoxMax.y = max.y;
+    bBoxMax.z = max.z;
+    bBoxMax.w = 1;
+
+    m_bBox.CreateFromPoints(m_bBox, XMLoadFloat4(&bBoxMin), XMLoadFloat4(&bBoxMax));
+
     return true;
 }
 
 
-#if 0
+#if 1
 // from example code: http://assimp.svn.sourceforge.net/viewvc/assimp/trunk/samples/SimpleOpenGL/Sample_SimpleOpenGL.c?revision=1332&content-type=text%2Fplain
 // TODO: update to use xnamath/d3dmath
 void CompoundMesh::get_bounding_box_for_node (const aiNode* nd, 
@@ -449,7 +467,26 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, 
     DirectX::CXMMATRIX projectionMatrix, vector<Light> &lights, CompoundMeshNode *node /*= nullptr */ )
 {
-    if (!node) node = &m_root;
+    if (!node)
+    {
+        node = &m_root;
+
+        // clip to view frustum
+        BoundingFrustum frustum(projectionMatrix); // TODO this should be moved somewhere higher up if the engine ever becomes CPU-bound
+        frustum.Transform(frustum, XMMatrixInverse(nullptr, viewMatrix)); // move the frustum as though it was an object within the world; probably slow?
+
+        XMFLOAT3 center;
+        float radius = 1.0f; // XXX incorrect, calculate this somewhere
+
+        XMStoreFloat3(&center, XMVector3Transform(XMVectorZero(), worldMatrix));
+
+        BoundingSphere bSphere(center, radius);
+
+        BoundingBox bBox(m_bBox);
+        bBox.Transform(bBox, worldMatrix);
+
+        if (!frustum.Contains(bBox) && !frustum.Intersects(bBox)) return true;
+    }
 
     for (auto mesh = node->meshes.begin(), end = node->meshes.end(); mesh != end; ++mesh)
     {

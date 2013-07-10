@@ -126,6 +126,9 @@ int _tmain(int argc, _TCHAR* argv[])
     Options::intOptions["MSAAQuality"] = 0;
 #endif
 
+    //XMFLOAT4 vectortest(2, 2, 2, 1);
+    //cout << XMVector4NormalizeEst(XMLoadFloat4(&vectortest)) << endl; exit(0); // verification that XMVector4Normalize() also divides w by length
+
     wcout << L"Unicode test: проверка Unicode" << endl; // unlikely to work! need to manually set codepage in terminal so have fun with that
     cout << endl; // because the above is unlikely to work
 
@@ -180,20 +183,24 @@ int _tmain(int argc, _TCHAR* argv[])
     // this is how sounds are loaded:
     int beepverb = soundSystem.loadSound("beepverb.wav");
 
+    // Graphics contains most of the implementation details of the 3D stuff
     Graphics gEngine(width, height, window, progInstance);
 
-    shared_ptr<TextureManager> tm = make_shared<TextureManager>();
-    shared_ptr<ModelManager> mm = make_shared<ModelManager>(gEngine.getD3D());
+    // though you're welcome do to stuff like this:
+    //shared_ptr<TextureManager> tm = make_shared<TextureManager>();
+    //shared_ptr<ModelManager> mm = make_shared<ModelManager>(gEngine.getD3D());
+    // but Scene initializes its own managers now if you want it to
 
     //SceneDemo scene(gEngine.getD3D());
     //SceneDemo *scene = nullptr;
 
     Chronometer timer;
 
+    // create the Lua state and register our Lua-exposed classes
     lua_State *L = luaL_newstate();
-    luaL_openlibs(L); // NOTE: This is not sandboxed.
+    luaL_openlibs(L); // NOTE: This is not sandboxed. All os and filesystem libraries are exposed. You wouldn't want to load user-created mods in this state.
     lua_pushlightuserdata(L, (void*)&(gEngine.getD3D()));
-    lua_setglobal(L, "d3d"); // store d3d for objects initialized from Lua; this seems really clunky :|
+    lua_setglobal(L, "d3d"); // store d3d for objects initialized from Lua; this seems really clunky but it works :|
     LunaShare<ScriptedScene>::Register(L); // "Scene" object
     LunaShare<ScriptedActor>::Register(L); // "Actor" object
     LunaShare<ScriptedCamera>::Register(L); // "Camera" object
@@ -233,7 +240,7 @@ int _tmain(int argc, _TCHAR* argv[])
     scene = *udata;
     lua_pop(L, 1);
 
-    gEngine.FPCamera = scene->FPCam;
+    gEngine.FPCamera = scene->FPCam; // use the scene's camera object; actually swapping the two variables here would have no effect, it would just use the gEngine instance.
 
     float angle = 0.0f;
     bool done = false;
@@ -263,18 +270,19 @@ int _tmain(int argc, _TCHAR* argv[])
 
         soundSystem.perFrameUpdate();
 
-        scene->update((float)timer.sinceInit(), (float)timer.sincePrev()); 
+        scene->update((float)timer.sinceInit(), (float)timer.sincePrev());  // in case you actually want to implement a game, the gameplay would happen in this update() call
 
         if (!gEngine.RenderScene(timer, scene.get())) return -1;
             
-        Sleep(1); // for luck
+        //Sleep(1); // for luck? seems to have no effect on a moderm multi-core PC really.
+
         angle += (float)(M_PI) * (float)timer.sincePrev();
         test = angle;
 
         static double last_honked = 0.0;
         if (input.IsPressed(DIK_E) && timer.sinceInit() - last_honked > 0.5)
         {
-            soundSystem.play(beepverb);
+            soundSystem.play(beepverb); // just a test of the sound system
             last_honked = timer.sinceInit();
         }
 

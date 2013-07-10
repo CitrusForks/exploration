@@ -18,6 +18,7 @@
 #include "vanillashaderclass.h"
 
 #include <DirectXMath.h>
+#include <DirectXCollision.h>
 
 class CompoundMesh
 {
@@ -29,6 +30,11 @@ private:
 
         std::vector<CompoundMeshNode> children;
     } m_root;
+
+    DirectX::XMFLOAT4 bBoxMin;
+    DirectX::XMFLOAT4 bBoxMax;
+
+    DirectX::BoundingBox m_bBox;
 
     const aiScene *m_aiScene;
 

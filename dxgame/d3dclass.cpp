@@ -35,6 +35,7 @@ D3DClass::D3DClass()
 
 D3DClass::D3DClass(const D3DClass& other)
 {
+    Errors::Cry("Don't copy D3DClass.");
 }
 
 
@@ -567,20 +568,6 @@ ID3D11Device* D3DClass::GetDevice()
 ID3D11DeviceContext* D3DClass::GetDeviceContext()
 {
 	return m_deviceContext;
-}
-
-
-void D3DClass::GetProjectionMatrix(XMMATRIX& projectionMatrix)
-{
-	projectionMatrix = XMLoadFloat4x4(&m_projectionMatrix);
-	return;
-}
-
-
-void D3DClass::GetOrthoMatrix(XMMATRIX& orthoMatrix)
-{
-	orthoMatrix = XMLoadFloat4x4(&m_orthoMatrix);
-	return;
 }
 
 

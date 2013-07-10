@@ -1,32 +1,20 @@
-////////////////////////////////////////////////////////////////////////////////
-// Filename: d3dclass.h
-////////////////////////////////////////////////////////////////////////////////
 #ifndef _D3DCLASS_H_
 #define _D3DCLASS_H_
 
 
-// from http://www.rastertek.com/dx11tut03.html
+// from http://www.rastertek.com/dx11tut03.html with lots of modifications, watch out
 
-
-/////////////
-// LINKING //
-/////////////
+// I actually like this way of specifying input libraries but I can understand if most other people don't. 
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3d11.lib")
 
 
-//////////////
-// INCLUDES //
-//////////////
 #include <dxgi.h>
 #include <d3dcommon.h>
 #include <d3d11.h>
 #include <directxmath.h>
 
 
-////////////////////////////////////////////////////////////////////////////////
-// Class name: D3DClass
-////////////////////////////////////////////////////////////////////////////////
 class D3DClass
 {
 public:
@@ -39,24 +27,21 @@ public:
 	
 	void Shutdown();
 	
-        void BeginScene(bool clear = true, float red = 0.0f, float green = 0.0f, float blue = 0.0f, float alpha = 0.0f);
-	void EndScene();
+        void BeginScene(bool clear = true, float red = 0.0f, float green = 0.0f, float blue = 0.0f, float alpha = 0.0f); // called before rendering
+	void EndScene(); // ends rendering, stuff ends up on the screen
 
-	ID3D11Device* GetDevice();
-        ID3D11DeviceContext* GetDeviceContext();
+	ID3D11Device* GetDevice(); // needed in many places 
+        ID3D11DeviceContext* GetDeviceContext(); // ""
 
-	void GetProjectionMatrix(DirectX::XMMATRIX&);
-	void GetOrthoMatrix(DirectX::XMMATRIX&);
+        void GetVideoCardInfo(std::string, int&); // not really used...
 
-        void GetVideoCardInfo(std::string, int&);
+        ID3D11DepthStencilView *GetDepthStencilView(); // used by off-screen renderer
+        void setAsRenderTarget(bool depthEnable); // sets swap-chain render target as current
 
-        ID3D11DepthStencilView *GetDepthStencilView();
-        void setAsRenderTarget(bool depthEnable);
+        void depthOn();  // useful when rendering a scene...
+        void depthOff(); // this is for rendering post-processed image or overlays such as text
 
-        void depthOn();
-        void depthOff();
-
-        void setDepthBias(bool setBias, bool highBias = false);
+        void setDepthBias(bool setBias, bool highBias = false); // true for rendering to shadow maps
 
         HWND getWindow() { return m_window; }
 

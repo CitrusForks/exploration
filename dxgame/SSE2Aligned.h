@@ -11,7 +11,7 @@ public:
     {
     }
 
-    virtual ~SSE2Aligned(void)
+    inline ~SSE2Aligned(void)
     {
 
     }
