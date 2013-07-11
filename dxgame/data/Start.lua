@@ -71,9 +71,13 @@ for x = 1, xnum, 2 do
 	end
 end
 
-torus = Actor(scene:getModel("torus.obj"))
+torus = Actor(scene:getModel("torus.obj"), 1, 0, 0, 0, 1)
 scene:enters(torus)
-torus:moveTo(0, 1, 3)
+torus:moveTo(0, 2.5, 3)
+
+bigTorus = Actor(scene:getModel("torus.obj"), 1, 0, 0, -math.pi/4, 1.5) -- the torus is tilted slightly and it's obnoxious
+scene:enters(bigTorus)
+bigTorus:moveTo(0, 2.5, 3)
 
 tree = Actor(scene:getModel("spooky_tree.obj"))
 scene:enters(tree)
@@ -103,13 +107,13 @@ i = 0
 function update(now, timeSinceLastFrame)
 	scene:updateFlashlight(0) -- light 0 is a flashlight
 
-	i = i + 1
-	if (i > 9) then
-		-- this call also updates the cascading shadow map setup:
-		scene:pointMoonlight(0.1, -0.2, 1.0)
-		i = 0
-	end
+	-- this call also updates the cascading shadow map setup:
+	scene:pointMoonlight(0.1, -0.2, 1.0)
 
 	duck:moveTo(-3, math.sin(now), 3) -- bobbing duck
-	torus:setRollPitchYaw(now, now, 0) -- spinning torus
+
+	torus:setRollPitchYaw(0, now*1.1, 0) -- spinning torus
+	bigTorus:setRollPitchYaw(-now, 0, 0)
+	duck2:moveTo(0, 2, 3)
+	duck2:setRollPitchYaw(0, 0, now*2)
 end

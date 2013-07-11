@@ -24,7 +24,8 @@ public:
 
     // Lua-centric methods:
     int l_enters(lua_State *L); // adds an actor 
-    int l_exits(lua_State *L);  // removes an actor
+    int l_exits(lua_State *L);  // removes an actor, pursued by bear
+    int l_exeunt(lua_State *L); // removes all actors 
     int l_moveLight(lua_State *L); // moves a light; NOTE perhaps make lights their own objects in Lua as well? Though this is easier, of course.
     int l_configureLight(lua_State *L);  // set RGB value, orientation, and beam angle for light
     int l_getModel(lua_State *L); // look up a model by name in the ModelManager; this is a shortcut to avoid turning ModelManager into its own Lua object

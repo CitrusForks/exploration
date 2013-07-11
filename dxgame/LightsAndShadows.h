@@ -49,7 +49,7 @@ public:
 
     // this method expects a function object — probably from a lambda — that can draw the current scene given the supplied shader and matrices
     bool renderShadowMaps( D3DClass &d3d, 
-        std::function<bool(VanillaShaderClass &shader, DirectX::CXMMATRIX view, DirectX::CXMMATRIX projection, std::vector<Light> &lights)> doRenderCalls
+        std::function<bool(VanillaShaderClass &shader, DirectX::CXMMATRIX view, DirectX::CXMMATRIX projection, bool orthoProjection, std::vector<Light> &lights)> doRenderCalls
         );
 
     void updateGPU(ID3D11DeviceContext *devCtx, VanillaShaderClass &shader, float time, DirectX::FXMVECTOR eyePosition);

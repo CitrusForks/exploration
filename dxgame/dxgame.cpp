@@ -194,16 +194,35 @@ int _tmain(int argc, _TCHAR* argv[])
     //SceneDemo scene(gEngine.getD3D());
     //SceneDemo *scene = nullptr;
 
-    Chronometer timer;
+    XMFLOAT3 derp[2];
+    derp[0].x = derp[0].y = derp[0].z = 0;
+    derp[1].x = derp[1].y = derp[1].z = 1;
+
+    /*
+    BoundingOrientedBox testBox;
+    testBox.CreateFromPoints(testBox, 2, derp, sizeof(XMFLOAT3));
+    cout << XMLoadFloat3(&testBox.Center) << XMLoadFloat4(&testBox.Orientation) << endl;
+    testBox.Transform(testBox, XMMatrixRotationRollPitchYaw(0, M_PI_2, 0));
+    cout << XMLoadFloat3(&testBox.Center) << XMLoadFloat4(&testBox.Orientation) << endl;
+    exit(0);
+    */
+
+    shared_ptr<Chronometer> timer = make_shared<Chronometer>();
 
     // create the Lua state and register our Lua-exposed classes
     lua_State *L = luaL_newstate();
     luaL_openlibs(L); // NOTE: This is not sandboxed. All os and filesystem libraries are exposed. You wouldn't want to load user-created mods in this state.
     lua_pushlightuserdata(L, (void*)&(gEngine.getD3D()));
     lua_setglobal(L, "d3d"); // store d3d for objects initialized from Lua; this seems really clunky but it works :|
+
     LunaShare<ScriptedScene>::Register(L); // "Scene" object
     LunaShare<ScriptedActor>::Register(L); // "Actor" object
     LunaShare<ScriptedCamera>::Register(L); // "Camera" object
+
+    LunaShare<Chronometer>::Register(L); // "Chronometer" object, to be set from C++
+    LunaShare<Chronometer>::push(L, timer);
+    lua_setglobal(L, "timer");
+
 
     shared_ptr<ScriptedScene> scene = nullptr;
 
@@ -265,25 +284,25 @@ int _tmain(int argc, _TCHAR* argv[])
 
         input.Frame(); // read input and update state
 
-        gEngine.getCamera()->perFrameUpdate(timer.sincePrev(), input); // move the camera 
+        gEngine.getCamera()->perFrameUpdate(timer->sincePrev(), input); // move the camera 
         // XXX should the above update be somewhere specific?
 
         soundSystem.perFrameUpdate();
 
-        scene->update((float)timer.sinceInit(), (float)timer.sincePrev());  // in case you actually want to implement a game, the gameplay would happen in this update() call
+        scene->update((float)timer->sinceInit(), (float)timer->sincePrev());  // in case you actually want to implement a game, the gameplay would happen in this update() call
 
-        if (!gEngine.RenderScene(timer, scene.get())) return -1;
+        if (!gEngine.RenderScene(*timer, scene.get())) return -1;
             
         //Sleep(1); // for luck? seems to have no effect on a moderm multi-core PC really.
 
-        angle += (float)(M_PI) * (float)timer.sincePrev();
+        angle += (float)(M_PI) * (float)timer->sincePrev();
         test = angle;
 
         static double last_honked = 0.0;
-        if (input.IsPressed(DIK_E) && timer.sinceInit() - last_honked > 0.5)
+        if (input.IsPressed(DIK_E) && timer->sinceInit() - last_honked > 0.5)
         {
             soundSystem.play(beepverb); // just a test of the sound system
-            last_honked = timer.sinceInit();
+            last_honked = timer->sinceInit();
         }
 
 
@@ -291,7 +310,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
         if (input.IsPressed(DIK_LALT) && input.IsPressed(DIK_F4)) done = true; // be nice
 
-        timer.Sample(); // read timer and update variables
+        timer->Sample(); // read timer and update variables
     }
 
     scene = nullptr;

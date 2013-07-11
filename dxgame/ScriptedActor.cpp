@@ -37,7 +37,8 @@ ScriptedActor::ScriptedActor( lua_State *L )
     if (lua_gettop(L) >= 5)
     {
         // correctional rotation: axis, angle
-        correction *= XMMatrixRotationAxis(XMVectorSet((float)luaL_checknumber(L, 2), (float)luaL_checknumber(L, 3), (float)luaL_checknumber(L, 4), 0), // axis
+        XMVECTOR axis = XMVectorSet((float)luaL_checknumber(L, 2), (float)luaL_checknumber(L, 3), (float)luaL_checknumber(L, 4), 0);
+        correction *= XMMatrixRotationAxis(axis,
             (float)luaL_checknumber(L, 5)); // angle
 
         if (lua_gettop(L) >= 6)
@@ -77,15 +78,14 @@ int ScriptedActor::l_moveTo( lua_State *L )
     return 0;
 }
 
-// shouldn't it really be called l_setPitchYawRoll?
-// Roll is optional.
+// roll, pitch, yaw, like it says in the name.
 int ScriptedActor::l_setRollPitchYaw( lua_State *L )
 {
-    float pitch = (float)luaL_checknumber(L, 2);
-    float yaw   = (float)luaL_checknumber(L, 3);
-    float roll  = lua_gettop(L) > 3 && lua_isnumber(L, 3) ? (float) lua_tonumber(L, 3) : 0.0f;
+    float roll = (float)luaL_checknumber(L, 2);
+    float pitch   = (float)luaL_checknumber(L, 3);
+    float yaw  = (float)luaL_checknumber(L, 4);
 
-    setRollPitchYaw(pitch, yaw, roll);
+    setPitchYawRoll(pitch, yaw, roll);
 
     return 0;
 }

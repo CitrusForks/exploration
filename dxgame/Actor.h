@@ -41,7 +41,7 @@ public:
     void moveTo(DirectX::FXMVECTOR to);
     void move(DirectX::FXMVECTOR delta);
 
-    void setRollPitchYaw(float pitch, float yaw, float roll = 0);
+    void setPitchYawRoll(float pitch, float yaw, float roll = 0);
 
     void slerp(float now, float finish, float pitch, float yaw, float roll = 0);
     void slerp(float now, float finish, DirectX::FXMVECTOR quaternion);

@@ -60,7 +60,7 @@ void Actor::updateWorldMatrix()
 }
 
 
-void Actor::setRollPitchYaw( float pitch, float yaw, float roll /*= 0*/ )
+void Actor::setPitchYawRoll( float pitch, float yaw, float roll /*= 0*/ )
 {
     m_rotation = XMQuaternionRotationRollPitchYaw(pitch, yaw, roll);
     updateWorldMatrix();

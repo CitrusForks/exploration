@@ -18,7 +18,8 @@ struct Light
     float quadraticAttenuation;
     // these used to be an XMFLOAT4 but I wanted to give them names and XMFLOAT4 can't be in a union due to a non-trivial constructor
 
-    DirectX::XMFLOAT4X4 projection; // View*Projection matrices ("VP") for all the lights, >>>including the directional light in the final position x2 LOD<<<
+    DirectX::XMFLOAT4X4 view; // view matrix
+    DirectX::XMFLOAT4X4 projection; // Projection matrices for all the lights, >>>including the directional light in the final position x2 LOD<<<
 
     DirectX::XMFLOAT4 color; // colored lights can hypnotize?
 
@@ -44,9 +45,10 @@ struct Light
         // one might think that halfAngle*2 would be ideal but that looks more like a view inscribed within the circle of the spotlight
 
 
-        DirectX::XMMATRIX viewProj = DirectX::XMMatrixLookToLH(XMLoadFloat4(&position), DirectX::XMLoadFloat3(&direction), DirectX::XMVectorSet(0, 1, 0, 0)) * 
-            DirectX::XMMatrixPerspectiveFovLH(angle, 1.0f /* shadowmap is a square at any resolution */, 0.1f, 1000.0f); // the 1000 far plane should perhaps be configurable?
-        DirectX::XMStoreFloat4x4(&projection, viewProj);
+        DirectX::XMMATRIX viewMat = DirectX::XMMatrixLookToLH(XMLoadFloat4(&position), DirectX::XMLoadFloat3(&direction), DirectX::XMVectorSet(0, 1, 0, 0));
+        DirectX::XMMATRIX projMat = DirectX::XMMatrixPerspectiveFovLH(angle, 1.0f /* shadowmap is a square at any resolution */, 0.1f, 1000.0f); // the 1000 far plane should perhaps be configurable?
+        DirectX::XMStoreFloat4x4(&projection, projMat);
+        DirectX::XMStoreFloat4x4(&view, viewMat);
     }
 
     void move(DirectX::FXMVECTOR newPosition, DirectX::FXMVECTOR newDirection /* no relation to the band */)
@@ -55,6 +57,11 @@ struct Light
         DirectX::XMStoreFloat3(&direction, newDirection);
         updateProjection();
         enabled = true;
+    }
+
+    inline DirectX::XMMATRIX getVP()
+    {
+        return DirectX::XMLoadFloat4x4(&view) * DirectX::XMLoadFloat4x4(&projection);
     }
 };
 

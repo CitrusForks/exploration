@@ -31,10 +31,8 @@ private:
         std::vector<CompoundMeshNode> children;
     } m_root;
 
-    DirectX::XMFLOAT4 bBoxMin;
-    DirectX::XMFLOAT4 bBoxMax;
-
-    DirectX::BoundingBox m_bBox;
+    DirectX::BoundingOrientedBox m_bBox;
+    DirectX::BoundingSphere m_bSphere;
 
     const aiScene *m_aiScene;
 
@@ -50,7 +48,7 @@ private:
     
 public:
     bool load(ID3D11Device* device, ID3D11DeviceContext *devCtx, TextureManager *texman, char *modelFileName);
-    bool render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, std::vector<Light> &lights, CompoundMeshNode *node = nullptr );
+    bool render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, std::vector<Light> &lights, bool orthoProjection = false, CompoundMeshNode *node = nullptr );
     void release();
 
 

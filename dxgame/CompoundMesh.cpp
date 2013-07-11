@@ -105,21 +105,14 @@ bool CompoundMesh::load(ID3D11Device* device, ID3D11DeviceContext *devCtx, Textu
 
     cout << modelFileName << " loaded with " << indexCount << " total indices." << endl;
 
-    aiVector3D min, max;
+    aiVector3D corners[2];
 
-    get_bounding_box(&min, &max);
+    get_bounding_box(corners, corners+1);
 
-    bBoxMin.x = min.x; // too tired to make this copy clever right now; it's not important.
-    bBoxMin.y = min.y;
-    bBoxMin.z = min.z;
-    bBoxMin.w = 1;
-
-    bBoxMax.x = max.x;
-    bBoxMax.y = max.y;
-    bBoxMax.z = max.z;
-    bBoxMax.w = 1;
-
-    m_bBox.CreateFromPoints(m_bBox, XMLoadFloat4(&bBoxMin), XMLoadFloat4(&bBoxMax));
+    m_bBox.CreateFromPoints(m_bBox, 2, (XMFLOAT3*)corners, sizeof(aiVector3D));
+    BoundingBox bb;
+    bb.CreateFromPoints(bb, 2, (XMFLOAT3*)corners, sizeof(aiVector3D));
+    m_bSphere.CreateFromBoundingBox(m_bSphere, bb);
 
     return true;
 }
@@ -465,27 +458,50 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 // recursively render meshes for all nodes
 // lambda-free version
 bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, 
-    DirectX::CXMMATRIX projectionMatrix, vector<Light> &lights, CompoundMeshNode *node /*= nullptr */ )
+    DirectX::CXMMATRIX projectionMatrix, vector<Light> &lights, bool orthoProjection /* = false */, CompoundMeshNode *node /*= nullptr */ )
 {
     if (!node)
     {
         node = &m_root;
 
         // clip to view frustum
-        BoundingFrustum frustum(projectionMatrix); // TODO this should be moved somewhere higher up if the engine ever becomes CPU-bound
-        frustum.Transform(frustum, XMMatrixInverse(nullptr, viewMatrix)); // move the frustum as though it was an object within the world; probably slow?
 
-        XMFLOAT3 center;
-        float radius = 1.0f; // XXX incorrect, calculate this somewhere
+        BoundingSphere bSphere(m_bSphere);
+        bSphere.Transform(bSphere, worldMatrix);
 
-        XMStoreFloat3(&center, XMVector3Transform(XMVectorZero(), worldMatrix));
+        //BoundingOrientedBox bBox;
+        //m_bBox.Transform(bBox, worldMatrix);
 
-        BoundingSphere bSphere(center, radius);
+        if (!orthoProjection)
+        {
+            BoundingFrustum frustum(projectionMatrix); // TODO this should be moved somewhere higher up if the engine ever becomes CPU-bound
+            frustum.Transform(frustum, XMMatrixInverse(nullptr, viewMatrix)); // move the frustum as though it was an object within the world; probably slow?
 
-        BoundingBox bBox(m_bBox);
-        bBox.Transform(bBox, worldMatrix);
+            if (!frustum.Intersects(bSphere)) return true;
+        } else
+        {
+            // make a bounding box from the orthographic projection matrix (is this weird? perhaps it's weird.)
+            XMMATRIX unproj = XMMatrixInverse(nullptr, projectionMatrix);
+            float x = unproj.r[0].m128_f32[0]; // half the width; for now, assuming projection centered at origin
+            float y = unproj.r[1].m128_f32[1]; // half the height
+            float near_plane = unproj.r[3].m128_f32[2];
+            float far_plane = unproj.r[2].m128_f32[2] + near_plane;
 
-        if (!frustum.Contains(bBox) && !frustum.Intersects(bBox)) return true;
+            XMFLOAT3 points[2];
+            points[0].x = -x;
+            points[0].y = -y;
+            points[0].z = near_plane;
+            points[1].x = x;
+            points[1].y = y;
+            points[1].z = far_plane;
+
+            BoundingOrientedBox viewBox;
+            viewBox.CreateFromPoints(viewBox, 2, points, sizeof(XMFLOAT3));
+            viewBox.Transform(viewBox, XMMatrixInverse(nullptr, viewMatrix));
+
+            // clip to viewbox
+            if (!viewBox.Intersects(bSphere)) return true;
+        }
     }
 
     for (auto mesh = node->meshes.begin(), end = node->meshes.end(); mesh != end; ++mesh)
@@ -514,7 +530,7 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 
     for (auto i = node->children.begin(); i != node->children.end(); ++i)
     {
-        if (!render(deviceContext, shader, worldMatrix, viewMatrix, projectionMatrix, lights, &(*i))) return false;
+        if (!render(deviceContext, shader, worldMatrix, viewMatrix, projectionMatrix, lights, orthoProjection, &(*i))) return false;
     }
 
     return true;

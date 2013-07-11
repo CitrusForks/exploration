@@ -106,24 +106,27 @@ void LightsAndShadows::pointMoonlight( DirectX::FXMVECTOR newDirection, FirstPer
     XMVECTOR skyCamPos = FPCamera.getEyePosition();
     skyCamPos = XMVectorFloor(skyCamPos + XMVectorSet(0.5f, 0.5f, 0.5f, 0.0f) - newDirection * 90);
 
-    XMMATRIX directionalShadowOrtho = XMMatrixLookToLH(skyCamPos, 
-        newDirection, XMVectorSet(0, 0, 1, 0)) * XMMatrixOrthographicLH(90, 90, 0.1f, 1000); // view * orthographic projection, for directional light
-    // N.B., "up" should be orthogonal to lightDirection, or at least not parallel because a crossproduct is performed
+    XMMATRIX directionalShadowView = XMMatrixLookToLH(skyCamPos, newDirection, XMVectorSet(0, 0, 1, 0));
+    XMMATRIX directionalShadowOrtho =  XMMatrixOrthographicLH(90, 90, 0.1f, 1000); // orthographic projection for directional light
+    // N.B., "up" should be orthogonal to lightDirection, or at least not parallel because a crossproduct is calculated
 
+    XMStoreFloat4x4(&lights[NUM_SPOTLIGHTS].view, directionalShadowView);
     XMStoreFloat4x4(&lights[NUM_SPOTLIGHTS].projection, directionalShadowOrtho);
 
     // high LOD view for directional shadow, focused on the player's vicinity
     skyCamPos = FPCamera.getEyePosition() + FPCamera.getForwardVector()*3.5;
     skyCamPos = XMVectorFloor(skyCamPos  + XMVectorSet(0.5f, 0.5f, 0.5f, 0.0f) - newDirection * 90);
-    XMMATRIX directionalShadowOrtho2 = XMMatrixLookToLH(skyCamPos, 
-        newDirection, XMVectorSet(0, 0, 1, 0)) * XMMatrixOrthographicLH(9.0f, 9.0f, 0.1f, 1000); // view * orthographic projection, for directional light
 
-    XMStoreFloat4x4(&lights[NUM_SPOTLIGHTS+1].projection, directionalShadowOrtho2);
+    directionalShadowView = XMMatrixLookToLH(skyCamPos, newDirection, XMVectorSet(0, 0, 1, 0)); // recalculate
+    directionalShadowOrtho = XMMatrixOrthographicLH(9.0f, 9.0f, 0.1f, 1000); 
+
+    XMStoreFloat4x4(&lights[NUM_SPOTLIGHTS+1].view, directionalShadowView);
+    XMStoreFloat4x4(&lights[NUM_SPOTLIGHTS+1].projection, directionalShadowOrtho);
 }
 
 
 bool LightsAndShadows::renderShadowMaps( D3DClass &d3d, 
-                                        std::function<bool(VanillaShaderClass &shader, CXMMATRIX view, CXMMATRIX projection, std::vector<Light> &lights)> doRenderCalls
+                                        std::function<bool(VanillaShaderClass &shader, CXMMATRIX view, CXMMATRIX projection, bool orthoProjection, std::vector<Light> &lights)> doRenderCalls
                                         )
 {
     //
@@ -144,12 +147,13 @@ bool LightsAndShadows::renderShadowMaps( D3DClass &d3d,
     auto shadow = shadows.begin();
     for (int i = 0; light != lights.end() && shadow != shadows.end() && light->enabled && i < NUM_SPOTLIGHTS; ++light, ++shadow, ++i)
     {
-        XMMATRIX view = XMLoadFloat4x4(&light->projection);
+        XMMATRIX view = XMLoadFloat4x4(&light->view);
+        XMMATRIX proj = XMLoadFloat4x4(&light->projection);
 
         shadow->setAsRenderTarget(d3d.GetDeviceContext());
         shadow->clear(d3d.GetDeviceContext());
 
-        if (!doRenderCalls(shadowShaders, view, XMMatrixIdentity(), lights)) return false;
+        if (!doRenderCalls(shadowShaders, view, proj, false, lights)) return false;
     }
 
     //
@@ -162,8 +166,9 @@ bool LightsAndShadows::renderShadowMaps( D3DClass &d3d,
     shadows[NUM_SPOTLIGHTS].setAsRenderTarget(d3d.GetDeviceContext());
     shadows[NUM_SPOTLIGHTS].clear(d3d.GetDeviceContext());
 
-    XMMATRIX view = XMLoadFloat4x4(&(lights[NUM_SPOTLIGHTS].projection));
-    if (!doRenderCalls(shadowShaders, view, XMMatrixIdentity(), lights)) return false;
+    XMMATRIX view = XMLoadFloat4x4(&(lights[NUM_SPOTLIGHTS].view));
+    XMMATRIX proj = XMLoadFloat4x4(&(lights[NUM_SPOTLIGHTS].projection));
+    if (!doRenderCalls(shadowShaders, view, proj, true, lights)) return false;
 
     // next map is the high detail one; we set a rasterizer with a higher bias to beat down shadow acne artifacts
     D3D11_VIEWPORT viewport3 = { 0.0f, 0.0f, (float)shadows[NUM_SPOTLIGHTS+1].m_width, (float)shadows[NUM_SPOTLIGHTS+1].m_height, 0.0f, 1.0f };
@@ -174,8 +179,9 @@ bool LightsAndShadows::renderShadowMaps( D3DClass &d3d,
     shadows[NUM_SPOTLIGHTS+1].setAsRenderTarget(d3d.GetDeviceContext());
     shadows[NUM_SPOTLIGHTS+1].clear(d3d.GetDeviceContext());
 
-    view = XMLoadFloat4x4(&(lights[NUM_SPOTLIGHTS+1].projection));
-    if (!doRenderCalls(shadowShaders, view, XMMatrixIdentity(), lights)) return false;
+    view = XMLoadFloat4x4(&(lights[NUM_SPOTLIGHTS+1].view));
+    proj = XMLoadFloat4x4(&(lights[NUM_SPOTLIGHTS+1].projection));
+    if (!doRenderCalls(shadowShaders, view, proj, true, lights)) return false;
 
     return true;
 }

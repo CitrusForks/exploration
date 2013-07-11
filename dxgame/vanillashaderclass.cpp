@@ -420,10 +420,10 @@ bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext
         int j = 0;
         for (auto i = lights->begin(); i < lights->end() && i->enabled && j < NUM_SPOTLIGHTS; ++i, ++j)
         {
-            XMStoreFloat4x4(&(dataPtr->lightViewProjection[j]), XMMatrixTranspose(XMLoadFloat4x4(&i->projection)));
+            XMStoreFloat4x4(&(dataPtr->lightViewProjection[j]), XMMatrixTranspose(i->getVP()));
         }
-        XMStoreFloat4x4(&(dataPtr->lightViewProjection[NUM_SPOTLIGHTS]), XMMatrixTranspose(XMLoadFloat4x4(&(*lights)[NUM_SPOTLIGHTS].projection)));    // directional light's shadow maps
-        XMStoreFloat4x4(&(dataPtr->lightViewProjection[NUM_SPOTLIGHTS+1]), XMMatrixTranspose(XMLoadFloat4x4(&(*lights)[NUM_SPOTLIGHTS+1].projection)));
+        XMStoreFloat4x4(&(dataPtr->lightViewProjection[NUM_SPOTLIGHTS]), XMMatrixTranspose((*lights)[NUM_SPOTLIGHTS].getVP()));    // directional light's shadow maps
+        XMStoreFloat4x4(&(dataPtr->lightViewProjection[NUM_SPOTLIGHTS+1]), XMMatrixTranspose((*lights)[NUM_SPOTLIGHTS+1].getVP()));
         dataPtr->numLights = j;
     }
 

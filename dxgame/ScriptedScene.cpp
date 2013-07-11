@@ -21,6 +21,7 @@ const LunaShare<ScriptedScene>::FunctionType ScriptedScene::methods[] =
 {
     {"exits", &ScriptedScene::l_exits},
     {"enters", &ScriptedScene::l_enters},
+    {"exeunt", &ScriptedScene::l_exeunt},
     {"configureLight", &ScriptedScene::l_configureLight},
     {"moveLight", &ScriptedScene::l_moveLight},
     {"pointMoonlight", &ScriptedScene::l_pointMoonlight},
@@ -84,6 +85,16 @@ int ScriptedScene::l_exits( lua_State *L )
 
     return 0; // number of results
 }
+
+
+// remove all objects, perhaps if you want to keep assets loaded but want to change everything
+int ScriptedScene::l_exeunt( lua_State *L )
+{
+    m_actors.clear();
+
+    return 0;
+}
+
 
 // arguments: index, pos_x, pos_y, pos_z, [optional: dir_x, dir_y, dir_z]
 int ScriptedScene::l_moveLight( lua_State *L )

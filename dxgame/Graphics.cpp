@@ -95,15 +95,18 @@ bool Graphics::RenderScene( Chronometer &timer, Scene *scene)
 
     lighting->updateGPU(d3d.GetDeviceContext(), shaders0, (float)timer.sinceInit(), FPCamera->getEyePosition());
 
-    if (!lighting->renderShadowMaps(d3d, [&](VanillaShaderClass &shader, CXMMATRIX view, CXMMATRIX projection, std::vector<Light> &lights)
+    // pass a render function to the LightsAndShadows object; it will be called once per shadowmap
+    if (!lighting->renderShadowMaps(d3d, [&](VanillaShaderClass &shader, CXMMATRIX view, CXMMATRIX projection, bool orthoProjection, std::vector<Light> &lights)
     {
+        // body of function called from within lighting
+
+        // pass a render function to scene with the combined data from Graphics and LightsAndShadows
         Scene::renderFunc_t renderFuncForScene = [&] (CXMMATRIX world, shared_ptr<ModelManager> models, int modelRefNum, shared_ptr<LightsAndShadows> lighting) 
         {
-            return (*models)[modelRefNum]->render(d3d.GetDeviceContext(), &shaders0, world,  view, projection, lights);
+            return (*models)[modelRefNum]->render(d3d.GetDeviceContext(), &shaders0, world,  view, projection, lights, orthoProjection);
         };
 
-        //return doRenderCalls(scene, d3d, shader, view, projection, lights); 
-        return scene->render(renderFuncForScene);
+        return scene->render(renderFuncForScene); // this will call the above lambda for all the actor objects
     }
     )) return false;
 
