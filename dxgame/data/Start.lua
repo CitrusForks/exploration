@@ -63,11 +63,13 @@ ducks = {}
 xnum = 23
 ynum = 22
 for x = 1, xnum, 2 do
+	ducks[x] = {}
 	for y = 1, ynum, 2 do
 		d = newDuck()
 		scene:enters(d)
 		d:moveTo(x*4 - xnum*2, 2, y*4 - ynum*2)
-		ducks[#ducks + 1] = d
+		-- ducks[#ducks + 1] = d
+		ducks[x][y] = d
 	end
 end
 
@@ -96,6 +98,8 @@ chekov:moveTo(0, 0, 7)
 -- the C++ code will normalize this vector for you:
 scene:pointMoonlight(0.1, -0.2, 1.0)
 
+scene:configureLight(1, -7.2, 3, 6, 0.000001, -1, 0, math.pi * (30/180), 1, 0, 0 )
+-- scene:moveLight(1, -7.2, 3, 6, 0, -1, 0)
 
 i = 0
 
@@ -116,4 +120,10 @@ function update(now, timeSinceLastFrame)
 	bigTorus:setRollPitchYaw(-now, 0, 0)
 	duck2:moveTo(0, 2, 3)
 	duck2:setRollPitchYaw(0, 0, now*2)
+
+	for x,row in pairs(ducks) do
+		for y,d in pairs(row) do
+			d:moveTo(x*4-xnum*2, 2 + math.sin(x+now)/4 + math.cos(y+now)/4, y*4-ynum*2+0.5)
+		end
+	end
 end

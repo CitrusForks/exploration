@@ -495,6 +495,10 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
             points[1].y = y;
             points[1].z = far_plane;
 
+            // XXX XXX XXX Something about this code fails with /fp:fast XXX XXX XXX
+            // one workaround is to set far_plane to 10000
+            // another is, of course, to set /fp:precise ... this costs several FPS on the i7 laptop with the double-torus test scene! 
+
             BoundingOrientedBox viewBox;
             viewBox.CreateFromPoints(viewBox, 2, points, sizeof(XMFLOAT3));
             viewBox.Transform(viewBox, XMMatrixInverse(nullptr, viewMatrix));

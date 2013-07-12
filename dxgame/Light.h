@@ -44,14 +44,17 @@ struct Light
         // halfAngle*2.5 just needs to make sure the projected view encompasses the entire spotlight
         // one might think that halfAngle*2 would be ideal but that looks more like a view inscribed within the circle of the spotlight
 
+        DirectX::XMVECTOR dir = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&direction));
 
-        DirectX::XMMATRIX viewMat = DirectX::XMMatrixLookToLH(XMLoadFloat4(&position), DirectX::XMLoadFloat3(&direction), DirectX::XMVectorSet(0, 1, 0, 0));
+        if (fabs(dir.m128_f32[1]) > 0.99999f) dir = DirectX::XMVector3Normalize(DirectX::XMVectorAdd(dir, DirectX::XMVectorSet(0.0001, 0, 0, 0)));  // vector parallel to our "up" direction? fudge it.
+
+        DirectX::XMMATRIX viewMat = DirectX::XMMatrixLookToLH(XMLoadFloat4(&position), dir, DirectX::XMVectorSet(0, 1, 0, 0));
         DirectX::XMMATRIX projMat = DirectX::XMMatrixPerspectiveFovLH(angle, 1.0f /* shadowmap is a square at any resolution */, 0.1f, 1000.0f); // the 1000 far plane should perhaps be configurable?
         DirectX::XMStoreFloat4x4(&projection, projMat);
         DirectX::XMStoreFloat4x4(&view, viewMat);
     }
 
-    void move(DirectX::FXMVECTOR newPosition, DirectX::FXMVECTOR newDirection /* no relation to the band */)
+    void move(DirectX::FXMVECTOR newPosition, DirectX::FXMVECTOR newDirection)
     {
         DirectX::XMStoreFloat4(&position, newPosition);
         DirectX::XMStoreFloat3(&direction, newDirection);

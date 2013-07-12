@@ -451,7 +451,7 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	}
 
 	//return saturate(color + specular); // pure light value visualization
-	//return saturate(float4(0, color.r, specular.g, 1)); // separate ambient vs. specular visual
+	//return saturate(float4(0, color.r, specular.g, 1)); // separate diffuse vs. specular visual
 
         // Multiply the texture pixel and the input color to get the textured result.
         color = color * textureColor;
@@ -459,5 +459,5 @@ float4 LightPixelShader(PixelInputType input) : SV_TARGET
 	// Add the specular component last to the output color.
         color = saturate(color + specular);
 
-       return color;
+        return color;
 }

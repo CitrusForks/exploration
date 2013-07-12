@@ -9,8 +9,8 @@
 // shadow map dimensions
 #define SHADOWMAP_DIMENSIONS 256
 
-#define DIRECTIONAL_SHADOW_MULTIPLIER_WIDE 4
-#define DIRECTIONAL_SHADOW_MULTIPLIER_LOD1 2
+#define DIRECTIONAL_SHADOW_MULTIPLIER_WIDE 8
+#define DIRECTIONAL_SHADOW_MULTIPLIER_LOD1 4
 
 // define this to debug main shaders with VS2012 more easily:
 //#define DISABLE_OFFSCREEN_BUFFER debug_debug_debug

@@ -106,7 +106,7 @@ void LightsAndShadows::pointMoonlight( DirectX::FXMVECTOR newDirection, FirstPer
     XMVECTOR skyCamPos = FPCamera.getEyePosition();
     skyCamPos = XMVectorFloor(skyCamPos + XMVectorSet(0.5f, 0.5f, 0.5f, 0.0f) - newDirection * 90);
 
-    XMMATRIX directionalShadowView = XMMatrixLookToLH(skyCamPos, newDirection, XMVectorSet(0, 0, 1, 0));
+    XMMATRIX directionalShadowView = XMMatrixLookToLH(skyCamPos, newDirection, XMVectorSet(-1, 0, 0, 0));
     XMMATRIX directionalShadowOrtho =  XMMatrixOrthographicLH(90, 90, 0.1f, 1000); // orthographic projection for directional light
     // N.B., "up" should be orthogonal to lightDirection, or at least not parallel because a crossproduct is calculated
 
@@ -117,7 +117,7 @@ void LightsAndShadows::pointMoonlight( DirectX::FXMVECTOR newDirection, FirstPer
     skyCamPos = FPCamera.getEyePosition() + FPCamera.getForwardVector()*3.5;
     skyCamPos = XMVectorFloor(skyCamPos  + XMVectorSet(0.5f, 0.5f, 0.5f, 0.0f) - newDirection * 90);
 
-    directionalShadowView = XMMatrixLookToLH(skyCamPos, newDirection, XMVectorSet(0, 0, 1, 0)); // recalculate
+    directionalShadowView = XMMatrixLookToLH(skyCamPos, newDirection, XMVectorSet(-1, 0, 0, 0)); // recalculate
     directionalShadowOrtho = XMMatrixOrthographicLH(9.0f, 9.0f, 0.1f, 1000); 
 
     XMStoreFloat4x4(&lights[NUM_SPOTLIGHTS+1].view, directionalShadowView);
@@ -170,7 +170,7 @@ bool LightsAndShadows::renderShadowMaps( D3DClass &d3d,
     XMMATRIX proj = XMLoadFloat4x4(&(lights[NUM_SPOTLIGHTS].projection));
     if (!doRenderCalls(shadowShaders, view, proj, true, lights)) return false;
 
-    // next map is the high detail one; we set a rasterizer with a higher bias to beat down shadow acne artifacts
+    // next map is the high detail one; set a rasterizer with a higher bias to beat down shadow acne artifacts
     D3D11_VIEWPORT viewport3 = { 0.0f, 0.0f, (float)shadows[NUM_SPOTLIGHTS+1].m_width, (float)shadows[NUM_SPOTLIGHTS+1].m_height, 0.0f, 1.0f };
     d3d.GetDeviceContext()->RSSetViewports(1, &viewport3);
 

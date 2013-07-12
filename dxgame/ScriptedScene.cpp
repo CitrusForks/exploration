@@ -102,7 +102,7 @@ int ScriptedScene::l_moveLight( lua_State *L )
     int idx = luaL_checkinteger(L, 2);
 
     XMVECTOR pos = XMVectorSet((float)luaL_checknumber(L, 3), (float)luaL_checknumber(L, 4), (float)luaL_checknumber(L, 5), 1);
-    XMVECTOR dir = (lua_gettop(L) == 8) ? XMVectorSet((float)luaL_checknumber(L, 4), (float)luaL_checknumber(L, 5), (float)luaL_checknumber(L, 6), 1) :
+    XMVECTOR dir = (lua_gettop(L) == 8) ? XMVector3Normalize(XMVectorSet((float)luaL_checknumber(L, 6), (float)luaL_checknumber(L, 7), (float)luaL_checknumber(L, 8), 0)) :
         XMLoadFloat3(&(m_lighting->getLights()[idx].direction)); // XXX this shouldn't be necessary perhaps?
 
     m_lighting->getLights()[idx].move(pos, dir);
@@ -119,11 +119,11 @@ int ScriptedScene::l_configureLight( lua_State *L )
 
     m_lighting->setSpotlight(idx, 
         XMVectorSet((float)luaL_checknumber(L, 3), (float)luaL_checknumber(L, 4), (float)luaL_checknumber(L, 5), 1),
-        XMVectorSet((float)luaL_checknumber(L, 4), (float)luaL_checknumber(L, 5), (float)luaL_checknumber(L, 6), 1),
-        (float)luaL_checknumber(L, 7),
-        (float)luaL_checknumber(L, 8),
+        XMVector3Normalize(XMVectorSet((float)luaL_checknumber(L, 6), (float)luaL_checknumber(L, 7), (float)luaL_checknumber(L, 8), 0)),
         (float)luaL_checknumber(L, 9),
-        (float)luaL_checknumber(L, 10)
+        (float)luaL_checknumber(L, 10),
+        (float)luaL_checknumber(L, 11),
+        (float)luaL_checknumber(L, 12)
         );
 
     return 0; // as always, number of results
