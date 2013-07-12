@@ -19,6 +19,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
+    <None Include="data\Start.lua" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
