@@ -146,6 +146,7 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)\data\%(Filename).cso</ObjectFileOutput>
     </FxCompile>
+    <None Include="data\Start.lua" />
     <None Include="ReadMe.txt" />
     <FxCompile Include="shadow_ps.hlsl">
       <FileType>Document</FileType>

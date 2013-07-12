@@ -46,7 +46,7 @@ struct Light
 
         DirectX::XMVECTOR dir = DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&direction));
 
-        if (fabs(dir.m128_f32[1]) > 0.99999f) dir = DirectX::XMVector3Normalize(DirectX::XMVectorAdd(dir, DirectX::XMVectorSet(0.0001, 0, 0, 0)));  // vector parallel to our "up" direction? fudge it.
+        if (fabs(dir.m128_f32[1]) > 0.99999f) dir = DirectX::XMVector3Normalize(DirectX::XMVectorAdd(dir, DirectX::XMVectorSet(0.0001f, 0, 0, 0)));  // vector parallel to our "up" direction? fudge it.
 
         DirectX::XMMATRIX viewMat = DirectX::XMMatrixLookToLH(XMLoadFloat4(&position), dir, DirectX::XMVectorSet(0, 1, 0, 0));
         DirectX::XMMATRIX projMat = DirectX::XMMatrixPerspectiveFovLH(angle, 1.0f /* shadowmap is a square at any resolution */, 0.1f, 1000.0f); // the 1000 far plane should perhaps be configurable?
