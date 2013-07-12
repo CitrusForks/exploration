@@ -62,16 +62,23 @@ duck2:moveTo(3, 0, 3)
 ducks = {}
 xnum = 23
 ynum = 22
-for x = 1, xnum, 2 do
-	ducks[x] = {}
-	for y = 1, ynum, 2 do
-		d = newDuck()
-		scene:enters(d)
-		d:moveTo(x*4 - xnum*2, 2, y*4 - ynum*2)
-		-- ducks[#ducks + 1] = d
-		ducks[x][y] = d
+
+function duckLoop(work)
+	for x = 1, xnum, 2 do
+		for y = 1, ynum, 2 do
+			work(x,y)
+		end
 	end
 end
+
+duckLoop(function(x,y)
+			if (ducks[y] == nil) then ducks[y]={} end
+			d = newDuck()
+			scene:enters(d)
+			d:moveTo(x*4 - xnum*2, 2, y*4 - ynum*2)
+			-- ducks[#ducks + 1] = d
+			ducks[y][x] = d
+end)
 
 torus = Actor(scene:getModel("torus.obj"), 1, 0, 0, 0, 1)
 scene:enters(torus)
@@ -105,6 +112,11 @@ i = 0
 
 -- tada.
 
+function duckWave(x,y) 
+	ducks[y][x]:moveTo(x*4-xnum*2, 2 + math.sin(x+timer:now())/4 + math.cos(y+timer:now())/4, y*4-ynum*2+0.5) 
+end
+
+
 -- update() gets called every frame but more hooks are probably needed to do
 -- anything really interesting:
 
@@ -121,9 +133,5 @@ function update(now, timeSinceLastFrame)
 	duck2:moveTo(0, 2, 3)
 	duck2:setRollPitchYaw(0, 0, now*2)
 
-	for x,row in pairs(ducks) do
-		for y,d in pairs(row) do
-			d:moveTo(x*4-xnum*2, 2 + math.sin(x+now)/4 + math.cos(y+now)/4, y*4-ynum*2+0.5)
-		end
-	end
+	duckLoop(duckWave)
 end
