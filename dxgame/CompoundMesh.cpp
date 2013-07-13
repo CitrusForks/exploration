@@ -1,4 +1,4 @@
-// This loader reads a 3D object with libassimp and duplicates its mesh tree with SimpleMesh objects.
+﻿// This loader reads a 3D object with libassimp and duplicates its mesh tree with SimpleMesh objects.
 // This seems like the conventional approach. It should make it easier to implement animation.
 
 #include "StdAfx.h"
@@ -493,10 +493,10 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
             points[0].z = near_plane;
             points[1].x = x;
             points[1].y = y;
-            points[1].z = far_plane;
+            points[1].z = max(far_plane,10000); // /fp:fast workaround ಠ_ಠ
 
             // XXX XXX XXX Something about this code fails with /fp:fast XXX XXX XXX
-            // one workaround is to set far_plane to 10000
+            // one workaround is to set far_plane to 10000; we're probably not culling based on distance anyway so no harm done, at least?
             // another is, of course, to set /fp:precise ... this costs several FPS on the i7 laptop with the double-torus test scene! 
 
             BoundingOrientedBox viewBox;

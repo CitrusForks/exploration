@@ -55,6 +55,10 @@
 
 #include <directxmath.h>
 
+#include "DDSTextureLoader.h"
+#include "WICTextureLoader.h"
+
+
 //#include "cpp_hlsl_defs.h" // tiny file which may change often, doesn't belong in precompiled headers
 #include "SSE2Aligned.h"
 
@@ -80,7 +84,6 @@
 #include "SimpleText.h"
 #include "Sound.h"
 #include "TextureManager.h"
-#include "WICTextureLoader.h"
 #include "d3dclass.h"
 #include "vanillashaderclass.h"
 #include "vertex.h"

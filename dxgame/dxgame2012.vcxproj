@@ -77,13 +77,15 @@
       <WarningLevel>Level3</WarningLevel>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>DSFMT_MEXP=521;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <FloatingPointModel>Strict</FloatingPointModel>
+      <FloatingPointModel>Fast</FloatingPointModel>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <OmitFramePointers>true</OmitFramePointers>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -164,6 +166,7 @@
     <ClInclude Include="CompoundMesh.h" />
     <ClInclude Include="cpp_hlsl_defs.h" />
     <ClInclude Include="d3dclass.h" />
+    <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="dSFMT-common.h" />
     <ClInclude Include="dSFMT-params.h" />
     <ClInclude Include="dSFMT-params521.h" />
@@ -205,6 +208,7 @@
     <ClCompile Include="Chronometer.cpp" />
     <ClCompile Include="CompoundMesh.cpp" />
     <ClCompile Include="d3dclass.cpp" />
+    <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="dSFMT.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
