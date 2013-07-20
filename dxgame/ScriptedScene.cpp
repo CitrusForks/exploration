@@ -54,10 +54,6 @@ ScriptedScene::ScriptedScene(lua_State *LL) : L(LL)
 }
 
 
-ScriptedScene::~ScriptedScene(void)
-{
-}
-
 
 // Scene:enters(Actor a)
 // returns int reference to actor; useful for retrieving the object from Scene later and calling exits()

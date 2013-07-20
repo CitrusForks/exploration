@@ -24,7 +24,7 @@ public:
 
     void perFrameUpdate(double timeElapsed, Input &input);
 
-    DirectX::XMVECTOR getForwardVector();
+    DirectX::XMVECTOR getForwardVector(bool includePitch = false);
 
     DirectX::XMMATRIX getViewMatrix(); 
     DirectX::XMVECTOR getPosition();

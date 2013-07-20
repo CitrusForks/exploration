@@ -44,7 +44,8 @@ public:
         void setDepthBias(bool setBias, bool highBias = false); // true for rendering to shadow maps
 
         HWND getWindow() { return m_window; }
-
+       
+        void noCullNorBias();
 private:
 	bool m_vsync_enabled;
 	int m_videoCardMemory;
@@ -57,11 +58,13 @@ private:
 	ID3D11DepthStencilState *m_depthStencilState;
         ID3D11DepthStencilState *m_depthStencilDisabledState;
 	ID3D11DepthStencilView *m_depthStencilView;
-	ID3D11RasterizerState *m_rasterState, *m_biasRasterState, *m_highBiasRasterState;
+	ID3D11RasterizerState *m_rasterState, *m_biasRasterState, *m_highBiasRasterState, *m_noCullRasterState;
 	DirectX::XMFLOAT4X4 m_projectionMatrix;
 	DirectX::XMFLOAT4X4 m_orthoMatrix;
 
         HWND m_window;
+
+        ID3D11Debug *m_debug;
 };
 
 #endif

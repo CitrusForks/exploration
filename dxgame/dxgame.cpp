@@ -261,7 +261,6 @@ int _tmain(int argc, _TCHAR* argv[])
 
     gEngine.FPCamera = scene->FPCam; // use the scene's camera object; actually swapping the two variables here would have no effect, it would just use the gEngine instance.
 
-    float angle = 0.0f;
     bool done = false;
     while (!done)
     {
@@ -295,14 +294,16 @@ int _tmain(int argc, _TCHAR* argv[])
             
         //Sleep(1); // for luck? seems to have no effect on a moderm multi-core PC really.
 
-        angle += (float)(M_PI) * (float)timer->sincePrev();
-        test = angle;
-
         static double last_honked = 0.0;
         if (input.IsPressed(DIK_E) && timer->sinceInit() - last_honked > 0.5)
         {
             soundSystem.play(beepverb); // just a test of the sound system
             last_honked = timer->sinceInit();
+        }
+
+        if (input.IsPressed(DIK_F))
+        {
+            cout << gEngine.FPCamera->getForwardVector(true) << endl;
         }
 
 
@@ -315,6 +316,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
     scene = nullptr;
     lua_close(L);
+
+    gEngine.FPCamera = nullptr;
+
 
     DestroyWindow(window);
     UnregisterClass(L"MainClass", progInstance);

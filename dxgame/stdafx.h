@@ -42,6 +42,17 @@
 #include <d3d11.h>
 #include <dxgidebug.h>
 
+// need this header to define XMQuaternionIsUnit() for us
+#ifdef NDEBUG
+#undef NDEBUG
+#include <DirectXCollision.h>
+#define NDEBUG
+
+#else
+#include <DirectXCollision.h>
+#endif
+
+
 // external lib deps:
 #include <lua.hpp>
 #include "LunaShare.hpp"
@@ -82,6 +93,7 @@
 #include "ScriptedScene.h"
 #include "SimpleMesh.h"
 #include "SimpleText.h"
+#include "SkyBoxActor.h"
 #include "Sound.h"
 #include "TextureManager.h"
 #include "d3dclass.h"

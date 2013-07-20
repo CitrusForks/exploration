@@ -63,20 +63,33 @@ bool loadOBJ(const wchar_t * path,
         }else if ( strcmp( lineHeader, "f" ) == 0 ){
             //string vertex1, vertex2, vertex3;
             unsigned int vertexIndex[3], uvIndex[3], normalIndex[3];
+            int pos = ftell(file);
             int matches = fscanf(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n", &vertexIndex[0], &uvIndex[0], &normalIndex[0], &vertexIndex[1], &uvIndex[1], &normalIndex[1], &vertexIndex[2], &uvIndex[2], &normalIndex[2] );
-            if (matches != 9){
-                printf("Line %d; File can't be read by our simple parser :-( Try exporting with other options\n", line);
-                return false;
+            if (matches == 9)
+            {
+                vertexIndices.push_back(vertexIndex[0]);
+                vertexIndices.push_back(vertexIndex[1]);
+                vertexIndices.push_back(vertexIndex[2]);
+                uvIndices    .push_back(uvIndex[0]);
+                uvIndices    .push_back(uvIndex[1]);
+                uvIndices    .push_back(uvIndex[2]);
+                normalIndices.push_back(normalIndex[0]);
+                normalIndices.push_back(normalIndex[1]);
+                normalIndices.push_back(normalIndex[2]);
+            } else {
+                fseek(file, pos, SEEK_SET);
+                int matches = fscanf(file, "%d %d %d\n", &vertexIndex[0], &vertexIndex[1], &vertexIndex[2]);
+                if (matches == 3)
+                {
+                    vertexIndices.push_back(vertexIndex[0]);
+                    vertexIndices.push_back(vertexIndex[1]);
+                    vertexIndices.push_back(vertexIndex[2]);
+                } else
+                {
+                    printf("Line %d; File can't be read by our simple parser :-( Try exporting with other options\n", line);
+                    return false;
+                }
             }
-            vertexIndices.push_back(vertexIndex[0]);
-            vertexIndices.push_back(vertexIndex[1]);
-            vertexIndices.push_back(vertexIndex[2]);
-            uvIndices    .push_back(uvIndex[0]);
-            uvIndices    .push_back(uvIndex[1]);
-            uvIndices    .push_back(uvIndex[2]);
-            normalIndices.push_back(normalIndex[0]);
-            normalIndices.push_back(normalIndex[1]);
-            normalIndices.push_back(normalIndex[2]);
         }else{
             // Probably a comment, eat up the rest of the line
             char stupidBuffer[1000];
@@ -90,16 +103,31 @@ bool loadOBJ(const wchar_t * path,
 
     // For each vertex of each triangle
     for( unsigned int i=0; i<vertexIndices.size(); i++ ){
+        DirectX::XMFLOAT2 uv;
+        DirectX::XMFLOAT3 normal;
 
-        // Get the indices of its attributes
         unsigned int vertexIndex = vertexIndices[i];
-        unsigned int uvIndex = uvIndices[i];
-        unsigned int normalIndex = normalIndices[i];
-        
-        // Get the attributes thanks to the index
         DirectX::XMFLOAT3 vertex = temp_vertices[ vertexIndex-1 ];
-        DirectX::XMFLOAT2 uv = temp_uvs[ uvIndex-1 ];
-        DirectX::XMFLOAT3 normal = temp_normals[ normalIndex-1 ];
+
+        if (i < uvIndices.size())
+        {
+            unsigned int uvIndex = uvIndices[i];
+            uv = temp_uvs[ uvIndex-1 ];
+        } else
+        {
+            uv.x = uv.y = 0;
+        }
+
+        if (i < normalIndices.size())
+        {
+            unsigned int normalIndex = normalIndices[i];
+            normal = temp_normals[ normalIndex-1 ];
+        } else
+        {
+            normal.x = normal.y = 0;
+            normal.z = 1;
+        }
+        
 
         // pack into DirectX-friendly Vertex structure
         Vertex v;

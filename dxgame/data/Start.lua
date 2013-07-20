@@ -97,13 +97,16 @@ scene:enters(floor)
 floor:moveTo(0, 0, 10)
 
 -- Ensign Chekov is too big
-chekov = Actor(scene:getModel("Chekov.obj"), 1, 0, 0, 0, 0.55)
+-- chekov = Actor(scene:getModel("Chekov.obj"), 1, 0, 0, 0, 0.55)
 -- a zero-degree rotation is an identity or whatever
-scene:enters(chekov)
-chekov:moveTo(0, 0, 7)
+-- scene:enters(chekov)
+-- chekov:moveTo(0, 0, 7)
 
 -- the C++ code will normalize this vector for you:
-scene:pointMoonlight(0.1, -0.2, 1.0)
+function directionalLight()
+	-- scene:pointMoonlight(0.1, -0.2, 1.0)
+	scene:pointMoonlight(-0.894263, -0.359565, 0.266471)   -- good value for GrimmNight_cube.dds
+end
 
 scene:configureLight(1, -7.2, 3, 6, 0.000001, -1, 0, math.pi * (30/180), 1, 0, 0 )
 -- scene:moveLight(1, -7.2, 3, 6, 0, -1, 0)
@@ -124,7 +127,7 @@ function update(now, timeSinceLastFrame)
 	scene:updateFlashlight(0) -- light 0 is a flashlight
 
 	-- this call also updates the cascading shadow map setup:
-	scene:pointMoonlight(0.1, -0.2, 1.0)
+	directionalLight()
 
 	duck:moveTo(-3, math.sin(now), 3) -- bobbing duck
 

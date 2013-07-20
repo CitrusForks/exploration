@@ -28,6 +28,8 @@ TextureManager::~TextureManager(void)
     for (auto i = m_textureReference.begin(); i != m_textureReference.end(); ++i) (*i).second.shutdown();
     // writing the above loop with for_each() makes it more verbose and less readable :/
 
+    cout << "~TextureManager() called, fyi." << endl;
+
     m_textureReference.clear();
 }
 

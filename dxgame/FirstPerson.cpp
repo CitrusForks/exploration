@@ -143,9 +143,9 @@ void FirstPerson::setPosition(FXMVECTOR to)
 
 
 // heading in vector form
-XMVECTOR FirstPerson::getForwardVector()
+XMVECTOR FirstPerson::getForwardVector(bool includePitch)
 {
-    return XMVector3Normalize(XMVector3Rotate(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), XMQuaternionRotationRollPitchYaw(0.0f, m_heading, 0.0f))); // the quaternion is used just to prove to myself that I can use a quaternion
+    return XMVector3Normalize(XMVector3Rotate(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), XMQuaternionRotationRollPitchYaw(includePitch ? m_pitch : 0.0f, m_heading, 0.0f))); // the quaternion is used just to prove to myself that I can use a quaternion
 }
 
 

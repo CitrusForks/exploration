@@ -386,17 +386,6 @@ bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext
     D3D11_MAPPED_SUBRESOURCE mappedResource;
     MatrixBufferType* dataPtr;
     unsigned int bufferNumber;
-    //XMFLOAT4X4 worldF4X4, viewF4X4, projectionF4X4;    
-
-    // Transpose the matrices to prepare them for the shader.
-
-    //D3DXMatrixTranspose(&worldMatrix, &worldMatrix);
-    //D3DXMatrixTranspose(&viewMatrix, &viewMatrix);
-    //D3DXMatrixTranspose(&projectionMatrix, &projectionMatrix);
-
-    //deviceContext->VSSetShader(m_vertexShader, NULL, 0); // TODO change this to an "effect?" or are effects going out of style?
-    //deviceContext->PSSetShader(m_pixelShader, NULL, 0);
-
 
     // Lock the constant buffer so it can be written to.
     result = deviceContext->Map(m_matrixBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
@@ -442,8 +431,8 @@ bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext
     // same for normal map, if present
     if (normalMap && *normalMap) deviceContext->PSSetShaderResources(1, 1, normalMap);
 
-	// and specular map
-	if (specularMap && *specularMap) deviceContext->PSSetShaderResources(2, 1, specularMap);
+    // and specular map
+    if (specularMap && *specularMap) deviceContext->PSSetShaderResources(2, 1, specularMap);
 
     return true;
 }

@@ -267,8 +267,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	}
 
 #if defined(_DEBUG)
-        ID3D11Debug *debug;
-        m_device->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&debug));
+        m_device->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&m_debug));
 #endif
 
         m_device->SetPrivateData(WKPDID_D3DDebugObjectName, 6, "device");
@@ -335,7 +334,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	// Set up the description of the stencil state.
 	depthStencilDesc.DepthEnable = true;
 	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
 
 	depthStencilDesc.StencilEnable = true;
 	depthStencilDesc.StencilReadMask = 0xFF;
@@ -396,7 +395,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	m_deviceContext->OMSetRenderTargets(1, &m_renderTargetView, nullptr /*m_depthStencilView*/);
 
 	// Setup the raster description which will determine how and what polygons will be drawn.
-	D3D11_RASTERIZER_DESC rasterDesc, biasRasterDesc, highBiasRasterDesc;
+	D3D11_RASTERIZER_DESC rasterDesc, biasRasterDesc, highBiasRasterDesc, noCullRasterDesc;
 	rasterDesc.AntialiasedLineEnable = false;
 	rasterDesc.CullMode = D3D11_CULL_BACK;
 	rasterDesc.DepthBias = 0;
@@ -408,7 +407,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	rasterDesc.ScissorEnable = false;
 	rasterDesc.SlopeScaledDepthBias = 0.0f;
 
-        biasRasterDesc = highBiasRasterDesc = rasterDesc;
+        noCullRasterDesc = biasRasterDesc = highBiasRasterDesc = rasterDesc;
 
 	// Create the rasterizer state from the description we just filled out.
 	result = m_device->CreateRasterizerState(&rasterDesc, &m_rasterState);
@@ -448,6 +447,14 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
             return false;
         }
 
+        // and one that doesn't cull stuff, e.g., for the sky box
+        noCullRasterDesc.CullMode = D3D11_CULL_NONE;
+
+        result = m_device->CreateRasterizerState(&noCullRasterDesc, &m_noCullRasterState);
+        if(FAILED(result))
+        {
+            return false;
+        }
 
 #if 0
 	// Setup the viewport for rendering.
@@ -522,6 +529,13 @@ void D3DClass::Shutdown()
 		m_swapChain->Release();
 		m_swapChain = 0;
 	}
+
+#ifdef _DEBUG
+        m_debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+        m_debug->Release();
+#endif
+
+        cerr << "D3DClass::Shutdown() called, fyi." << endl;
 
 	return;
 }
@@ -606,6 +620,12 @@ void D3DClass::depthOff()
     m_deviceContext->OMSetDepthStencilState(m_depthStencilDisabledState, 0);
 }
 
+
+// turn off back face culling
+void D3DClass::noCullNorBias()
+{
+    m_deviceContext->RSSetState(m_noCullRasterState);
+}
 
 // set rasterizer state to one of two choices based on parameter
 void D3DClass::setDepthBias( bool setBias, bool highBias /*= false*/ )

@@ -25,11 +25,18 @@ Graphics::Graphics(int width, int height, HWND window, HMODULE progInstance)
 
     postProcess.InitializeShader(d3d.GetDevice(), window, L"postprocess_vs.cso", L"postprocess_ps.cso");
 
+    skyBoxShaders.InitializeShader(d3d.GetDevice(), window, L"skybox_vs.cso", L"skybox_ps.cso");
+
     projection = XMMatrixPerspectiveFovLH((float)((60.0/360.0) * M_PI * 2), (float)width / (float)height, 0.1f, 1000.0f);
 
     ortho = XMMatrixOrthographicOffCenterLH(0.0f, 1.0f, 0.0f, 1.0f, 0.1f, 1.1f);
 
     if (!square.load(L"square.obj", d3d.GetDevice()))
+    {
+        return;
+    }
+
+    if (!cube.load(L"sphere.obj", d3d.GetDevice()))
     {
         return;
     }
@@ -62,6 +69,7 @@ Graphics::~Graphics(void)
     // perhaps a garbage bag
     shaders0.Shutdown();
     postProcess.Shutdown();
+    skyBoxShaders.Shutdown();
 
     offScreen.Shutdown();
 
@@ -130,8 +138,8 @@ bool Graphics::RenderScene( Chronometer &timer, Scene *scene)
     d3d.depthOn();
 #endif
 
-    lighting->setShadowsAsViewResources(d3d);
     d3d.setDepthBias(false);
+    lighting->setShadowsAsViewResources(d3d);
 
     Scene::renderFunc_t renderFuncForScene = [&] (CXMMATRIX world, shared_ptr<ModelManager> models, int modelRefNum, shared_ptr<LightsAndShadows> lighting) 
     {
@@ -143,6 +151,20 @@ bool Graphics::RenderScene( Chronometer &timer, Scene *scene)
     //
     // Done rendering scene
     //
+
+
+    //
+    // draw sky box if applicable
+    //
+
+    shared_ptr<LoadedTexture> skyBox = scene->getSkyBoxTexture();
+    if (skyBox)
+    {
+        d3d.noCullNorBias();
+        cube.setBuffers(d3d.GetDeviceContext());
+        skyBoxShaders.Render(d3d.GetDeviceContext(), cube.getIndexCount(), XMMatrixIdentity(), view, projection, nullptr, nullptr, nullptr, skyBox->getTexture());
+    }
+
 
 #ifndef DISABLE_OFFSCREEN_BUFFER
 

@@ -17,7 +17,6 @@ public:
     std::shared_ptr<ScriptedCamera> FPCam;
 
     ScriptedScene(lua_State *LL);
-    ~ScriptedScene(void);
 
     virtual bool update(float now, float timeSinceLastUpdate, std::shared_ptr<FirstPerson> dummy = nullptr); // same header as Scene; still thinking about camera object handling 
 

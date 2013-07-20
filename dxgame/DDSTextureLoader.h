@@ -22,6 +22,10 @@
 #pragma once
 #endif
 
+// something in VS2012 erroneously assumes we're on Windows 8 when we're not... hack it :(
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0601
+
 #include <d3d11.h>
 
 #pragma warning(push)

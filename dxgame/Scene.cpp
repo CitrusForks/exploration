@@ -16,6 +16,9 @@ void Scene::init(D3DClass *d3d, shared_ptr<LightsAndShadows> lighting /* = nullp
     m_textures = textures ? textures : make_shared<TextureManager>();
     m_lighting = lighting ? lighting : shared_ptr<LightsAndShadows>(new LightsAndShadows(*d3d));
     m_d3d = d3d;
+
+    m_skyBoxTexture = nullptr;
+    setSkyBox(L"GrimmNight_cube.dds"); // deeefffaaaaaaaaaaauult
 }
 
 
@@ -33,6 +36,12 @@ Scene::Scene( D3DClass *d3d, shared_ptr<LightsAndShadows> lighting /*= nullptr*/
 
 Scene::~Scene(void)
 {
+    m_actors.clear();
+    m_lighting = nullptr;
+    m_models = nullptr;
+    m_textures = nullptr;
+
+    cout << "~Scene() called, fyi." << endl;
 }
 
 
@@ -83,4 +92,19 @@ void Scene::replaceManagers( std::shared_ptr<ModelManager> mm, std::shared_ptr<T
 {
     m_textures = tm;
     m_models = mm;
+}
+
+// this is most likely to be called internally within ScriptedScene or something but it's implemented here anyway because it seems like the place for it
+void Scene::setSkyBox( std::wstring textureFileName )
+{
+    m_skyBoxTexture = make_shared<LoadedTexture>(); // is shared_ptr making me lazy? eh.
+
+    try
+    {
+        m_textures->getTexture(textureFileName, m_d3d->GetDevice(), m_d3d->GetDeviceContext(), *m_skyBoxTexture);
+    }
+    catch (exception*)
+    {
+    	m_skyBoxTexture = nullptr; // meh
+    }
 }

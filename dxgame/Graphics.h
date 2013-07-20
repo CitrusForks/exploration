@@ -53,10 +53,16 @@ private:
     // this is the effects shader for rendering from off-screen buffer to swap chain
     VanillaShaderClass postProcess;
 
+    // shader for skybox
+    VanillaShaderClass skyBoxShaders;
+
     // this holds a buffer to act as a render target from which the image can be copied to the swap chain via a postprocess filter of some sort
     IntermediateRenderTarget offScreen;
 
     // two triangles to draw offScreen -> swap chain
     SimpleMesh square;
+
+    // a cube for the sky cube, obviously
+    SimpleMesh cube;
 };
 

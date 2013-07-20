@@ -24,7 +24,16 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+#ifdef NDEBUG
+
+// need this header to define XMQuaternionIsUnit() for us
+#undef NDEBUG
 #include <DirectXCollision.h>
+#define NDEBUG
+
+#else
+#include <DirectXCollision.h>
+#endif
 
 using namespace std;
 using namespace DirectX;
@@ -184,6 +193,12 @@ void CompoundMesh::apply_material(SimpleMesh::Material *to, aiMaterial *mtl)
     if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_SPECULAR, &color)) 
         memcpy(&to->specular, &color, sizeof(XMFLOAT4));
     
+    // sanity check ambient value
+    if (XMVector3Length(XMLoadFloat4(&to->ambient)).m128_f32[0] < 1.0f/256)
+    {
+        XMStoreFloat4(&to->ambient, XMVectorSet(0.03f, 0.03f, 0.03f, 0.0f)); // default 3% ambient value
+    }
+
     if(AI_SUCCESS == aiGetMaterialFloatArray(mtl, AI_MATKEY_SHININESS, &shinines, &max))
     {
         to->shininess = shinines;
@@ -475,9 +490,22 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
         if (!orthoProjection)
         {
             BoundingFrustum frustum(projectionMatrix); // TODO this should be moved somewhere higher up if the engine ever becomes CPU-bound
+            XMStoreFloat4(&frustum.Orientation, XMVectorSet(0, 0, 0, 1)); // identity quaternion
             frustum.Transform(frustum, XMMatrixInverse(nullptr, viewMatrix)); // move the frustum as though it was an object within the world; probably slow?
 
-            if (!frustum.Intersects(bSphere)) return true;
+            if (!DirectX::Internal::XMQuaternionIsUnit(XMLoadFloat4(&frustum.Orientation)))
+            {
+                cerr << "Bad frustum quaternion! :( " << XMLoadFloat4(&frustum.Orientation) << endl;
+                XMStoreFloat4(&frustum.Orientation, XMVectorSet(0, 0, 0, 1));
+            }
+
+            try 
+            {
+                if (!frustum.Intersects(bSphere)) return true;
+            } catch (exception *e)
+            {
+                cerr << e->what() << endl;
+            }
         } else
         {
             // make a bounding box from the orthographic projection matrix (is this weird? perhaps it's weird.)
@@ -494,6 +522,7 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
             points[1].x = x;
             points[1].y = y;
             points[1].z = max(far_plane,10000); // /fp:fast workaround ಠ_ಠ
+            //points[1].z = far_plane;
 
             // XXX XXX XXX Something about this code fails with /fp:fast XXX XXX XXX
             // one workaround is to set far_plane to 10000; we're probably not culling based on distance anyway so no harm done, at least?
@@ -501,6 +530,7 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 
             BoundingOrientedBox viewBox;
             viewBox.CreateFromPoints(viewBox, 2, points, sizeof(XMFLOAT3));
+            XMStoreFloat4(&viewBox.Orientation, XMVectorSet(0, 0, 0, 1)); // identity quaternion... strange that Orientation would be uninitialized though
             viewBox.Transform(viewBox, XMMatrixInverse(nullptr, viewMatrix));
 
             // clip to viewbox

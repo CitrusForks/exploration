@@ -6,9 +6,9 @@
 #include "LightsAndShadows.h"
 #include "ModelManager.h"
 #include "TextureManager.h"
+#include "LoadedTexture.h"
 
-// a scene just contains actors
-// ...perhaps an additional Lua script?
+// a scene just contains actors and shared pointers to lighting, texture manager, and model manager
 class Scene
 {
 public:
@@ -36,11 +36,17 @@ public:
 
     shared_ptr<LightsAndShadows> getLights() { return m_lighting; } // flexible design (tm)
 
+    shared_ptr<LoadedTexture> getSkyBoxTexture() { return m_skyBoxTexture; };
+
+    void setSkyBox(std::wstring textureFileName);
+
 protected:
     std::vector <shared_ptr<Actor>> m_actors;
     shared_ptr<LightsAndShadows> m_lighting;
     shared_ptr<ModelManager> m_models;
     shared_ptr<TextureManager> m_textures;
     D3DClass *m_d3d;
+
+    shared_ptr<LoadedTexture> m_skyBoxTexture;
 };
 

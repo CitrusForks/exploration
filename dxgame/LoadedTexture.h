@@ -17,9 +17,10 @@ public:
 	bool initialize(ID3D11Device*, ID3D11DeviceContext*, wchar_t*);
 	void shutdown();
 
-	ID3D11ShaderResourceView** getTexture();
+	ID3D11ShaderResourceView **getTexture();
 private:
-	ID3D11ShaderResourceView* m_texture;
+	ID3D11ShaderResourceView *m_texture;
+        ID3D11Resource *m_resource;
 };
 
 #endif
