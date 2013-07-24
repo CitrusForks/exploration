@@ -317,7 +317,7 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
         // copy vertex coordinates, normals, and texture coordinates for every vertex in this mesh
         // also tangents
         vertices.clear();
-        vertices.reserve(mesh->mNumVertices); // allocated required memory ahead of time!
+        vertices.reserve(mesh->mNumVertices); // allocate required memory ahead of time!
         for (unsigned i = 0; i < mesh->mNumVertices; ++i)
         {
             Vertex v;
@@ -395,7 +395,7 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
 
         if (indices.size() < 1)
         {
-            cerr << "Oddity: no indices in mesh!";
+            cerr << "Oddity: no indices in mesh!" << endl;
             continue;
         }
 
@@ -528,7 +528,13 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
             viewBox.Transform(viewBox, XMMatrixInverse(nullptr, viewMatrix));
 
             // clip to viewbox
-            if (!viewBox.Intersects(bSphere)) return true;
+            try
+            {
+                if (!viewBox.Intersects(bSphere)) return true;
+            } catch (exception *e)
+            {
+                cerr << e->what() << endl;
+            }
         }
     }
 
