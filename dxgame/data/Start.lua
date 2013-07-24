@@ -102,6 +102,10 @@ floor:moveTo(0, 0, 10)
 -- scene:enters(chekov)
 -- chekov:moveTo(0, 0, 7)
 
+dwarf = Actor(scene:getModel("dwarf2.b3d"), 1, 0, 0, 0, 0.0333)
+scene:enters(dwarf)
+dwarf:moveTo(0, 0, 7)
+
 -- the C++ code will normalize this vector for you:
 function directionalLight()
 	-- scene:pointMoonlight(0.1, -0.2, 1.0)

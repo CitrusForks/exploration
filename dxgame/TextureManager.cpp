@@ -35,7 +35,7 @@ TextureManager::~TextureManager(void)
 
 bool TextureManager::getTextureUTF8( ID3D11Device *device, ID3D11DeviceContext *devCtx, char *c_path, int c_len, LoadedTexture &out )
 {
-    while (*c_path == '\\' || *c_path == '/' || *c_path == '.') { ++c_path; --c_len; } // cut off any path stuff
+    //while (*c_path == '\\' || *c_path == '/' || *c_path == '.') { ++c_path; --c_len; } // cut off any path stuff
     wstring path = utf8ToWstring(c_path, c_len);
 
 
@@ -45,6 +45,8 @@ bool TextureManager::getTextureUTF8( ID3D11Device *device, ID3D11DeviceContext *
 
 bool TextureManager::getTexture( wstring path, ID3D11Device * device, ID3D11DeviceContext * devCtx, LoadedTexture &out )
 {
+    dePath(path);
+
     auto reference = m_textureReference.find(path);  // have we loaded it already?
 
     if (reference == m_textureReference.end())
@@ -81,4 +83,16 @@ wstring TextureManager::utf8ToWstring( char * c_path, int c_len )
 
     return path;
 }
+
+void TextureManager::dePath( wstring &path )
+{
+    size_t pathChar = path.rfind(L'/');
+    if (pathChar == string::npos) pathChar = path.rfind(L'\\');
+
+    if (pathChar != string::npos)
+    {
+        path = path.substr(pathChar + 1); // cut off any path part of the string... everything is in the one and only data dir for now
+    }
+}
+
 

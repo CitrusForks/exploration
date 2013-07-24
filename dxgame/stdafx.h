@@ -93,7 +93,6 @@
 #include "ScriptedScene.h"
 #include "SimpleMesh.h"
 #include "SimpleText.h"
-#include "SkyBoxActor.h"
 #include "Sound.h"
 #include "TextureManager.h"
 #include "d3dclass.h"

@@ -102,6 +102,11 @@ bool CompoundMesh::load(ID3D11Device* device, ID3D11DeviceContext *devCtx, Textu
         return false;
     }
 
+    if (m_aiScene->HasAnimations())
+    {
+        cout << modelFileName << " has animations!" << endl;
+    }
+
     // populate vertices and indices with data from m_aiScene
     recursive_interleave(device, devCtx, m_aiScene->mRootNode, m_root);
 
@@ -234,11 +239,6 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
     // update transform
     // TODO XXX
     // probably calls for a separate stream with a local-space transformation quaternion per vertex? also for more reading...
-#if 0
-    aiTransposeMatrix4(&m);
-    glPushMatrix();
-    glMultMatrixf((float*)&m);
-#endif
 
     vector<Vertex> vertices;  // declared here to avoid reallocating them for each mesh; it's easy enough to reuse them
     vector<unsigned> indices;
@@ -275,6 +275,7 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
             {
                 w[1] = 'N';
                 wstring path = m_textureManager->utf8ToWstring((char*)texPath.C_Str(), texPath.length);
+                m_textureManager->dePath(path);
                 if (FileExistsW((wchar_t*)path.c_str()))
                 {
                     if (!m_textureManager->getTexture(path, device, devCtx, interleavedMesh.m_material.normalMap)) return false;
@@ -286,39 +287,32 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
             if (!m_textureManager->getTextureUTF8(device, devCtx, (char*)texPath.C_Str(), texPath.length, interleavedMesh.m_material.normalMap)) return false;
         }
 
-		// repeat for a specular map
-		aiString specularPath;
-		rc = m_aiScene->mMaterials[mesh->mMaterialIndex]->GetTexture(aiTextureType_SPECULAR, 0, &specularPath); // texPath is in utf8
-		if (!specularPath.length)
+	// repeat for a specular map
+	aiString specularPath;
+	rc = m_aiScene->mMaterials[mesh->mMaterialIndex]->GetTexture(aiTextureType_SPECULAR, 0, &specularPath); // texPath is in utf8
+	if (!specularPath.length)
+	{
+		// specular map not specified... try searching for it blindly, due to bad .mtl/.dae files with Chekov?
+		char *w = strstr((char*)texPath.C_Str(), "_D");
+		if (w)
 		{
-			// specular map not specified... try searching for it blindly, due to bad .mtl/.dae files with Chekov?
-			char *w = strstr((char*)texPath.C_Str(), "_D");
-			if (w)
+			w[1] = 'S';
+			wstring path = m_textureManager->utf8ToWstring((char*)texPath.C_Str(), texPath.length);
+                        m_textureManager->dePath(path);
+			if (FileExistsW((wchar_t*)path.c_str()))
 			{
-				w[1] = 'S';
-				wstring path = m_textureManager->utf8ToWstring((char*)texPath.C_Str(), texPath.length);
-				if (FileExistsW((wchar_t*)path.c_str()))
-				{
-					if (!m_textureManager->getTexture(path, device, devCtx, interleavedMesh.m_material.specularMap)) return false;
-				}
-				w[1] = 'D';
+				if (!m_textureManager->getTexture(path, device, devCtx, interleavedMesh.m_material.specularMap)) return false;
 			}
-		} else
-		{   
-			if (!m_textureManager->getTextureUTF8(device, devCtx, (char*)specularPath.C_Str(), texPath.length, interleavedMesh.m_material.specularMap))
-			{
-				// don't quit if we can't find a specular map; most likely nobody cares all that much
-				cout << "Warning, missing specular map: " << specularPath.C_Str() << endl;
-			}
+			w[1] = 'D';
 		}
-
-#if 0
-        if(mesh->mNormals == NULL) {
-            glDisable(GL_LIGHTING);
-        } else {
-            glEnable(GL_LIGHTING);
-        }
-#endif
+	} else
+	{   
+		if (!m_textureManager->getTextureUTF8(device, devCtx, (char*)specularPath.C_Str(), texPath.length, interleavedMesh.m_material.specularMap))
+		{
+			// don't quit if we can't find a specular map; most likely nobody cares all that much
+			cout << "Warning, missing specular map: " << specularPath.C_Str() << endl;
+		}
+	}
 
         // copy vertex coordinates, normals, and texture coordinates for every vertex in this mesh
         // also tangents
