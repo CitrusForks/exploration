@@ -542,6 +542,13 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
             XMStoreFloat4(&viewBox.Orientation, XMVectorSet(0, 0, 0, 1)); // identity quaternion... strange that Orientation would be uninitialized though
             viewBox.Transform(viewBox, XMMatrixInverse(nullptr, viewMatrix));
 
+            if (!DirectX::Internal::XMQuaternionIsUnit(XMLoadFloat4(&viewBox.Orientation)))
+            {
+                cerr << "Bad viewBox quaternion! :( " << XMLoadFloat4(&viewBox.Orientation) << endl;
+                XMStoreFloat4(&viewBox.Orientation, XMVectorSet(0, 0, 0, 1));
+            }
+
+
             // clip to viewbox
             try
             {

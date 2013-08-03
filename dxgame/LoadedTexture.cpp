@@ -42,7 +42,7 @@ bool LoadedTexture::initialize(ID3D11Device* device, ID3D11DeviceContext* ctx, w
                 return true;
         }
 	
-	result = DirectX::CreateWICTextureFromFile(device, ctx, filename, nullptr, &m_texture);
+	result = DirectX::CreateWICTextureFromFile(device, ctx, filename, &m_resource, &m_texture);
 	if (FAILED(result))
 	{
 		return false;
