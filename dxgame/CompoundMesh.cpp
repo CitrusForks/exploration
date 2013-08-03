@@ -104,7 +104,22 @@ bool CompoundMesh::load(ID3D11Device* device, ID3D11DeviceContext *devCtx, Textu
 
     if (m_aiScene->HasAnimations())
     {
-        cout << modelFileName << " has animations!" << endl;
+        cout << modelFileName << " has " << m_aiScene->mNumAnimations << " animations!" << endl;
+        for (unsigned i = 0; i < m_aiScene->mNumAnimations; ++i)
+        {
+            cout << "Animation " << i << endl;
+            cout << "mNumChannels = " << m_aiScene->mAnimations[i]->mNumChannels << endl;
+            cout << "mNumMeshChannels = " << m_aiScene->mAnimations[i]->mNumMeshChannels << endl;
+            for (unsigned j = 0; j < m_aiScene->mAnimations[i]->mNumChannels; ++j)
+            {
+                aiNodeAnim *anim = m_aiScene->mAnimations[i]->mChannels[j];
+                cout << "Channel: " << anim->mNodeName.C_Str() << ": ";
+                cout << anim->mNumRotationKeys << ", " << anim->mNumPositionKeys << ", " << anim->mNumScalingKeys << endl;
+
+                m_animationNodes[anim->mNodeName.C_Str()] = anim; // save the node in a way that's easy to look up :P
+            }
+            break; // only support 1 animation now since that's all we've got in our object(s); animations of different actions just start at particular frames
+        }
     }
 
     // populate vertices and indices with data from m_aiScene
@@ -280,7 +295,7 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
                 {
                     if (!m_textureManager->getTexture(path, device, devCtx, interleavedMesh.m_material.normalMap)) return false;
                 }
-				w[1] = 'D';
+		w[1] = 'D';
             }
         } else
         {   

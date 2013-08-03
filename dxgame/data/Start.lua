@@ -96,7 +96,7 @@ floor = Actor(scene:getModel("floor.obj"))
 scene:enters(floor)
 floor:moveTo(0, 0, 10)
 
--- Ensign Chekov is too big
+-- Ensign Chekov is too tall
 -- chekov = Actor(scene:getModel("Chekov.obj"), 1, 0, 0, 0, 0.55)
 -- a zero-degree rotation is an identity or whatever
 -- scene:enters(chekov)

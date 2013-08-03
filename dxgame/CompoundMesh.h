@@ -38,6 +38,8 @@ private:
 
     TextureManager *m_textureManager;
 
+    std::unordered_map<const char *, aiNodeAnim *> m_animationNodes; // each one contains an array (one element per frame) of transformation keys for each named node
+
     void WalkNodes(CompoundMesh::CompoundMeshNode &node, std::function<void (CompoundMesh::CompoundMeshNode &)> f);
 
     void get_bounding_box_for_node (const aiNode* nd, aiVector3D* min, aiVector3D* max, aiMatrix4x4* trafo);
