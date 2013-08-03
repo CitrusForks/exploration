@@ -265,6 +265,12 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
 
         SimpleMesh interleavedMesh;
 
+        if (mesh->HasBones())
+        {
+            // populate bone weights
+        }
+
+
         // store the material properties
         aiMaterial *mat = m_aiScene->mMaterials[mesh->mMaterialIndex];
         apply_material(&interleavedMesh.m_material, mat);

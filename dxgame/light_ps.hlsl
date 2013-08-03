@@ -2,6 +2,8 @@
 
 #include "cpp_hlsl_defs.h"
 
+#include "Structures.hlsli"
+
 // a random number function of some sort that I found on the net, which I ported from glsl:
 
 // Input: It uses texture coords as the random number seed.
@@ -93,18 +95,6 @@ cbuffer LightBuffer : register(b1)
 };
 // end of globals
 
-struct PixelInputType
-{
-        float4 position : SV_POSITION;
-	float4 modelPos : MODELPOS;
-	float4 worldPos : WORLDPOS;
-        float2 tex : TEXCOORD0;
-	nointerpolation uint texNum : TEXINDEX;                    // which texture to use
-	float3 normal : NORMAL;
-	float3 tangent : TANGENT;
-	float3 viewDirection : VIEWDIR;
-	float4 shadowUV[NUM_SPOTLIGHTS+2] : SHADOWUV; // actually UV + z + w
-};
 
 
 static const float PI = 3.14159265358979;

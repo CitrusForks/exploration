@@ -1,13 +1,8 @@
-////////////////////////////////////////////////////////////////////////////////
-// Filename: vanillashaderclass.h
-////////////////////////////////////////////////////////////////////////////////
 #ifndef VANILLASHADERCLASS_H_
 #define VANILLASHADERCLASS_H_
 
 
-//////////////
-// INCLUDES //
-//////////////
+
 #include <d3d11.h>
 #include <fstream>
 #include <DirectXMath.h>
@@ -17,9 +12,8 @@ using namespace std;
 
 #include "Light.h"
 
-////////////////////////////////////////////////////////////////////////////////
-// Class name: TextureShaderClass
-////////////////////////////////////////////////////////////////////////////////
+
+
 class VanillaShaderClass
 {
 private:
@@ -74,7 +68,7 @@ public:
 
 	void Shutdown();
         bool Render(ID3D11DeviceContext *deviceContext, int indexCount, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, ID3D11ShaderResourceView** normalMap, ID3D11ShaderResourceView** specularMap,std::vector<Light> *lights, ID3D11ShaderResourceView** texture, unsigned resourceViewCount = 1, bool setSampler = true);
-    	bool InitializeShader(ID3D11Device* device, HWND hwnd, wchar_t *vsFilename, wchar_t *psFilename, bool multiStreaming = false);
+    	bool InitializeShader(ID3D11Device* device, HWND hwnd, wchar_t *vsFilename, wchar_t *psFilename);
     	bool SetPSMaterial( ID3D11DeviceContext *deviceContext, DirectX::XMFLOAT4 &ambientColor, DirectX::XMFLOAT4 &diffuseColor, float specularPower, DirectX::XMFLOAT4 &specularColor, bool useNormalMap, bool useSpecularMap);
         bool SetPSLights( ID3D11DeviceContext *deviceContext, const DirectX::FXMVECTOR lightDirection, float time, const DirectX::FXMVECTOR cameraPos, std::vector<Light> &lights, const DirectX::XMFLOAT4 &ambientLight, const DirectX::XMFLOAT4 &diffuseLight );
         bool setVSCameraBuffer( ID3D11DeviceContext* deviceContext, DirectX::CXMVECTOR cameraPos, float time, unsigned effect );

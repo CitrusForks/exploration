@@ -13,6 +13,8 @@ struct Vertex
 	DirectX::XMFLOAT2 tex1;   // not used, just experimenting
         unsigned int texArray;  // texture to choose from array if using an array of textures
         DirectX::XMFLOAT3 tangent;// tangent; binormal is calculated in vertex shader
+        float boneWeights[4];  // bone weights
+        unsigned boneNum[4];  // index into arrays of translations and rotations (as quaternions); the array should be equivalent to one frame of animation with each member populated from a single aiNodeAnim
 
         Vertex() : pos(0.0f, 0.0f, 0.0f), normal(0.0f, 0.0f, 0.0f), tex0(0.0f, 0.0f), tex1(0.0f, 0.0f), texArray(0)
         {

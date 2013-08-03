@@ -76,11 +76,11 @@ bool VanillaShaderClass::Render( ID3D11DeviceContext *deviceContext, int indexCo
 	return true;
 }
 
-// This method actually compiles shader programs, via the compiler dll. N.B., that's not allowed in the Windows App Store but is that a thing that's actually relevant to anyone's life?
-bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wchar_t *vsFilename, wchar_t *psFilename, bool multiStreaming /*= false*/ )
+// This loads pre-compiled shader programs and defines some data layouts
+bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wchar_t *vsFilename, wchar_t *psFilename )
 {
     HRESULT result;
-
+    const bool multiStreaming = false;
 
     struct _stat ss;
 
@@ -145,7 +145,7 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
     // Create the vertex input layout description.
     // This setup needs to match the Vertex structure
     // XXX Is this really a good place to define it then? Do we really need to redefine it for every shader if it's identical?
-    D3D11_INPUT_ELEMENT_DESC polygonLayout[6];
+    D3D11_INPUT_ELEMENT_DESC polygonLayout[8];
     polygonLayout[0].SemanticName = "POSITION";
     polygonLayout[0].SemanticIndex = 0;
     polygonLayout[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
@@ -193,6 +193,23 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
     polygonLayout[5].AlignedByteOffset = multiStreaming ? 0 : D3D11_APPEND_ALIGNED_ELEMENT;
     polygonLayout[5].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
     polygonLayout[5].InstanceDataStepRate = 0;
+
+    polygonLayout[6].SemanticName = "BONEWEIGHTS";
+    polygonLayout[6].SemanticIndex = 0;
+    polygonLayout[6].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    polygonLayout[6].InputSlot = 0;
+    polygonLayout[6].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+    polygonLayout[6].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+    polygonLayout[6].InstanceDataStepRate = 0;
+
+    polygonLayout[7].SemanticName = "BONEINDICES";
+    polygonLayout[7].SemanticIndex = 0;
+    polygonLayout[7].Format = DXGI_FORMAT_R32G32B32A32_UINT;
+    polygonLayout[7].InputSlot = 0;
+    polygonLayout[7].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+    polygonLayout[7].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+    polygonLayout[7].InstanceDataStepRate = 0;
+
 
     // Get a count of the elements in the layout.
     unsigned int numElements = sizeof(polygonLayout) / sizeof(polygonLayout[0]);

@@ -3,6 +3,8 @@
 
 #include "cpp_hlsl_defs.h"
 
+#include "Structures.hlsli"
+
 //
 // Globals
 //
@@ -26,16 +28,8 @@ cbuffer CameraBuffer
 //
 // Typedefs
 //
-struct VertexInputType
-{
-    float4 position : POSITION;
-    float2 tex : TEXCOORD0;
-    uint texNum : TEXINDEX;
-    float3 normal : NORMAL;
-    float3 tangent : TANGENT;
-};
 
-struct PixelInputType
+struct SkyBoxPixelInputType
 {
     float4 position : SV_POSITION;
     float3 uvw : TEXCOORD;
@@ -45,9 +39,9 @@ struct PixelInputType
 //
 // Vertex Shader
 //
-PixelInputType main(VertexInputType input)
+SkyBoxPixelInputType main(VertexInputType input)
 {
-    PixelInputType output;
+    SkyBoxPixelInputType output;
 
     matrix viewMod = viewMatrix;
     viewMod._41 = viewMod._42 = viewMod._43 = 0; // remove translation vector from matrix

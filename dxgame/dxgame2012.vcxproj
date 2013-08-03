@@ -163,6 +163,12 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.1</ShaderModel>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)\data\%(Filename).cso</ObjectFileOutput>
     </FxCompile>
+    <FxCompile Include="TestComputeShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
+    </FxCompile>
     <None Include="data\Start.lua" />
     <None Include="ReadMe.txt" />
     <FxCompile Include="shadow_ps.hlsl">
@@ -174,6 +180,7 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.1</ShaderModel>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)\data\%(Filename).cso</ObjectFileOutput>
     </FxCompile>
+    <None Include="Structures.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Actor.h" />

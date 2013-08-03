@@ -91,7 +91,7 @@ cbuffer LightBuffer : register(b1)
 };
 // end of globals
 
-struct PixelInputType
+struct SkyBoxPixelInputType
 {
     float4 position : SV_POSITION;
     float3 uvw : TEXCOORD;
@@ -104,7 +104,7 @@ static const float PI = 3.14159265358979;
 ////////////////////////////////////////////////////////////////////////////////
 // Pixel Shader
 ////////////////////////////////////////////////////////////////////////////////
-float4 main(PixelInputType input) : SV_TARGET
+float4 main(SkyBoxPixelInputType input) : SV_TARGET
 {
     return pow(skyBox.Sample(SampleAnisotropic, input.uvw), 2);
     //return float4(0, 1, 0, 1);

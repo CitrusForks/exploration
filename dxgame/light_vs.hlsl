@@ -3,50 +3,28 @@
 
 #include "cpp_hlsl_defs.h"
 
+#include "Structures.hlsli"
+
+
 //
 // Globals
 //
 cbuffer MatrixBuffer
 {
-	matrix worldMatrix;
-	matrix viewMatrix;
-	matrix projectionMatrix;
-	matrix lightVP[NUM_SPOTLIGHTS+2]; // world coordinates -> light shadow map coordinates
-	uint numLights;
+    matrix worldMatrix;
+    matrix viewMatrix;
+    matrix projectionMatrix;
+    matrix lightVP[NUM_SPOTLIGHTS+2]; // world coordinates -> light shadow map coordinates
+    uint numLights;
 };
 
 cbuffer CameraBuffer
 {
     float4 cameraPosition;
-	float time;
-	uint effect;
+    float camTime;
+    uint effect;
 };
 
-
-//
-// Typedefs
-//
-struct VertexInputType
-{
-    float4 position : POSITION;
-    float2 tex : TEXCOORD0;
-	uint texNum : TEXINDEX;
-	float3 normal : NORMAL;
-	float3 tangent : TANGENT;
-};
-
-struct PixelInputType
-{
-        float4 position : SV_POSITION;
-	float4 modelPos : MODELPOS;
-	float4 worldPos : WORLDPOS;
-        float2 tex : TEXCOORD0;
-	nointerpolation uint texNum : TEXINDEX;                    // which texture to use
-	float3 normal : NORMAL;
-	float3 tangent : TANGENT;
-	float3 viewDirection : VIEWDIR;
-	float4 shadowUV[NUM_SPOTLIGHTS+2] : SHADOWUV;
-};
 
 
 //
@@ -54,12 +32,12 @@ struct PixelInputType
 //
 matrix rotateAboutY(float angle)
 {
-	float4 col1 = {cos(angle), 0, -sin(angle), 0};
-	float4 col2 = {0, 1, 0, 0};
-	float4 col3 = {sin(angle), 0, cos(angle), 0};
-	float4 col4 = {0, 0, 0, 1};
+    float4 col1 = {cos(angle), 0, -sin(angle), 0};
+    float4 col2 = {0, 1, 0, 0};
+    float4 col3 = {sin(angle), 0, cos(angle), 0};
+    float4 col4 = {0, 0, 0, 1};
 	
-	return matrix(col1, col2, col3, col4); 
+    return matrix(col1, col2, col3, col4); 
 }
 
 
@@ -84,7 +62,7 @@ PixelInputType LightVertexShader(VertexInputType input)
 
     if (effect == 1)
     { // twist the object
-	    matrix twist = rotateAboutY(3.14159 * sin(time + localPosition.y/2));
+	    matrix twist = rotateAboutY(3.14159 * sin(camTime + localPosition.y/2));
 	    localPosition = mul(localPosition, twist);
 	    normal = mul(normal, (float3x3)twist);
 	    tangent = mul(tangent, (float3x3)twist);

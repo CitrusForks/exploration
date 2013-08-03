@@ -20,6 +20,9 @@
   <ItemGroup>
     <None Include="ReadMe.txt" />
     <None Include="data\Start.lua" />
+    <None Include="Structures.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -269,5 +272,6 @@
     <FxCompile Include="skybox_vs.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="TestComputeShader.hlsl" />
   </ItemGroup>
 </Project>
