@@ -130,11 +130,24 @@ done: Normal maps.
 done: Specular maps?
 done: Shadow maps!
 done: Actor, Scene
-Lua hooks
+works: Lua hooks, Lua control of actors?
 Game state
 Environment maps? static or dynamic?
-Lua control of actors?
 Level generator?
 3D sound... actually make use of FMOD
 Use bulletphysics library?
 Do the things.
+
+/////////////////////////////////////////////////////////////////////////////
+Skeletal animation notes:
+
+aiScene may have a number of animations -- usually 1 apparently with different actions comprising discrete frame ranges therein
+an animation has multiple channels, each one corresponding to a bone
+a channel has separate arrays of rotations, translations, and scaling factors... but often only rotations
+
+for ease of rendering, each bone/channel shall be assigned an index number
+rotations will be stored in a 2D array with X being animation frame and Y being bone index
+
+each vertex has shall have four bone weights with indexes
+It should be possible to implement interpolation using a texture sampler... perhaps. It may be necessary to pad the last frame of each animation range with the first frame of each range @_@.
+XXX can I even use textures in a vertex shader?

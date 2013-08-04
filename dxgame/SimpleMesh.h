@@ -30,11 +30,9 @@ struct SimpleMesh
 
     bool loaded;
     ID3D11Buffer *m_vertexBuffer, *m_indexBuffer;
+    ID3D11Texture2D *m_boneData;
     unsigned int m_indexCount;
 
-    //friend CompoundMesh;
-
-//public:
     void setBuffers(ID3D11DeviceContext *deviceContext);
     bool load(wchar_t *objFileName, ID3D11Device* device, DirectX::XMFLOAT2 texture_scaler = DirectX::XMFLOAT2(1.0f, 1.0f));
     void Release();
