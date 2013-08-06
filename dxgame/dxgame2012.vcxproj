@@ -184,6 +184,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Actor.h" />
+    <ClInclude Include="AnimationBuffer.h" />
     <ClInclude Include="Chronometer.h" />
     <ClInclude Include="ComplexMesh.h" />
     <ClInclude Include="CompoundMesh.h" />
@@ -228,6 +229,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Actor.cpp" />
+    <ClCompile Include="AnimationBuffer.cpp" />
     <ClCompile Include="Chronometer.cpp" />
     <ClCompile Include="CompoundMesh.cpp" />
     <ClCompile Include="d3dclass.cpp" />

@@ -102,44 +102,11 @@ bool CompoundMesh::load(ID3D11Device* device, ID3D11DeviceContext *devCtx, Textu
         return false;
     }
 
-    unsigned maxFrame = 0;
+    double maxTick = 0;
 
     if (m_aiScene->HasAnimations())
     {
         cout << modelFileName << " has " << m_aiScene->mNumAnimations << " animations!" << endl;
-        for (unsigned i = 0; i < m_aiScene->mNumAnimations; ++i)
-        {
-            cout << "Animation " << i << endl;
-            cout << "mNumChannels = " << m_aiScene->mAnimations[i]->mNumChannels << endl;
-            cout << "mNumMeshChannels = " << m_aiScene->mAnimations[i]->mNumMeshChannels << endl; // not actually used in liba.i.
-            for (unsigned j = 0; j < m_aiScene->mAnimations[i]->mNumChannels; ++j)
-            {
-                aiNodeAnim *anim = m_aiScene->mAnimations[i]->mChannels[j];
-                cout << "Channel: " << anim->mNodeName.C_Str() << ": ";
-                cout << anim->mNumRotationKeys << ", " << anim->mNumPositionKeys << ", " << anim->mNumScalingKeys << endl;
-
-                maxFrame = max(maxFrame, max(anim->mNumRotationKeys, max(anim->mNumPositionKeys, anim->mNumScalingKeys)));
-
-                m_animationNodes[anim->mNodeName.C_Str()] = anim; // save the node in a way that's easy to look up :P
-            }
-            break; // only support 1 animation now since that's all we've got in our object(s); animations of different actions just start at particular frames
-        }
-
-        // we need a texture to populate
-        vector<XMFLOAT4> buffer;
-        buffer.resize(maxFrame * m_aiScene->mAnimations[0]->mNumChannels);
-#if 0
-        for (unsigned j = 0; j < m_aiScene->mAnimations[0]->mNumChannels; ++j)
-        {
-            aiNodeAnim *anim = m_aiScene->mAnimations[0]->mChannels[j];
-            anim->mRotationKeys[0].mTime; // ???
-        }
-#endif
-        for (int i = 0; i < m_aiScene->mAnimations[0]->mChannels[0]->mNumRotationKeys; ++i)
-        {
-            cout << m_aiScene->mAnimations[0]->mChannels[0]->mRotationKeys[i].mTime << ", ";
-        }
-        cout << endl;
     }
 
     // populate vertices and indices with data from m_aiScene

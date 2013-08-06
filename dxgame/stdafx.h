@@ -74,6 +74,7 @@
 #include "SSE2Aligned.h"
 
 #include "Actor.h"
+#include "AnimationBuffer.h"
 #include "Chronometer.h"
 #include "CompoundMesh.h"
 #include "dxmathprint.h"

@@ -146,7 +146,7 @@ an animation has multiple channels, each one corresponding to a bone
 a channel has separate arrays of rotations, translations, and scaling factors... but often only rotations
 
 for ease of rendering, each bone/channel shall be assigned an index number
-rotations will be stored in a 2D array with X being animation frame and Y being bone index
+rotations, translations, scalings will be stored in a 3D array (texture) with X being animation time in ticks, Y being bone index, Z being data type (rotation = 0, translation = 1, scaling = 2)
 
 each vertex has shall have four bone weights with indexes
 It should be possible to implement interpolation using a texture sampler... perhaps. It may be necessary to pad the last frame of each animation range with the first frame of each range @_@.
