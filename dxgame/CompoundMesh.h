@@ -45,7 +45,7 @@ private:
     void get_bounding_box_for_node (const aiNode* nd, aiVector3D* min, aiVector3D* max, aiMatrix4x4* trafo);
     void get_bounding_box (aiVector3D* min, aiVector3D* max);
 
-    bool recursive_interleave( ID3D11Device* device, ID3D11DeviceContext *devCtx, const struct aiNode *nd, CompoundMeshNode &node );
+    bool recursive_interleave( ID3D11Device* device, ID3D11DeviceContext *devCtx, const struct aiNode *nd, CompoundMeshNode &node, DirectX::CXMMATRIX parentTransform );
     void apply_material(SimpleMesh::Material *to, aiMaterial *mtl);
     
 public:

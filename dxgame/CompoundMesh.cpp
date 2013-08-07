@@ -113,7 +113,7 @@ bool CompoundMesh::load(ID3D11Device* device, ID3D11DeviceContext *devCtx, Textu
     }
 
     // populate vertices and indices with data from m_aiScene
-    recursive_interleave(device, devCtx, m_aiScene->mRootNode, m_root);
+    recursive_interleave(device, devCtx, m_aiScene->mRootNode, m_root, XMMatrixIdentity());
 
     int indexCount = 0;
 
@@ -232,7 +232,7 @@ void CompoundMesh::apply_material(SimpleMesh::Material *to, aiMaterial *mtl)
 
 
 
-bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceContext *devCtx, const struct aiNode *nd, CompoundMeshNode &node )
+bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceContext *devCtx, const struct aiNode *nd, CompoundMeshNode &node, CXMMATRIX parentTransform )
 {
     bool uvWarningPrinted = false;
     bool tangentWarningPrinted = false;
@@ -242,8 +242,6 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
     XMMATRIX localTransform = XMLoadFloat4x4((XMFLOAT4X4*) &(nd->mTransformation));
 
     // update transform
-    // TODO XXX
-    // probably calls for a separate stream with a local-space transformation quaternion per vertex? also for more reading...
 
     vector<Vertex> vertices;  // declared here to avoid reallocating them for each mesh; it's easy enough to reuse them
     vector<unsigned> indices;
@@ -337,7 +335,7 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
                 v.tex0.x = v.tex0.y = 0;
                 if (!uvWarningPrinted)
                 {
-                    cerr << "Missing texture coordinates... " << endl;
+                    cerr << "Missing texture coordinates... " << endl; // shouldn't happen with libai load-time processing
                     uvWarningPrinted = true;
                 }
             } else
@@ -394,6 +392,7 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
             for (unsigned i = 0; i < mesh->mNumBones; ++i)
             {
                 cout << mesh->mBones[i]->mNumWeights << endl;
+                mesh->mBones[i]->mOffsetMatrix;
                 int boneNum;
                 try 
                 {
@@ -456,7 +455,7 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
     for (unsigned n = 0; n < nd->mNumChildren; ++n) 
     {
         CompoundMeshNode child;
-        if (!recursive_interleave(device, devCtx, nd->mChildren[n], child)) return false;
+        if (!recursive_interleave(device, devCtx, nd->mChildren[n], child, localTransform)) return false;
         node.children.push_back(child);
     }
 
