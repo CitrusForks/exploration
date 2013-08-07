@@ -162,7 +162,7 @@ PixelInputType LightVertexShader(VertexInputType input)
 	    normal = mul(normal, (float3x3)twist);
 	    tangent = mul(tangent, (float3x3)twist);
     }
-
+#if 0
     if (animationTick != 1.0f && (input.boneWeights.x != 0 || input.boneWeights.w != 0))
     {
         float4 quat, tran, scal;
@@ -178,7 +178,7 @@ PixelInputType LightVertexShader(VertexInputType input)
 
         localPosition = mul(localPosition, M);
     }
-
+#endif
     // Calculate the position of the vertex in world, view, and screen coordinates
     // by using the appropriate matrices
     output.worldPos = worldPosition = output.position = mul(localPosition, worldMatrix);
