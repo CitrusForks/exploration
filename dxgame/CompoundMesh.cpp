@@ -462,45 +462,10 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
     return true;
 }
 
-#if 0
-// recursively render meshes for all nodes
-bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, std::vector<Light> &lights, CompoundMeshNode *node /*= nullptr */ )
-{
-    bool rc = true; // return value
-
-    WalkNodes(m_root, [&deviceContext, &shader, &rc, &worldMatrix, &viewMatrix, &projectionMatrix] (CompoundMeshNode &node) // capturing an *XMVECTOR variable is a bad idea, doesn't work
-    {
-        // auto deviceContext = in_deviceContext; // C++ lambda wart: can't capture a variable that's only in scope due to being captured by the containing lambda; must make a local copy
-        //auto shader = in_shader; // maybe C++ lambdas aren't good :|
-        for (auto mesh = node.meshes.begin(), end = node.meshes.end(); mesh != end; ++mesh)
-        {
-            if (mesh->m_indexBuffer == nullptr || mesh->m_vertexBuffer == nullptr)
-            {
-                cerr << "strange, empty mesh";
-                continue;
-            }
-
-            mesh->setBuffers(deviceContext);
-
-            SimpleMesh::Material &mat = mesh->m_material;
-            bool useNormalMap = mat.normalMap.getTexture() ? true : false;
-            if (!shader->SetPSMaterial(deviceContext, mat.ambient, mat.diffuse, mat.shininess, mat.specular, useNormalMap) ||
-                !shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, mesh->m_material.normalMap.getTexture(), mesh->m_material.diffuseTexture.getTexture()))
-            {
-                rc = false;
-                break;
-            }
-        }
-    });
-
-    return rc;
-}
-#else
 
 // recursively render meshes for all nodes
 // lambda-free version
-bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, 
-    DirectX::CXMMATRIX projectionMatrix, vector<Light> &lights, bool orthoProjection /* = false */, CompoundMeshNode *node /*= nullptr */ )
+bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, vector<Light> &lights, bool orthoProjection /* = false */, float animationTick /* = 1.0f */, CompoundMeshNode *node /*= nullptr */ )
 {
     if (!node)
     {
@@ -576,6 +541,12 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
                 cerr << e->what() << endl;
             }
         }
+
+        // tell the vertex shader about the wonderful animation buffer we have for it:
+        if (m_animation.loaded())
+        {
+            m_animation.setAsResource(deviceContext);
+        }
     }
 
     for (auto mesh = node->meshes.begin(), end = node->meshes.end(); mesh != end; ++mesh)
@@ -604,10 +575,44 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 
     for (auto i = node->children.begin(); i != node->children.end(); ++i)
     {
-        if (!render(deviceContext, shader, worldMatrix, viewMatrix, projectionMatrix, lights, orthoProjection, &(*i))) return false;
+        if (!render(deviceContext, shader, worldMatrix, viewMatrix, projectionMatrix, lights, orthoProjection, animationTick, &(*i))) return false;
     }
 
     return true;
 }
 
+// lambda version, unmaintained because it turns out I don't like it
+#if 0
+// recursively render meshes for all nodes
+bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, std::vector<Light> &lights, bool orthoProjection /*= false*/, float animationTick /*= 1.0f*/, CompoundMeshNode *node /*= nullptr*/ )
+{
+    bool rc = true; // return value
+
+    WalkNodes(m_root, [&deviceContext, &shader, &rc, &worldMatrix, &viewMatrix, &projectionMatrix] (CompoundMeshNode &node) // capturing an *XMVECTOR variable is a bad idea, doesn't work
+    {
+        // auto deviceContext = in_deviceContext; // C++ lambda wart: can't capture a variable that's only in scope due to being captured by the containing lambda; must make a local copy
+        //auto shader = in_shader; // maybe C++ lambdas aren't good :|
+        for (auto mesh = node.meshes.begin(), end = node.meshes.end(); mesh != end; ++mesh)
+        {
+            if (mesh->m_indexBuffer == nullptr || mesh->m_vertexBuffer == nullptr)
+            {
+                cerr << "strange, empty mesh";
+                continue;
+            }
+
+            mesh->setBuffers(deviceContext);
+
+            SimpleMesh::Material &mat = mesh->m_material;
+            bool useNormalMap = mat.normalMap.getTexture() ? true : false;
+            if (!shader->SetPSMaterial(deviceContext, mat.ambient, mat.diffuse, mat.shininess, mat.specular, useNormalMap) ||
+                !shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, mesh->m_material.normalMap.getTexture(), mesh->m_material.diffuseTexture.getTexture()))
+            {
+                rc = false;
+                break;
+            }
+        }
+    });
+
+    return rc;
+}
 #endif

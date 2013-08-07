@@ -13,7 +13,7 @@ class Scene
 {
 public:
 
-    typedef std::function<bool(DirectX::CXMMATRIX world, shared_ptr<ModelManager> models, int modelRefNum, shared_ptr<LightsAndShadows> lighting)> 
+    typedef std::function<bool(DirectX::CXMMATRIX world, shared_ptr<ModelManager> models, int modelRefNum, shared_ptr<LightsAndShadows> lighting, float animationTick)> 
         renderFunc_t;
 
     // draw all actors:

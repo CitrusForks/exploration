@@ -65,7 +65,7 @@ bool Scene::update( float now, float timeSinceLastUpdate, std::shared_ptr<FirstP
 bool Scene::render( renderFunc_t &renderFunc )
 {
     using namespace std::placeholders;
-    Actor::renderFunc_t partialBind = std::bind(renderFunc, _1, m_models, _2, m_lighting);
+    Actor::renderFunc_t partialBind = std::bind(renderFunc, _1, m_models, _2, m_lighting, _3);
 
     for (auto &i: m_actors)
     {

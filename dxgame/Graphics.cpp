@@ -109,9 +109,9 @@ bool Graphics::RenderScene( Chronometer &timer, Scene *scene)
         // body of function called from within lighting
 
         // pass a render function to scene with the combined data from Graphics and LightsAndShadows
-        Scene::renderFunc_t renderFuncForScene = [&] (CXMMATRIX world, shared_ptr<ModelManager> models, int modelRefNum, shared_ptr<LightsAndShadows> lighting) 
+        Scene::renderFunc_t renderFuncForScene = [&] (CXMMATRIX world, shared_ptr<ModelManager> models, int modelRefNum, shared_ptr<LightsAndShadows> lighting, float animationTick) 
         {
-            return (*models)[modelRefNum]->render(d3d.GetDeviceContext(), &shaders0, world,  view, projection, lights, orthoProjection);
+            return (*models)[modelRefNum]->render(d3d.GetDeviceContext(), &shaders0, world,  view, projection, lights, orthoProjection, animationTick);
         };
 
         return scene->render(renderFuncForScene); // this will call the above lambda for all the actor objects
@@ -141,9 +141,9 @@ bool Graphics::RenderScene( Chronometer &timer, Scene *scene)
     d3d.setDepthBias(false);
     lighting->setShadowsAsViewResources(d3d);
 
-    Scene::renderFunc_t renderFuncForScene = [&] (CXMMATRIX world, shared_ptr<ModelManager> models, int modelRefNum, shared_ptr<LightsAndShadows> lighting) 
+    Scene::renderFunc_t renderFuncForScene = [&] (CXMMATRIX world, shared_ptr<ModelManager> models, int modelRefNum, shared_ptr<LightsAndShadows> lighting, float animationTick) 
     {
-        return (*models)[modelRefNum]->render(d3d.GetDeviceContext(), &shaders0, world,  view, projection, lighting->getLights());
+        return (*models)[modelRefNum]->render(d3d.GetDeviceContext(), &shaders0, world,  view, projection, lighting->getLights(), false, animationTick);
     };
 
     if (!scene->render(renderFuncForScene)) return false; // XXX style: use exceptions instead?

@@ -27,15 +27,17 @@ private:
     int m_sceneID; // or any extra id or other opaque integer label slapped onto the object by external agents
 
     // perhaps something like this, not final:
-    int m_animation; // ???
-    float m_animationStartTime; // ???
+    int m_animation; // which animation we're performing
+    double m_animationStartTime; // ???
+    float m_animationTick;
+    double m_ticksPerSecond; 
 
     // for internal use, updates world matrix:
     void updateWorldMatrix();
 
 public:
 
-    typedef std::function<bool(DirectX::CXMMATRIX world, int modelRefNum)> renderFunc_t;
+    typedef std::function<bool(DirectX::CXMMATRIX world, int modelRefNum, float animationTick)> renderFunc_t;
     bool render(renderFunc_t &renderFunc);
 
     void moveTo(DirectX::FXMVECTOR to);

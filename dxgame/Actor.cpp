@@ -11,7 +11,7 @@ using namespace std;
 
 static bool arrrg = false;
 
-Actor::Actor(int modelRefNum, DirectX::CXMMATRIX correction /* = XMMatrixIdentity() */) : m_modelRefNum(modelRefNum), m_lastRoll(0.0f), m_lastPitch(0.0f), m_lastYaw(0.0f)
+Actor::Actor(int modelRefNum, DirectX::CXMMATRIX correction /* = XMMatrixIdentity() */) : m_modelRefNum(modelRefNum), m_lastRoll(0.0f), m_lastPitch(0.0f), m_lastYaw(0.0f), m_animation(1)
 {
     m_correction = correction;
     m_position = XMVectorSet(0, 0, 0, 0);
@@ -43,7 +43,7 @@ Actor::~Actor(void)
 bool Actor::render( renderFunc_t &renderFunc )
 {
     if (m_modelRefNum == -1) Errors::Cry("Attempt to render uninitialized Actor object");
-    return renderFunc(m_world, m_modelRefNum);
+    return renderFunc(m_world, m_modelRefNum, m_animationTick);
 }
 
 
@@ -73,6 +73,9 @@ bool Actor::update(float now, float timeSinceLastUpdate)
     {
         m_rotation = XMQuaternionSlerp(m_slerpFrom, m_slerpTo,  (now - m_slerpStartTime) / (m_slerpFinishTime - m_slerpStartTime) );
     }
+
+    m_animationTick = now; // XXX garbage for testing
+    while (m_animationTick > 100.0) m_animationTick -= 100;
 
     return true;
 }

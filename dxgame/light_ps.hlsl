@@ -48,7 +48,7 @@ SamplerState SampleAnisotropic : register(s0);
 SamplerState SampleShadows : register(s1);
 // unfiltered
 SamplerState SampleUnfiltered : register(s2);
-// unfiltered
+// linear-filtered + wrap
 SamplerState SampleLinear : register(s3);
 
 // from http://msdn.microsoft.com/en-us/library/windows/desktop/bb509644%28v=vs.85%29.aspx (modified)

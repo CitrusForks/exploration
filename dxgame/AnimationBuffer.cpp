@@ -8,7 +8,7 @@ using namespace std;
 using namespace DirectX;
 
 
-AnimationBuffer::AnimationBuffer(void) : m_texture(nullptr)
+AnimationBuffer::AnimationBuffer(void) : m_texture(nullptr), m_view(nullptr)
 {
 }
 
@@ -148,17 +148,28 @@ void AnimationBuffer::load( const aiScene *scene, ID3D11Device *dev )
     cout << endl;
 #endif
 
-    CD3D11_TEXTURE3D_DESC texDesc(DXGI_FORMAT_R32G32B32A32_FLOAT, maxTick+1, scene->mAnimations[0]->mNumChannels, 3, 1);
+    CD3D11_TEXTURE3D_DESC texDesc(DXGI_FORMAT_R32G32B32A32_FLOAT, maxTick + 1, scene->mAnimations[0]->mNumChannels, 3, 1, D3D11_BIND_SHADER_RESOURCE, D3D11_USAGE_IMMUTABLE);
     D3D11_SUBRESOURCE_DATA subResource = { &buffer[0], yStride, zStride };
     HRESULT rc = dev->CreateTexture3D(&texDesc, &subResource, &m_texture);
     if (FAILED(rc))
     {
         throw ("Could not create 3D texture for animation buffer.");
     }
+
+    CD3D11_SHADER_RESOURCE_VIEW_DESC srvd(m_texture, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 1);
+    dev->CreateShaderResourceView(m_texture, &srvd, &m_view);
+
+
 }
 
 
 void AnimationBuffer::release()
 {
+    if (m_view) m_view->Release();
     if (m_texture) m_texture->Release();
+}
+
+void AnimationBuffer::setAsResource( ID3D11DeviceContext *ctx )
+{
+    ctx->VSSetShaderResources(0xB, 1, &m_view);
 }

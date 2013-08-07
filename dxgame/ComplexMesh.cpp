@@ -61,7 +61,7 @@ bool ComplexMesh::load(ID3D11Device* device, ID3D11DeviceContext *devCtx, char *
     recursive_interleave(device, devCtx, vertices, indices, m_aiScene, m_aiScene->mRootNode);
 
     // feed the vertex and index buffers to the GPU
-    D3D11_BUFFER_DESC vbufDesc = { vertices.size() * sizeof(Vertex), D3D11_USAGE_IMMUTABLE, D3D11_BIND_VERTEX_BUFFER, 0, 0, 0};
+    CD3D11_BUFFER_DESC vbufDesc(vertices.size() * sizeof(Vertex), D3D11_USAGE_IMMUTABLE, D3D11_BIND_VERTEX_BUFFER, 0, 0, 0);
     D3D11_SUBRESOURCE_DATA vbufSub = { vertices.data(), 0, 0 };
 
     HRESULT hr = device->CreateBuffer(&vbufDesc, &vbufSub, &m_vertexBuffer);

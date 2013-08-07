@@ -58,13 +58,12 @@ void VanillaShaderClass::Shutdown()
 // @numViews        the number of textures sent; defaults to 1, probably best to leave it that way
 // @setSampler      leave true for normal rendering; it's set false when rendering off-screen buffer to screen,
 //                  since the intermediate target class sets its own (simpler) sampler
-bool VanillaShaderClass::Render( ID3D11DeviceContext *deviceContext, int indexCount, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, 
-                                ID3D11ShaderResourceView** normalMap, ID3D11ShaderResourceView** specularMap,std::vector<Light> *lights, ID3D11ShaderResourceView** texture, unsigned resourceViewCount /*= 1*/, bool setSampler /*= true*/ )
+bool VanillaShaderClass::Render( ID3D11DeviceContext *deviceContext, int indexCount, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, ID3D11ShaderResourceView** normalMap, ID3D11ShaderResourceView** specularMap,std::vector<Light> *lights, ID3D11ShaderResourceView** texture, unsigned resourceViewCount /*= 1*/, bool setSampler /*= true*/, float animationTick /*= 1.0f*/ )
 {
 	bool result;
 
 	// Set the shader parameters that it will use for rendering.
-	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, normalMap, specularMap, lights, texture, resourceViewCount);
+	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, normalMap, specularMap, lights, texture, animationTick, resourceViewCount);
 	if(!result)
 	{
 		return false;
@@ -223,17 +222,11 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
     }
 
     // Setup the description of the dynamic matrix constant buffer that is in the vertex shader.
-    D3D11_BUFFER_DESC matrixBufferDesc;
-    matrixBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-    matrixBufferDesc.ByteWidth = sizeof(MatrixBufferType);
-    matrixBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    matrixBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    matrixBufferDesc.MiscFlags = 0;
-    matrixBufferDesc.StructureByteStride = 0;
+    CD3D11_BUFFER_DESC matrixBufferDesc (sizeof(MatrixBufferType), D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE, 0, 0);
 
-    D3D11_BUFFER_DESC cameraBufferDesc = matrixBufferDesc; // in the interest of brevity, copy all the identical values from a previous buffer_desc
-    D3D11_BUFFER_DESC lightBufferDesc = cameraBufferDesc;  // also these need to be copied before the first call to CreateBuffer() because it may do odd things to the data; no, really, this actually happened.
-    D3D11_BUFFER_DESC materialBufferDesc = lightBufferDesc;
+    CD3D11_BUFFER_DESC cameraBufferDesc(matrixBufferDesc); // in the interest of brevity, copy all the identical values from a previous buffer_desc
+    CD3D11_BUFFER_DESC lightBufferDesc(cameraBufferDesc);  // also these need to be copied before the first call to CreateBuffer() because it may do odd things to the data; no, really, this actually happened.
+    CD3D11_BUFFER_DESC materialBufferDesc(lightBufferDesc);
 
 
     // Create the constant buffer pointer so we can access the vertex shader constant buffer from within this class.
@@ -396,8 +389,7 @@ void VanillaShaderClass::ShutdownShader()
 
 
 // this method mainly sets matrices and textures for the Render method; private
-bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, 
-                                             ID3D11ShaderResourceView **normalMap, ID3D11ShaderResourceView **specularMap, std::vector<Light> *lights, ID3D11ShaderResourceView **texture, unsigned numViews /*= 1*/ )
+bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, ID3D11ShaderResourceView **normalMap, ID3D11ShaderResourceView **specularMap, std::vector<Light> *lights, ID3D11ShaderResourceView **texture, float animationTick /*= 1.0f*/, unsigned numViews /*= 1*/ )
 {
     HRESULT result;
     D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -418,6 +410,8 @@ bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext
     XMStoreFloat4x4(&dataPtr->world, XMMatrixTranspose(worldMatrix));
     XMStoreFloat4x4(&dataPtr->view, XMMatrixTranspose(viewMatrix));
     XMStoreFloat4x4(&dataPtr->projection, XMMatrixTranspose(projectionMatrix));
+
+    dataPtr->animationTick = animationTick; // animation!
 
     ZeroMemory(dataPtr->lightViewProjection, sizeof(dataPtr->lightViewProjection));
 
