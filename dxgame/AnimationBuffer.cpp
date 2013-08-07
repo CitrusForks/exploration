@@ -2,6 +2,7 @@
 #include "AnimationBuffer.h"
 
 #include <DirectXMath.h>
+#include <dxgiformat.h>
 
 using namespace std;
 using namespace DirectX;
@@ -17,7 +18,15 @@ AnimationBuffer::~AnimationBuffer(void)
 }
 
 
-void AnimationBuffer::load( aiScene *scene )
+static void loadAiQ(XMFLOAT4& dest, aiQuaternion &src)
+{
+    dest.x = src.x;
+    dest.y = src.y;
+    dest.z = src.z;
+    dest.w = src.w;
+}
+
+void AnimationBuffer::load( const aiScene *scene, ID3D11Device *dev )
 {
     double maxTick = 0;
 
@@ -33,30 +42,119 @@ void AnimationBuffer::load( aiScene *scene )
             cout << anim->mNumRotationKeys << ", " << anim->mNumPositionKeys << ", " << anim->mNumScalingKeys << endl;
 
             maxTick = max(maxTick, max(anim->mRotationKeys[anim->mNumRotationKeys-1].mTime, max(anim->mPositionKeys[anim->mNumPositionKeys-1].mTime, anim->mScalingKeys[anim->mNumScalingKeys-1].mTime)));
-
-            m_animationNodes[anim->mNodeName.C_Str()] = anim; // save the node in a way that's easy to look up :P
         }
         break; // only support 1 animation now since that's all we've got in our object(s); animations of different actions just start at particular frames
     }
 
     assert(floor(maxTick) == maxTick);
 
+    assert(sizeof(XMFLOAT4) == sizeof(aiQuaternion));
+    assert(sizeof(XMFLOAT3) == sizeof(aiVector3D));
+
     // we need a texture to populate
     vector<XMFLOAT4> buffer;
-    buffer.resize((int)maxTick * scene->mAnimations[0]->mNumChannels);
-#if 0
-    for (unsigned j = 0; j < scene->mAnimations[0]->mNumChannels; ++j)
+    unsigned yStride = (int)maxTick+1;
+    unsigned zStride = yStride * scene->mAnimations[0]->mNumChannels;
+    buffer.resize(zStride * 3);
+    
+    for (int keyType = rotation; keyType < scaling; ++keyType)
     {
-        aiNodeAnim *anim = scene->mAnimations[0]->mChannels[j];
-        anim->mRotationKeys[0].mTime; // ???
+        for (unsigned bone = 0; bone < scene->mAnimations[0]->mNumChannels; ++bone)
+        {
+            aiNodeAnim *anim = scene->mAnimations[0]->mChannels[bone];
+
+            m_animationNodes[anim->mNodeName.C_Str()] = bone; // save the node in a way that's easy to look up
+
+            unsigned keyNum;
+            switch(keyType)
+            {
+            case rotation: keyNum = anim->mNumRotationKeys; break;
+            case translation: keyNum = anim->mNumPositionKeys; break;
+            case scaling: keyNum = anim->mNumScalingKeys; break;
+            }
+
+            XMVECTOR a = XMVectorSet(0,0,0,0), b = XMVectorSet(0,0,0,0);
+            double aTime = 0, bTime = 0;
+
+            for (unsigned k = 0; k < keyNum; ++k)
+            {
+                switch(keyType)
+                {
+                case rotation:
+                    a = XMLoadFloat4(reinterpret_cast<XMFLOAT4*>(&anim->mRotationKeys[k].mValue));
+                    aTime = anim->mRotationKeys[k].mTime;
+
+                    if (k == keyNum - 1) break;
+
+                    b = XMLoadFloat4(reinterpret_cast<XMFLOAT4*>(&anim->mRotationKeys[k+1].mValue));
+                    bTime = anim->mRotationKeys[k+1].mTime;
+
+                    break;
+
+                case translation:
+                    a = XMLoadFloat3(reinterpret_cast<XMFLOAT3*>(&anim->mPositionKeys[k].mValue));
+                    aTime = anim->mPositionKeys[k].mTime;
+
+                    if (k == keyNum - 1) break;
+
+                    b = XMLoadFloat3(reinterpret_cast<XMFLOAT3*>(&anim->mPositionKeys[k+1].mValue));
+                    bTime = anim->mPositionKeys[k+1].mTime;
+
+                    break;
+
+                case scaling:
+                    a = XMLoadFloat3(reinterpret_cast<XMFLOAT3*>(&anim->mScalingKeys[k].mValue));
+                    aTime = anim->mScalingKeys[k].mTime;
+
+                    if (k == keyNum - 1) break;
+
+                    b = XMLoadFloat3(reinterpret_cast<XMFLOAT3*>(&anim->mScalingKeys[k+1].mValue));
+                    bTime = anim->mScalingKeys[k+1].mTime;
+
+                    break;
+
+                }
+
+                if (k == keyNum-1)
+                {
+                    XMStoreFloat4(&buffer[keyType * zStride + bone * yStride + aTime], a);
+                } else
+                {
+
+                    assert(floor(aTime) == aTime);
+                    assert(floor(bTime) == bTime);
+
+                    for (double t = aTime; t < bTime; ++t)
+                    {
+                        XMStoreFloat4(&buffer[0 + bone * yStride + t], XMVectorLerp(a, b, (t - aTime) / (bTime - aTime)));
+                    }
+                }
+            }
+            // at this point aTime is the time of the last key in the channel; fill in the rest of the texture line with the value a if necessary
+            if (aTime < maxTick)
+            {
+                for (double t = aTime; t < maxTick; ++t)
+                {
+                    XMStoreFloat4(&buffer[0 + bone * yStride + t], a);
+                }
+            }
+        }
     }
-#endif
+#if 0
     for (int i = 0; i < scene->mAnimations[0]->mChannels[0]->mNumRotationKeys; ++i)
     {
         cout << scene->mAnimations[0]->mChannels[0]->mRotationKeys[i].mTime << ", ";
     }
     cout << endl;
+#endif
 
+    CD3D11_TEXTURE3D_DESC texDesc(DXGI_FORMAT_R32G32B32A32_FLOAT, maxTick+1, scene->mAnimations[0]->mNumChannels, 3, 1);
+    D3D11_SUBRESOURCE_DATA subResource = { &buffer[0], yStride, zStride };
+    HRESULT rc = dev->CreateTexture3D(&texDesc, &subResource, &m_texture);
+    if (FAILED(rc))
+    {
+        throw ("Could not create 3D texture for animation buffer.");
+    }
 }
 
 

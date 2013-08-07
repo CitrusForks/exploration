@@ -14,11 +14,13 @@ private:
     ID3D11Texture3D *m_texture; // X is time in ticks, Y is bone index (think piano roll), Z is data type (see dataT)
     ID3D11Resource *m_view;
 
-    std::unordered_map<const char *, aiNodeAnim *> m_animationNodes; // each one contains an array (one element per frame) of transformation keys for each named node
+    std::unordered_map<const char *, int> m_animationNodes; // maps bone name to its index in the data buffer (the 3d texture)
 
 public:
-    void load(aiScene *scene);
+    void load(const aiScene *scene, ID3D11Device *dev);
     void release();
+
+    int getBoneNum(const char *bone) { return m_animationNodes[bone]; }
 
     AnimationBuffer(void);
     ~AnimationBuffer(void);

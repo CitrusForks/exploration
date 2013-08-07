@@ -84,6 +84,8 @@ void CompoundMesh::release()
             mesh.Release();
         });
     });
+
+    m_animation.release();
 }
 
 
@@ -106,7 +108,8 @@ bool CompoundMesh::load(ID3D11Device* device, ID3D11DeviceContext *devCtx, Textu
 
     if (m_aiScene->HasAnimations())
     {
-        cout << modelFileName << " has " << m_aiScene->mNumAnimations << " animations!" << endl;
+        cout << modelFileName << " has " << m_aiScene->mNumAnimations << " animation(s)!" << endl;
+        m_animation.load(m_aiScene, device);
     }
 
     // populate vertices and indices with data from m_aiScene
@@ -252,12 +255,6 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
 
         SimpleMesh interleavedMesh;
 
-        if (mesh->HasBones())
-        {
-            // populate bone weights
-        }
-
-
         // store the material properties
         aiMaterial *mat = m_aiScene->mMaterials[mesh->mMaterialIndex];
         apply_material(&interleavedMesh.m_material, mat);
@@ -389,6 +386,35 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
             cerr << "Oddity: no vertices in mesh. Perhaps it was composed entirely of non-triangles?";
             continue;
         }
+
+        if (mesh->HasBones())
+        {
+            cout << "Bone census: ";
+            // populate bone weights TODO
+            for (unsigned i = 0; i < mesh->mNumBones; ++i)
+            {
+                cout << mesh->mBones[i]->mNumWeights << endl;
+                int boneNum;
+                try 
+                {
+                    boneNum = m_animation.getBoneNum(mesh->mBones[i]->mName.C_Str());
+                } catch (exception e)
+                {
+                    cerr << "Missing bone name " << mesh->mBones[i]->mName.C_Str();
+                    boneNum = -1;
+                    continue;
+                }
+
+                for (unsigned j = 0; j < mesh->mBones[i]->mNumWeights; ++j)
+                {
+                    aiVertexWeight weight = mesh->mBones[i]->mWeights[j];
+                    vertices[weight.mVertexId].addBoneWeight(boneNum, weight.mWeight);
+                    cout << mesh->mBones[i]->mWeights[j].mVertexId << " ";
+                }
+            }
+            cout << endl;
+        }
+
 
         // feed the vertex and index buffers to the GPU
         D3D11_BUFFER_DESC vbufDesc = { vertices.size() * sizeof(Vertex), D3D11_USAGE_IMMUTABLE, D3D11_BIND_VERTEX_BUFFER, 0, 0, 0};
