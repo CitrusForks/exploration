@@ -51,7 +51,7 @@ bool Scene::update( float now, float timeSinceLastUpdate, std::shared_ptr<FirstP
     {
         bool rc = true;
         if (i) rc = i->update(now, timeSinceLastUpdate);
-        if (!true)
+        if (rc != true)
         {
             i = nullptr;
         }

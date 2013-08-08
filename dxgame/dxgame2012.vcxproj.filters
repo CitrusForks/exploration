@@ -97,9 +97,6 @@
     <ClInclude Include="ShadowBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cpp_hlsl_defs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="LightsAndShadows.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -153,6 +150,9 @@
     </ClInclude>
     <ClInclude Include="AnimationBuffer.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cpp_hlsl_defs.h">
+      <Filter>Shaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

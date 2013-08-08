@@ -157,6 +157,8 @@ bool ScriptedScene::update( float now, float timeSinceLastUpdate, std::shared_pt
         Errors::Cry((char*)lua_tostring(L, -1));
     }
 
+    Scene::update(now, timeSinceLastUpdate, dummy);
+    
     return 0;
 }
 // 3 arguments, x y z, establishing a vector parallel to the directional light in the scene

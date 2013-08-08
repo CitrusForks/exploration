@@ -11,7 +11,7 @@ using namespace std;
 
 static bool arrrg = false;
 
-Actor::Actor(int modelRefNum, DirectX::CXMMATRIX correction /* = XMMatrixIdentity() */) : m_modelRefNum(modelRefNum), m_lastRoll(0.0f), m_lastPitch(0.0f), m_lastYaw(0.0f), m_animation(1)
+Actor::Actor(int modelRefNum, DirectX::CXMMATRIX correction /* = XMMatrixIdentity() */) : m_modelRefNum(modelRefNum), m_lastRoll(0.0f), m_lastPitch(0.0f), m_lastYaw(0.0f), m_animation(-1), m_animationTick(-1)
 {
     m_correction = correction;
     m_position = XMVectorSet(0, 0, 0, 0);
@@ -21,6 +21,8 @@ Actor::Actor(int modelRefNum, DirectX::CXMMATRIX correction /* = XMMatrixIdentit
 
 void Actor::init(int modelRefNum, DirectX::CXMMATRIX correction /* = DirectX::XMMatrixIdentity */)
 {
+    m_animationTick = -1;
+    m_animation = -1;
     m_modelRefNum = modelRefNum;
     m_lastRoll = m_lastYaw = m_lastPitch = 0.0f;
     m_correction = correction;
@@ -75,7 +77,7 @@ bool Actor::update(float now, float timeSinceLastUpdate)
     }
 
     m_animationTick = now; // XXX garbage for testing
-    while (m_animationTick > 100.0) m_animationTick -= 100;
+    while (m_animationTick > 200.0) m_animationTick -= 200;
 
     return true;
 }

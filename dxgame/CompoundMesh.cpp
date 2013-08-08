@@ -465,7 +465,7 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
 
 // recursively render meshes for all nodes
 // lambda-free version
-bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, vector<Light> &lights, bool orthoProjection /* = false */, float animationTick /* = 1.0f */, CompoundMeshNode *node /*= nullptr */ )
+bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, std::vector<Light> &lights, bool orthoProjection /*= false*/, double animationTick /*= 1.0*/, CompoundMeshNode *node /*= nullptr*/ )
 {
     if (!node)
     {
@@ -545,7 +545,7 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
         // tell the vertex shader about the wonderful animation buffer we have for it:
         if (m_animation.loaded())
         {
-            m_animation.setAsResource(deviceContext);
+            m_animation.updateResource(deviceContext, animationTick);
         }
     }
 

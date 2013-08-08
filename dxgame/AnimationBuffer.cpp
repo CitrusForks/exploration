@@ -3,12 +3,13 @@
 
 #include <DirectXMath.h>
 #include <dxgiformat.h>
+#include <stdlib.h>
 
 using namespace std;
 using namespace DirectX;
 
 
-AnimationBuffer::AnimationBuffer(void) : m_texture(nullptr), m_view(nullptr)
+AnimationBuffer::AnimationBuffer(void) : m_bones(nullptr)
 {
 }
 
@@ -18,7 +19,7 @@ AnimationBuffer::~AnimationBuffer(void)
 }
 
 
-static void loadAiQ(XMFLOAT4& dest, aiQuaternion &src)
+static void loadAiQ(XMFLOAT4 &dest, aiQuaternion &src)
 {
     dest.x = src.x;
     dest.y = src.y;
@@ -28,7 +29,7 @@ static void loadAiQ(XMFLOAT4& dest, aiQuaternion &src)
 
 void AnimationBuffer::load( const aiScene *scene, ID3D11Device *dev )
 {
-    double maxTick = 0;
+    maxTick = 0;
 
     for (unsigned i = 0; i < scene->mNumAnimations; ++i)
     {
@@ -52,17 +53,18 @@ void AnimationBuffer::load( const aiScene *scene, ID3D11Device *dev )
     assert(sizeof(XMFLOAT3) == sizeof(aiVector3D));
 
     // we need a texture to populate
-    vector<XMFLOAT4> buffer;
-    unsigned yStride = (int)maxTick+1;
-    unsigned zStride = yStride * scene->mAnimations[0]->mNumChannels;
-    buffer.resize(zStride * 3);
+    m_ySize = (unsigned int)maxTick + 1;
+    unsigned yStride = m_xSize = scene->mAnimations[0]->mNumChannels;
+    m_zStride = m_xSize * m_ySize;
+    m_buffer.resize(m_zStride * 3);
     
-    for (int keyType = rotation; keyType < scaling; ++keyType)
+    for (int keyType = 0; keyType < 3; ++keyType)
     {
         for (unsigned bone = 0; bone < scene->mAnimations[0]->mNumChannels; ++bone)
         {
             aiNodeAnim *anim = scene->mAnimations[0]->mChannels[bone];
 
+            assert(m_animationNodes.find(anim->mNodeName.C_Str()) == m_animationNodes.end() || m_animationNodes[anim->mNodeName.C_Str()] == bone);
             m_animationNodes[anim->mNodeName.C_Str()] = bone; // save the node in a way that's easy to look up
 
             unsigned keyNum;
@@ -117,7 +119,7 @@ void AnimationBuffer::load( const aiScene *scene, ID3D11Device *dev )
 
                 if (k == keyNum-1)
                 {
-                    XMStoreFloat4(&buffer[keyType * zStride + bone * yStride + aTime], a);
+                    XMStoreFloat4(&m_buffer[keyType * m_zStride + yStride * (int)aTime + bone], a);
                 } else
                 {
 
@@ -126,16 +128,16 @@ void AnimationBuffer::load( const aiScene *scene, ID3D11Device *dev )
 
                     for (double t = aTime; t < bTime; ++t)
                     {
-                        XMStoreFloat4(&buffer[0 + bone * yStride + t], XMVectorLerp(a, b, (t - aTime) / (bTime - aTime)));
+                        XMStoreFloat4(&m_buffer[keyType * m_zStride + yStride * (int)t + bone], XMVectorLerp(a, b, (float)((t - aTime) / (bTime - aTime))));
                     }
                 }
             }
-            // at this point aTime is the time of the last key in the channel; fill in the rest of the texture line with the value a if necessary
+            // at this point aTime is the time of the last key in the channel; fill in the rest of the texture column with the value `a` if necessary
             if (aTime < maxTick)
             {
                 for (double t = aTime; t < maxTick; ++t)
                 {
-                    XMStoreFloat4(&buffer[0 + bone * yStride + t], a);
+                    XMStoreFloat4(&m_buffer[keyType * m_zStride + yStride * (int)t + bone], a);
                 }
             }
         }
@@ -148,28 +150,34 @@ void AnimationBuffer::load( const aiScene *scene, ID3D11Device *dev )
     cout << endl;
 #endif
 
-    CD3D11_TEXTURE3D_DESC texDesc(DXGI_FORMAT_R32G32B32A32_FLOAT, maxTick + 1, scene->mAnimations[0]->mNumChannels, 3, 1, D3D11_BIND_SHADER_RESOURCE, D3D11_USAGE_IMMUTABLE);
-    D3D11_SUBRESOURCE_DATA subResource = { &buffer[0], yStride, zStride };
-    HRESULT rc = dev->CreateTexture3D(&texDesc, &subResource, &m_texture);
-    if (FAILED(rc))
-    {
-        throw ("Could not create 3D texture for animation buffer.");
-    }
-
-    CD3D11_SHADER_RESOURCE_VIEW_DESC srvd(m_texture, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 1);
-    dev->CreateShaderResourceView(m_texture, &srvd, &m_view);
-
-
+    CD3D11_BUFFER_DESC bufDesc(MAX_BONES * 3 * sizeof(float) * 4, D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
+    dev->CreateBuffer(&bufDesc, NULL, &m_bones);
 }
 
 
 void AnimationBuffer::release()
 {
-    if (m_view) m_view->Release();
-    if (m_texture) m_texture->Release();
+    if (m_bones) m_bones->Release();
 }
 
-void AnimationBuffer::setAsResource( ID3D11DeviceContext *ctx )
+void AnimationBuffer::updateResource( ID3D11DeviceContext *ctx, double animationTick )
 {
-    ctx->VSSetShaderResources(0xB, 1, &m_view);
+    // TODO: interpolation. Get the basics working first!
+
+    if (animationTick < 0 || animationTick > maxTick) return;
+
+    animationTick = rand() % (int)maxTick;
+
+    D3D11_MAPPED_SUBRESOURCE sub;
+
+    HRESULT hr = ctx->Map(m_bones, 0, D3D11_MAP_WRITE_DISCARD, 0, &sub);
+    if (FAILED(hr)) throw("seriously? can't map subresource?");
+
+    for (int i = 0; i < 3; ++i)
+    {
+        memcpy((char*)sub.pData + MAX_BONES * i * (sizeof(float) * 4), &m_buffer[i * m_zStride + m_xSize * (int)animationTick], m_xSize * sizeof(float) * 4);
+    }
+    ctx->Unmap(m_bones, 0);
+
+    ctx->VSSetConstantBuffers(0xB, 1, &m_bones); // B is for bones!
 }

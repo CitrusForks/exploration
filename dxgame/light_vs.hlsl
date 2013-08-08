@@ -26,11 +26,12 @@ cbuffer CameraBuffer
     uint effect;
 };
 
-Texture3D bones : register(t11); // 11 is 0xB, B is for bones, OK?
-
-// linear-filtered + wrap
-SamplerState SampleLinear : register(s3);
-
+cbuffer Bones : register(b11)
+{
+    float4 boneRotation[MAX_BONES];
+    float4 boneTranslation[MAX_BONES];
+    float4 boneScaling[MAX_BONES];
+};
 
 //
 // Misc
@@ -48,6 +49,7 @@ matrix rotateAboutY(float angle)
 
 matrix quatToMatrix(float4 q) // uggghghgh see http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToMatrix/
 {
+    // this is actually pretty slow
     float4 col1 = {q.w, -q.z, q.y, -q.x};
     float4 col2 = {q.z, q.w, -q.x, -q.y};
     float4 col3 = {-q.y, q.x, q.w, -q.z};
@@ -57,7 +59,7 @@ matrix quatToMatrix(float4 q) // uggghghgh see http://www.euclideanspace.com/mat
     float4 col5 = {q.w, -q.z, q.y, q.x};
     float4 col6 = {q.z, q.w, -q.x, q.y};
     float4 col7 = {-q.y, q.x, q.w, q.z};
-    float4 col8 = {-q.x, -q.y, -q.z, -q.w};
+    float4 col8 = {-q.x, -q.y, -q.z, q.w};
     matrix B = matrix(col5, col6, col7, col8);
 
     return mul(A, B);
@@ -69,17 +71,9 @@ void sampleOneWeightedBone(uint index, out float4 quat, out float4 translation, 
 {
     float3 boneLookup;
 
-    boneLookup.x = animationTick;
-    boneLookup.y = index;
-    boneLookup.z = 0; // rotation
-
-    quat = bones.Sample(SampleLinear, boneLookup);
-
-    boneLookup.z = 1; // translation
-    translation = bones.Sample(SampleLinear, boneLookup);
-
-    boneLookup.z = 2; // scaling, probably not used much... then again, who knows
-    scale = bones.Sample(SampleLinear, boneLookup);
+    quat = boneRotation[index].wyzx;
+    translation = boneTranslation[index];
+    scale = boneScaling[index];
 }
 
 
@@ -89,7 +83,7 @@ void sampleBones(VertexInputType input, out float4 quat, out float4 translation,
 
     quat = float4(0,0,0,0);
     translation = float4(0,0,0,0);
-    scale = float4(1,1,1,1);
+    scale = float4(0,0,0,0);
 
     float weight;
     uint index;
@@ -162,19 +156,22 @@ PixelInputType LightVertexShader(VertexInputType input)
 	    normal = mul(normal, (float3x3)twist);
 	    tangent = mul(tangent, (float3x3)twist);
     }
-#if 0
-    if (animationTick != 1.0f && (input.boneWeights.x != 0 || input.boneWeights.w != 0))
+
+#if 1
+    if (animationTick >= 0.0f && input.boneIndex.x != -1)
     {
         float4 quat, tran, scal;
         sampleBones(input, quat, tran, scal);
         matrix M = quatToMatrix(quat);
-        M._14 = tran.x;
-        M._24 = tran.y;
-        M._34 = tran.z;
+#if 1
+        M._41 = tran.x;
+        M._42 = tran.y;
+        M._43 = tran.z;
 
         M._11 *= scal.x; // XXX not sure of this
         M._22 *= scal.y;
         M._33 *= scal.z; 
+#endif
 
         localPosition = mul(localPosition, M);
     }

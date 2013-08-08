@@ -13,15 +13,16 @@ struct Vertex
 	DirectX::XMFLOAT2 tex1;   // not used, just experimenting
         unsigned int texArray;  // texture to choose from array if using an array of textures
         DirectX::XMFLOAT3 tangent;// tangent; binormal is calculated in vertex shader
-        std::vector<float> boneWeights;  // bone weights
-        std::vector<unsigned> boneNum;  // index into arrays of translations and rotations (as quaternions); the array should be equivalent to one frame of animation with each member populated from a single aiNodeAnim
+        float boneWeights[4];  // bone weights
+        unsigned boneNum[4];  // index into arrays of translations and rotations (as quaternions); the array should be equivalent to one frame of animation with each member populated from a single aiNodeAnim
 
         Vertex() : pos(0.0f, 0.0f, 0.0f), normal(0.0f, 0.0f, 0.0f), tex0(0.0f, 0.0f), tex1(0.0f, 0.0f), texArray(0)
         {
-            boneWeights.resize(4);
-            boneNum.resize(4);
-            ZeroMemory(&boneNum[0], sizeof(boneNum));
-            ZeroMemory(&boneWeights[0], sizeof(boneWeights));
+            for (auto &i : boneNum)
+            {
+                i = -1;
+            }
+            ZeroMemory(boneWeights, sizeof(boneWeights));
         }
 
         // the following operator is meant only to allow the use of Vertex as a key to std::map() and such
@@ -31,11 +32,18 @@ struct Vertex
 
         void addBoneWeight(int boneIndex, float weight)
         {
-            auto v = std::min_element(boneWeights.begin(), boneWeights.end());
+            int j;
+            float min = weight;
+            for (int i = 0; i < 4; ++i)
+            {
+                if (boneWeights[i] < min)
+                {
+                    min = boneWeights[i];
+                    j = i;
+                }
+            }
 
-            if (*v > weight) return; // just keep the most significant bone weights if too many are specified
-
-            int j = v - boneWeights.begin();            
+            if (min >= weight) return; // just keep the most significant bone weights if too many are specified
 
             boneWeights[j] = weight;
             boneNum[j] = boneIndex;
