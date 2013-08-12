@@ -39,9 +39,10 @@ end
 --   a:setRollPitchYaw(roll, pitch, yaw)
 --   TODO: more methods :|
 
--- the house is our token 3DS model and it's all wrong
+-- the house is our token 3DS model
 -- rotations are in radians, btw
-house = Actor(scene:getModel("LPBuildX13r_3ds.3ds"), 1.0, 0.0, 0.0, math.pi/2, 0.15, 0, 4.5001, 0)
+-- house = Actor(scene:getModel("LPBuildX13r_3ds.3ds"), 1.0, 0.0, 0.0, math.pi/2, 0.15, 0, 4.5001, 0)
+house = Actor(scene:getModel("LPBuildX13r_3ds.3ds"), 1.0, 0.0, 0.0, 0.0, 0.15, 0, 0.001, 0)
 scene:enters(house)
 house:moveTo(-10, 0, 15)
 
@@ -93,7 +94,7 @@ scene:enters(tree)
 tree:moveTo(-7, 0, 6)
 
 floor = Actor(scene:getModel("floor.obj"))
-scene:enters(floor)
+-- scene:enters(floor)
 floor:moveTo(0, 0, 10)
 
 -- Ensign Chekov is too tall

@@ -76,7 +76,7 @@ bool Actor::update(float now, float timeSinceLastUpdate)
         m_rotation = XMQuaternionSlerp(m_slerpFrom, m_slerpTo,  (now - m_slerpStartTime) / (m_slerpFinishTime - m_slerpStartTime) );
     }
 
-    m_animationTick = now; // XXX garbage for testing
+    m_animationTick = now+1; // XXX garbage for testing
     while (m_animationTick > 200.0) m_animationTick -= 200;
 
     return true;

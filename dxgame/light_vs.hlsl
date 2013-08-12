@@ -71,7 +71,7 @@ void sampleOneWeightedBone(uint index, out float4 quat, out float4 translation, 
 {
     float3 boneLookup;
 
-    quat = boneRotation[index].wyzx;
+    quat = boneRotation[index].wxyz;
     translation = boneTranslation[index];
     scale = boneScaling[index];
 }
@@ -163,6 +163,8 @@ PixelInputType LightVertexShader(VertexInputType input)
         float4 quat, tran, scal;
         sampleBones(input, quat, tran, scal);
         matrix M = quatToMatrix(quat);
+        normal = mul(normal, (float3x3)M);
+        tangent = mul(tangent, (float3x3)M);
 #if 1
         M._41 = tran.x;
         M._42 = tran.y;

@@ -95,7 +95,7 @@ bool CompoundMesh::load(ID3D11Device* device, ID3D11DeviceContext *devCtx, Textu
 {
     assert(texman);
     m_textureManager = texman;
-    m_aiScene = aiImportFile(modelFileName, aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_ConvertToLeftHanded); // load meshes and make sure they're suitable for drawing
+    m_aiScene = aiImportFile(modelFileName, /* aiProcess_OptimizeGraph | */ aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_ConvertToLeftHanded); // load meshes and make sure they're suitable for drawing
     // for a production release, it would be best to ensure the meshes are correct on disk and avoid massaging them into shape here; impact on load time is uncertain but could be dire
 
     if (nullptr == m_aiScene)
@@ -239,7 +239,8 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
 
     assert(sizeof(XMFLOAT4X4) == sizeof(aiMatrix4x4));
 
-    XMMATRIX localTransform = XMLoadFloat4x4((XMFLOAT4X4*) &(nd->mTransformation));
+    XMMATRIX localTransform = XMMatrixTranspose(XMLoadFloat4x4((XMFLOAT4X4*) &(nd->mTransformation)));
+    localTransform = XMMatrixMultiply(localTransform, parentTransform);
 
     // update transform
 
@@ -252,6 +253,8 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
         const aiMesh* mesh = m_aiScene->mMeshes[nd->mMeshes[n]];
 
         SimpleMesh interleavedMesh;
+
+        interleavedMesh.m_name = mesh->mName.C_Str();
 
         // store the material properties
         aiMaterial *mat = m_aiScene->mMaterials[mesh->mMaterialIndex];
@@ -352,6 +355,17 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
                 v.tangent = reinterpret_cast<XMFLOAT3*>(mesh->mTangents)[i];
             }
 
+#if 0
+            XMVECTOR vec = XMLoadFloat3(&v.pos);
+            vec = XMVector3TransformCoord(vec, localTransform);
+            XMStoreFloat3(&v.pos, vec);
+
+            XMStoreFloat3(&v.normal, XMVector3TransformNormal(XMLoadFloat3(&v.normal), localTransform));
+            XMStoreFloat3(&v.tangent, XMVector3TransformNormal(XMLoadFloat3(&v.tangent), localTransform));
+#endif
+            XMStoreFloat4x4(&node.transform, localTransform);
+            node.name = nd->mName.C_Str();
+
             v.texArray = 0;
 
             vertices.push_back(v);
@@ -388,11 +402,16 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
         if (mesh->HasBones())
         {
             cout << "Bone census: ";
-            // populate bone weights TODO
             for (unsigned i = 0; i < mesh->mNumBones; ++i)
             {
                 cout << mesh->mBones[i]->mNumWeights << endl;
-                mesh->mBones[i]->mOffsetMatrix;
+                mesh->mBones[i]->mOffsetMatrix; // TODO
+
+                XMMATRIX offsetMatrix = XMMatrixTranspose(XMLoadFloat4x4((XMFLOAT4X4*)&mesh->mBones[i]->mOffsetMatrix));
+                XMFLOAT4X4 om;
+                XMStoreFloat4x4(&om, offsetMatrix);
+                interleavedMesh.m_OffsetMatrix.push_back(om);
+
                 int boneNum;
                 try 
                 {
@@ -408,7 +427,6 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
                 {
                     aiVertexWeight weight = mesh->mBones[i]->mWeights[j];
                     vertices[weight.mVertexId].addBoneWeight(boneNum, weight.mWeight);
-                    cout << mesh->mBones[i]->mWeights[j].mVertexId << " ";
                 }
             }
             cout << endl;
@@ -465,7 +483,7 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
 
 // recursively render meshes for all nodes
 // lambda-free version
-bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, std::vector<Light> &lights, bool orthoProjection /*= false*/, double animationTick /*= 1.0*/, CompoundMeshNode *node /*= nullptr*/ )
+bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, std::vector<Light> &lights, bool orthoProjection /*= false*/, double animationTick /*= 1.0*/, CompoundMeshNode *node /*= nullptr*/, DirectX::CXMMATRIX parentNodeTransform /*= XMMatrixIdentity()*/ )
 {
     if (!node)
     {
@@ -549,8 +567,36 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
         }
     }
 
+
+    XMMATRIX sceneGraphMatrix, finalSGM;
+    int nodeNum = -1;
+
+
+    if (node->name.size() == 0)
+    {
+        sceneGraphMatrix = parentNodeTransform;
+    } else
+    {
+        if (m_animation.loaded())
+        {
+            // node animation for scene graph
+            m_animation.getNodeTransform(&node->transform, node->name, animationTick); 
+            nodeNum = m_animation.getBoneNum(node->name.c_str());
+        }
+
+
+        finalSGM = sceneGraphMatrix = XMLoadFloat4x4(&node->transform);
+
+        if (m_animation.loaded()) 
+        {
+            finalSGM = sceneGraphMatrix = XMMatrixMultiply(parentNodeTransform, sceneGraphMatrix);
+        }
+    }
+
+
     for (auto mesh = node->meshes.begin(), end = node->meshes.end(); mesh != end; ++mesh)
     {
+
         if (mesh->m_indexBuffer == nullptr || mesh->m_vertexBuffer == nullptr || !mesh->getIndexCount())
         {
             cerr << "strange, empty mesh";
@@ -567,7 +613,12 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
             return false;
         }
 
-        if (!shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, mesh->m_material.normalMap.getTexture(), mesh->m_material.specularMap.getTexture(), &lights, mesh->m_material.diffuseTexture.getTexture()))
+        if (nodeNum > -1 && nodeNum < mesh->m_OffsetMatrix.size())
+        {
+            finalSGM = XMMatrixMultiply(finalSGM, XMLoadFloat4x4(&mesh->m_OffsetMatrix[nodeNum]));
+        }
+
+        if (!shader->Render(deviceContext, mesh->getIndexCount(), XMMatrixMultiply(finalSGM, worldMatrix), viewMatrix, projectionMatrix, mesh->m_material.normalMap.getTexture(), mesh->m_material.specularMap.getTexture(), &lights, mesh->m_material.diffuseTexture.getTexture()))
         {
             return false;
         }
@@ -575,7 +626,7 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 
     for (auto i = node->children.begin(); i != node->children.end(); ++i)
     {
-        if (!render(deviceContext, shader, worldMatrix, viewMatrix, projectionMatrix, lights, orthoProjection, animationTick, &(*i))) return false;
+        if (!render(deviceContext, shader, worldMatrix, viewMatrix, projectionMatrix, lights, orthoProjection, animationTick, &(*i), sceneGraphMatrix)) return false;
     }
 
     return true;

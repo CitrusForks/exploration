@@ -24,7 +24,7 @@ static void loadAiQ(XMFLOAT4 &dest, aiQuaternion &src)
     dest.x = src.x;
     dest.y = src.y;
     dest.z = src.z;
-    dest.w = src.w;
+    dest.w = src.w; // load so component names are preserved rather than order in memory, fwiw
 }
 
 void AnimationBuffer::load( const aiScene *scene, ID3D11Device *dev )
@@ -66,6 +66,8 @@ void AnimationBuffer::load( const aiScene *scene, ID3D11Device *dev )
 
             assert(m_animationNodes.find(anim->mNodeName.C_Str()) == m_animationNodes.end() || m_animationNodes[anim->mNodeName.C_Str()] == bone);
             m_animationNodes[anim->mNodeName.C_Str()] = bone; // save the node in a way that's easy to look up
+
+            cout << anim->mNodeName.C_Str() << " = " << bone << endl;
 
             unsigned keyNum;
             switch(keyType)
@@ -166,8 +168,6 @@ void AnimationBuffer::updateResource( ID3D11DeviceContext *ctx, double animation
 
     if (animationTick < 0 || animationTick > maxTick) return;
 
-    animationTick = rand() % (int)maxTick;
-
     D3D11_MAPPED_SUBRESOURCE sub;
 
     HRESULT hr = ctx->Map(m_bones, 0, D3D11_MAP_WRITE_DISCARD, 0, &sub);
@@ -180,4 +180,26 @@ void AnimationBuffer::updateResource( ID3D11DeviceContext *ctx, double animation
     ctx->Unmap(m_bones, 0);
 
     ctx->VSSetConstantBuffers(0xB, 1, &m_bones); // B is for bones!
+}
+
+void AnimationBuffer::getNodeTransform( DirectX::XMFLOAT4X4 *dest, std::string bone, double animationTick )
+{
+    auto iter = m_animationNodes.find(bone);
+
+    if (iter == m_animationNodes.end()) return;
+
+    int i = iter->second;
+
+    XMFLOAT4 *quat = &m_buffer[m_xSize * (int)animationTick + i];
+    XMFLOAT4 *tran = &m_buffer[m_zStride + m_xSize * (int)animationTick + i];
+    XMFLOAT4 *scal = &m_buffer[m_zStride * 2 + m_xSize * (int)animationTick + i];
+
+    XMMATRIX M = XMMatrixRotationQuaternion(XMLoadFloat4(quat));
+    //M = XMMatrixMultiply(M, XMMatrixScaling(scal->x, scal->y, scal->z));
+
+    XMStoreFloat4x4(dest, M);
+    dest->_41 = tran->x;
+    dest->_42 = tran->y;
+    dest->_43 = tran->z;
+    dest->_44 = 1;
 }

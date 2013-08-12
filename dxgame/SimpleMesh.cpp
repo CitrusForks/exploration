@@ -86,7 +86,7 @@ bool SimpleMesh::load(wchar_t *objFileName, ID3D11Device* device, XMFLOAT2 textu
 
 }
 
-SimpleMesh::SimpleMesh() : loaded(false), m_indexCount(0)
+SimpleMesh::SimpleMesh() : loaded(false), m_indexCount(0), m_name("")
 {
 }
 

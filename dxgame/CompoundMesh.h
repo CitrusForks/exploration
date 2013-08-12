@@ -29,6 +29,9 @@ private:
         std::vector<SimpleMesh> meshes;
 
         std::vector<CompoundMeshNode> children;
+
+        DirectX::XMFLOAT4X4 transform; // for scene graph, replaced by node animations when applicable?
+        std::string name; // to look up a transform to replace the above
     } m_root;
 
     DirectX::BoundingOrientedBox m_bBox;
@@ -50,7 +53,7 @@ private:
     
 public:
     bool load(ID3D11Device* device, ID3D11DeviceContext *devCtx, TextureManager *texman, char *modelFileName);
-    bool render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, std::vector<Light> &lights, bool orthoProjection = false, double animationTick = 1.0, CompoundMeshNode *node = nullptr);
+    bool render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, std::vector<Light> &lights, bool orthoProjection = false, double animationTick = 1.0, CompoundMeshNode *node = nullptr, DirectX::CXMMATRIX parentNodeTransform = DirectX::XMMatrixIdentity());
     void release();
 
 
