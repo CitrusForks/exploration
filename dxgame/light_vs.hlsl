@@ -14,6 +14,7 @@ cbuffer MatrixBuffer
     matrix worldMatrix;
     matrix viewMatrix;
     matrix projectionMatrix;
+    matrix bindToBoneSpace;
     matrix lightVP[NUM_SPOTLIGHTS+2]; // world coordinates -> light shadow map coordinates
     uint numLights;
     float animationTick;
@@ -28,9 +29,7 @@ cbuffer CameraBuffer
 
 cbuffer Bones : register(b11)
 {
-    float4 boneRotation[MAX_BONES];
-    float4 boneTranslation[MAX_BONES];
-    float4 boneScaling[MAX_BONES];
+    matrix boneTransform[MAX_BONES];
 };
 
 //
@@ -67,68 +66,51 @@ matrix quatToMatrix(float4 q) // uggghghgh see http://www.euclideanspace.com/mat
 
 
 
-void sampleOneWeightedBone(uint index, out float4 quat, out float4 translation, out float4 scale)
+void sampleOneWeightedBone(uint index, out matrix transform)
 {
+    // TODO: interpolation here ffs finally?
     float3 boneLookup;
 
-    quat = boneRotation[index].wxyz;
-    translation = boneTranslation[index];
-    scale = boneScaling[index];
+    transform = boneTransform[index];
 }
 
 
-void sampleBones(VertexInputType input, out float4 quat, out float4 translation, out float4 scale)
+void sampleBones(VertexInputType input, out matrix transform)
 {
     uint i, n;
 
-    quat = float4(0,0,0,0);
-    translation = float4(0,0,0,0);
-    scale = float4(0,0,0,0);
-
     float weight;
     uint index;
-    float4 q, t, s;
+    matrix M;
 
     weight = input.boneWeights.x;
-    if (weight != 0.0f)
-    {
-        index = input.boneIndex.x;
-        sampleOneWeightedBone(index, q, t, s);
-        quat += q * weight;
-        translation += t * weight;
-        scale += s * weight; // XXX this doesn't seem right, look it up
-    }
+    index = input.boneIndex.x;
+    sampleOneWeightedBone(index, M);
+    transform = M * weight;
 
     weight = input.boneWeights.y;
     if (weight != 0.0f)
     {
         index = input.boneIndex.y;
-        sampleOneWeightedBone(index, q, t, s);
-        quat += q * weight;
-        translation += t * weight;
-        scale += s * weight; // XXX this doesn't seem right, look it up
+        sampleOneWeightedBone(index, M);
+        transform += M * weight;
     }
 
     weight = input.boneWeights.z;
     if (weight != 0.0f)
     {
         index = input.boneIndex.z;
-        sampleOneWeightedBone(index, q, t, s);
-        quat += q * weight;
-        translation += t * weight;
-        scale += s * weight; // XXX this doesn't seem right, look it up
+        sampleOneWeightedBone(index, M);
+        transform += M * weight;
     }
 
     weight = input.boneWeights.w;
     if (weight != 0.0f)
     {
         index = input.boneIndex.w;
-        sampleOneWeightedBone(index, q, t, s);
-        quat += q * weight;
-        translation += t * weight;
-        scale += s * weight; // XXX this doesn't seem right, look it up
+        sampleOneWeightedBone(index, M);
+        transform += M * weight;
     }
-
 }
 
 //
@@ -160,22 +142,12 @@ PixelInputType LightVertexShader(VertexInputType input)
 #if 1
     if (animationTick >= 0.0f && input.boneIndex.x != -1)
     {
-        float4 quat, tran, scal;
-        sampleBones(input, quat, tran, scal);
-        matrix M = quatToMatrix(quat);
+        matrix M;
+        sampleBones(input, M);
+
         normal = mul(normal, (float3x3)M);
         tangent = mul(tangent, (float3x3)M);
-#if 1
-        M._41 = tran.x;
-        M._42 = tran.y;
-        M._43 = tran.z;
-
-        M._11 *= scal.x; // XXX not sure of this
-        M._22 *= scal.y;
-        M._33 *= scal.z; 
-#endif
-
-        localPosition = mul(localPosition, M);
+        localPosition = mul(mul(localPosition, bindToBoneSpace), M);
     }
 #endif
     // Calculate the position of the vertex in world, view, and screen coordinates

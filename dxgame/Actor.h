@@ -29,7 +29,7 @@ private:
     // perhaps something like this, not final:
     int m_animation; // which animation we're performing
     double m_animationStartTime; // ???
-    float m_animationTick;
+    double m_animationTick;
     double m_ticksPerSecond; 
 
     // for internal use, updates world matrix:
@@ -37,7 +37,7 @@ private:
 
 public:
 
-    typedef std::function<bool(DirectX::CXMMATRIX world, int modelRefNum, float animationTick)> renderFunc_t;
+    typedef std::function<bool(DirectX::CXMMATRIX world, int modelRefNum, double animationTick)> renderFunc_t;
     bool render(renderFunc_t &renderFunc);
 
     void moveTo(DirectX::FXMVECTOR to);
@@ -52,7 +52,7 @@ public:
     void getRollPitchYaw(float &out_pitch, float &out_yaw, float &out_roll) { out_pitch = m_lastPitch; out_yaw = m_lastYaw; out_roll = m_lastRoll; } 
 
     // the default implementation only updates SLERP:
-    virtual bool update(float now, float timeSinceLastUpdate); // return false as a hint to have yourself deleted from world.
+    virtual bool update(double now, double timeSinceLastUpdate); // return false as a hint to have yourself deleted from world.
 
     // set m_sceneID; only Scene is likely to have that information, let it be set apart from construction
     void setID(int id) { m_sceneID = id; }

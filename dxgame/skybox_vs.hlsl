@@ -13,8 +13,6 @@ cbuffer MatrixBuffer
 	matrix worldMatrix;
 	matrix viewMatrix;
 	matrix projectionMatrix;
-	matrix lightVP[NUM_SPOTLIGHTS+2]; // world coordinates -> light shadow map coordinates
-	uint numLights;
 };
 
 cbuffer CameraBuffer

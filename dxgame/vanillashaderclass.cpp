@@ -58,7 +58,7 @@ void VanillaShaderClass::Shutdown()
 // @numViews        the number of textures sent; defaults to 1, probably best to leave it that way
 // @setSampler      leave true for normal rendering; it's set false when rendering off-screen buffer to screen,
 //                  since the intermediate target class sets its own (simpler) sampler
-bool VanillaShaderClass::Render( ID3D11DeviceContext *deviceContext, int indexCount, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, ID3D11ShaderResourceView** normalMap, ID3D11ShaderResourceView** specularMap,std::vector<Light> *lights, ID3D11ShaderResourceView** texture, unsigned resourceViewCount /*= 1*/, bool setSampler /*= true*/, float animationTick /*= 1.0f*/ )
+bool VanillaShaderClass::Render( ID3D11DeviceContext *deviceContext, int indexCount, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, ID3D11ShaderResourceView** normalMap, ID3D11ShaderResourceView** specularMap,std::vector<Light> *lights, ID3D11ShaderResourceView** texture, unsigned resourceViewCount /*= 1*/, bool setSampler /*= true*/, float animationTick /*= 1.0f*/, DirectX::XMFLOAT4X4 *bindToBoneSpace /*= nullptr*/)
 {
 	bool result;
 
@@ -389,7 +389,7 @@ void VanillaShaderClass::ShutdownShader()
 
 
 // this method mainly sets matrices and textures for the Render method; private
-bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, ID3D11ShaderResourceView **normalMap, ID3D11ShaderResourceView **specularMap, std::vector<Light> *lights, ID3D11ShaderResourceView **texture, float animationTick /*= 1.0f*/, unsigned numViews /*= 1*/ )
+bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, ID3D11ShaderResourceView **normalMap, ID3D11ShaderResourceView **specularMap, std::vector<Light> *lights, ID3D11ShaderResourceView **texture, float animationTick /*= 1.0f*/, unsigned numViews /*= 1*/, XMFLOAT4X4 *bindToBoneSpace )
 {
     HRESULT result;
     D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -427,6 +427,9 @@ bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext
         dataPtr->numLights = j;
     }
 
+    if (bindToBoneSpace) memcpy(&dataPtr->bindToBoneSpace, bindToBoneSpace, sizeof(XMFLOAT4X4));
+
+
     // Unlock the constant buffer.
     deviceContext->Unmap(m_matrixBuffer, 0);
 
@@ -444,6 +447,7 @@ bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext
 
     // and specular map
     if (specularMap && *specularMap) deviceContext->PSSetShaderResources(2, 1, specularMap);
+
 
     return true;
 }

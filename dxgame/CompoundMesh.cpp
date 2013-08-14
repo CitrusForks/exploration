@@ -355,7 +355,7 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
                 v.tangent = reinterpret_cast<XMFLOAT3*>(mesh->mTangents)[i];
             }
 
-#if 0
+#if 1
             XMVECTOR vec = XMLoadFloat3(&v.pos);
             vec = XMVector3TransformCoord(vec, localTransform);
             XMStoreFloat3(&v.pos, vec);
@@ -407,7 +407,7 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
                 cout << mesh->mBones[i]->mNumWeights << endl;
                 mesh->mBones[i]->mOffsetMatrix; // TODO
 
-                XMMATRIX offsetMatrix = XMMatrixTranspose(XMLoadFloat4x4((XMFLOAT4X4*)&mesh->mBones[i]->mOffsetMatrix));
+                XMMATRIX offsetMatrix = XMLoadFloat4x4((XMFLOAT4X4*)&mesh->mBones[i]->mOffsetMatrix);
                 XMFLOAT4X4 om;
                 XMStoreFloat4x4(&om, offsetMatrix);
                 interleavedMesh.m_OffsetMatrix.push_back(om);
@@ -568,7 +568,7 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
     }
 
 
-    XMMATRIX sceneGraphMatrix, finalSGM;
+    XMMATRIX sceneGraphMatrix;
     int nodeNum = -1;
 
 
@@ -584,15 +584,13 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
             nodeNum = m_animation.getBoneNum(node->name.c_str());
         }
 
-
-        finalSGM = sceneGraphMatrix = XMLoadFloat4x4(&node->transform);
+        sceneGraphMatrix = XMLoadFloat4x4(&node->transform);
 
         if (m_animation.loaded()) 
         {
-            finalSGM = sceneGraphMatrix = XMMatrixMultiply(parentNodeTransform, sceneGraphMatrix);
+            sceneGraphMatrix = XMMatrixMultiply(parentNodeTransform, sceneGraphMatrix);
         }
     }
-
 
     for (auto mesh = node->meshes.begin(), end = node->meshes.end(); mesh != end; ++mesh)
     {
@@ -613,12 +611,15 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
             return false;
         }
 
+        XMFLOAT4X4 *offsetMatrix = nullptr;
+
         if (nodeNum > -1 && nodeNum < mesh->m_OffsetMatrix.size())
         {
-            finalSGM = XMMatrixMultiply(finalSGM, XMLoadFloat4x4(&mesh->m_OffsetMatrix[nodeNum]));
+            //XMLoadFloat4x4(&mesh->m_OffsetMatrix[nodeNum]);
+            offsetMatrix = &mesh->m_OffsetMatrix[nodeNum];
         }
 
-        if (!shader->Render(deviceContext, mesh->getIndexCount(), XMMatrixMultiply(finalSGM, worldMatrix), viewMatrix, projectionMatrix, mesh->m_material.normalMap.getTexture(), mesh->m_material.specularMap.getTexture(), &lights, mesh->m_material.diffuseTexture.getTexture()))
+        if (!shader->Render(deviceContext, mesh->getIndexCount(), XMMatrixMultiply(sceneGraphMatrix, worldMatrix), viewMatrix, projectionMatrix, mesh->m_material.normalMap.getTexture(), mesh->m_material.specularMap.getTexture(), &lights, mesh->m_material.diffuseTexture.getTexture(), 1, true, animationTick, offsetMatrix))
         {
             return false;
         }

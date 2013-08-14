@@ -27,9 +27,13 @@ static void loadAiQ(XMFLOAT4 &dest, aiQuaternion &src)
     dest.w = src.w; // load so component names are preserved rather than order in memory, fwiw
 }
 
+
+
 void AnimationBuffer::load( const aiScene *scene, ID3D11Device *dev )
 {
     maxTick = 0;
+
+    m_aiScene = scene;
 
     for (unsigned i = 0; i < scene->mNumAnimations; ++i)
     {
@@ -39,6 +43,7 @@ void AnimationBuffer::load( const aiScene *scene, ID3D11Device *dev )
         for (unsigned j = 0; j < scene->mAnimations[i]->mNumChannels; ++j)
         {
             aiNodeAnim *anim = scene->mAnimations[i]->mChannels[j];
+            m_animationNodes[anim->mNodeName.C_Str()] = j;
             cout << "Channel: " << anim->mNodeName.C_Str() << ": ";
             cout << anim->mNumRotationKeys << ", " << anim->mNumPositionKeys << ", " << anim->mNumScalingKeys << endl;
 
@@ -52,107 +57,7 @@ void AnimationBuffer::load( const aiScene *scene, ID3D11Device *dev )
     assert(sizeof(XMFLOAT4) == sizeof(aiQuaternion));
     assert(sizeof(XMFLOAT3) == sizeof(aiVector3D));
 
-    // we need a texture to populate
-    m_ySize = (unsigned int)maxTick + 1;
-    unsigned yStride = m_xSize = scene->mAnimations[0]->mNumChannels;
-    m_zStride = m_xSize * m_ySize;
-    m_buffer.resize(m_zStride * 3);
-    
-    for (int keyType = 0; keyType < 3; ++keyType)
-    {
-        for (unsigned bone = 0; bone < scene->mAnimations[0]->mNumChannels; ++bone)
-        {
-            aiNodeAnim *anim = scene->mAnimations[0]->mChannels[bone];
-
-            assert(m_animationNodes.find(anim->mNodeName.C_Str()) == m_animationNodes.end() || m_animationNodes[anim->mNodeName.C_Str()] == bone);
-            m_animationNodes[anim->mNodeName.C_Str()] = bone; // save the node in a way that's easy to look up
-
-            cout << anim->mNodeName.C_Str() << " = " << bone << endl;
-
-            unsigned keyNum;
-            switch(keyType)
-            {
-            case rotation: keyNum = anim->mNumRotationKeys; break;
-            case translation: keyNum = anim->mNumPositionKeys; break;
-            case scaling: keyNum = anim->mNumScalingKeys; break;
-            }
-
-            XMVECTOR a = XMVectorSet(0,0,0,0), b = XMVectorSet(0,0,0,0);
-            double aTime = 0, bTime = 0;
-
-            for (unsigned k = 0; k < keyNum; ++k)
-            {
-                switch(keyType)
-                {
-                case rotation:
-                    a = XMLoadFloat4(reinterpret_cast<XMFLOAT4*>(&anim->mRotationKeys[k].mValue));
-                    aTime = anim->mRotationKeys[k].mTime;
-
-                    if (k == keyNum - 1) break;
-
-                    b = XMLoadFloat4(reinterpret_cast<XMFLOAT4*>(&anim->mRotationKeys[k+1].mValue));
-                    bTime = anim->mRotationKeys[k+1].mTime;
-
-                    break;
-
-                case translation:
-                    a = XMLoadFloat3(reinterpret_cast<XMFLOAT3*>(&anim->mPositionKeys[k].mValue));
-                    aTime = anim->mPositionKeys[k].mTime;
-
-                    if (k == keyNum - 1) break;
-
-                    b = XMLoadFloat3(reinterpret_cast<XMFLOAT3*>(&anim->mPositionKeys[k+1].mValue));
-                    bTime = anim->mPositionKeys[k+1].mTime;
-
-                    break;
-
-                case scaling:
-                    a = XMLoadFloat3(reinterpret_cast<XMFLOAT3*>(&anim->mScalingKeys[k].mValue));
-                    aTime = anim->mScalingKeys[k].mTime;
-
-                    if (k == keyNum - 1) break;
-
-                    b = XMLoadFloat3(reinterpret_cast<XMFLOAT3*>(&anim->mScalingKeys[k+1].mValue));
-                    bTime = anim->mScalingKeys[k+1].mTime;
-
-                    break;
-
-                }
-
-                if (k == keyNum-1)
-                {
-                    XMStoreFloat4(&m_buffer[keyType * m_zStride + yStride * (int)aTime + bone], a);
-                } else
-                {
-
-                    assert(floor(aTime) == aTime);
-                    assert(floor(bTime) == bTime);
-
-                    for (double t = aTime; t < bTime; ++t)
-                    {
-                        XMStoreFloat4(&m_buffer[keyType * m_zStride + yStride * (int)t + bone], XMVectorLerp(a, b, (float)((t - aTime) / (bTime - aTime))));
-                    }
-                }
-            }
-            // at this point aTime is the time of the last key in the channel; fill in the rest of the texture column with the value `a` if necessary
-            if (aTime < maxTick)
-            {
-                for (double t = aTime; t < maxTick; ++t)
-                {
-                    XMStoreFloat4(&m_buffer[keyType * m_zStride + yStride * (int)t + bone], a);
-                }
-            }
-        }
-    }
-#if 0
-    for (int i = 0; i < scene->mAnimations[0]->mChannels[0]->mNumRotationKeys; ++i)
-    {
-        cout << scene->mAnimations[0]->mChannels[0]->mRotationKeys[i].mTime << ", ";
-    }
-    cout << endl;
-#endif
-
-    CD3D11_BUFFER_DESC bufDesc(MAX_BONES * 3 * sizeof(float) * 4, D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
+    CD3D11_BUFFER_DESC bufDesc(MAX_BONES * sizeof(XMFLOAT4X4) + sizeof(XMFLOAT4X4), D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
     dev->CreateBuffer(&bufDesc, NULL, &m_bones);
 }
 
@@ -161,6 +66,10 @@ void AnimationBuffer::release()
 {
     if (m_bones) m_bones->Release();
 }
+
+
+
+
 
 void AnimationBuffer::updateResource( ID3D11DeviceContext *ctx, double animationTick )
 {
@@ -172,15 +81,20 @@ void AnimationBuffer::updateResource( ID3D11DeviceContext *ctx, double animation
 
     HRESULT hr = ctx->Map(m_bones, 0, D3D11_MAP_WRITE_DISCARD, 0, &sub);
     if (FAILED(hr)) throw("seriously? can't map subresource?");
+     
+    XMFLOAT4X4 *data = (XMFLOAT4X4*)sub.pData;
 
-    for (int i = 0; i < 3; ++i)
+    // update bones here!
+    for (unsigned b = 0; b < m_aiScene->mAnimations[0]->mNumChannels; ++b)
     {
-        memcpy((char*)sub.pData + MAX_BONES * i * (sizeof(float) * 4), &m_buffer[i * m_zStride + m_xSize * (int)animationTick], m_xSize * sizeof(float) * 4);
+        getBoneTransform(&data[b], b, animationTick, true);
     }
+
     ctx->Unmap(m_bones, 0);
 
     ctx->VSSetConstantBuffers(0xB, 1, &m_bones); // B is for bones!
 }
+
 
 void AnimationBuffer::getNodeTransform( DirectX::XMFLOAT4X4 *dest, std::string bone, double animationTick )
 {
@@ -190,16 +104,60 @@ void AnimationBuffer::getNodeTransform( DirectX::XMFLOAT4X4 *dest, std::string b
 
     int i = iter->second;
 
-    XMFLOAT4 *quat = &m_buffer[m_xSize * (int)animationTick + i];
-    XMFLOAT4 *tran = &m_buffer[m_zStride + m_xSize * (int)animationTick + i];
-    XMFLOAT4 *scal = &m_buffer[m_zStride * 2 + m_xSize * (int)animationTick + i];
+    XMFLOAT4 quat, tran, scal;
+    getBoneTransform(dest, i, animationTick);
+}
 
-    XMMATRIX M = XMMatrixRotationQuaternion(XMLoadFloat4(quat));
-    //M = XMMatrixMultiply(M, XMMatrixScaling(scal->x, scal->y, scal->z));
 
-    XMStoreFloat4x4(dest, M);
-    dest->_41 = tran->x;
-    dest->_42 = tran->y;
-    dest->_43 = tran->z;
-    dest->_44 = 1;
+void AnimationBuffer::getBoneTransform( DirectX::XMFLOAT4X4 *transform, int bone, double animationTick, bool transpose /*= false*/ )
+{
+    XMFLOAT4 rotation;
+    XMFLOAT3 translation, scaling;
+
+    aiNodeAnim *anim = m_aiScene->mAnimations[0]->mChannels[bone];
+
+    unsigned k;
+
+    // TODO: interpolation
+
+    for (k = 0; k < anim->mNumRotationKeys - 1; ++k) // -1 because we always accept the last item in the array (N.B., occasionally the arrays are of length 1)
+    {
+        if (anim->mRotationKeys[k].mTime <= animationTick && anim->mRotationKeys[k+1].mTime > animationTick) break;
+    }
+    loadAiQ(rotation, anim->mRotationKeys[k].mValue);
+
+    for (k = 0; k < anim->mNumPositionKeys - 1; ++k)
+    {
+        if (anim->mPositionKeys->mTime <= animationTick && anim->mRotationKeys[k+1].mTime > animationTick) break;
+    }
+    translation.x = anim->mPositionKeys[k].mValue.x;
+    translation.y = anim->mPositionKeys[k].mValue.y;
+    translation.z = anim->mPositionKeys[k].mValue.z;
+
+    for (k = 0; k < anim->mNumScalingKeys - 1; ++k)
+    {
+        if (anim->mScalingKeys->mTime <= animationTick && anim->mScalingKeys[k+1].mTime > animationTick) break;
+    }
+    scaling.x = anim->mScalingKeys[k].mValue.x;
+    scaling.y = anim->mScalingKeys[k].mValue.y;
+    scaling.z = anim->mScalingKeys[k].mValue.z;
+
+
+
+    XMMATRIX M = XMMatrixMultiply(XMMatrixRotationQuaternion(XMLoadFloat4(&rotation)), XMMatrixScaling(scaling.x, scaling.y, scaling.z));
+
+    //XMStoreFloat4x4(transform, XMMatrixMultiply(XMLoadFloat4x4(transform), XMMatrixScaling(scaling.x, scaling.y, scaling.z)));
+
+    M.r[3].m128_f32[0] = translation.x;
+    M.r[3].m128_f32[1] = translation.y;
+    M.r[3].m128_f32[2] = translation.z;
+
+/*
+    transform->_41 = translation.x;
+    transform->_42 = translation.y;
+    transform->_43 = translation.z;
+*/
+    if (transpose) M = XMMatrixTranspose(M);
+
+    XMStoreFloat4x4(transform, M);
 }

@@ -13,12 +13,14 @@ public:
 
 private:
     ID3D11Buffer *m_bones;
-    std::vector<DirectX::XMFLOAT4> m_buffer; // due to this, it's best to avoid copying this object; at ~160KB, copying this buffer may or may not matter to performance
 
-    unsigned m_ySize, m_xSize, m_zStride;
     double maxTick;
 
-    std::unordered_map<std::string, int> m_animationNodes; // maps bone name to its index in the data buffer (the 3d texture)
+    std::unordered_map<std::string, int> m_animationNodes; // maps bone name to its index in aiScene
+
+    const aiScene *m_aiScene;
+
+    void getBoneTransform(DirectX::XMFLOAT4X4 *transform, int bone, double animationTick, bool transpose = false);
 
 public:
     void load(const aiScene *scene, ID3D11Device *dev);
@@ -29,6 +31,8 @@ public:
     // note, bone names and node names are one and the same
     int getBoneNum(const char *bone) 
     {
+        if (m_animationNodes.find(bone) == m_animationNodes.end()) return -1;
+
         int i = m_animationNodes[bone]; 
         return i;
     }

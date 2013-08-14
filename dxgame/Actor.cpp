@@ -69,11 +69,11 @@ void Actor::setPitchYawRoll( float pitch, float yaw, float roll /*= 0*/ )
 }
 
 
-bool Actor::update(float now, float timeSinceLastUpdate)
+bool Actor::update(double now, double timeSinceLastUpdate)
 { 
     if (m_slerpFinishTime > now)
     {
-        m_rotation = XMQuaternionSlerp(m_slerpFrom, m_slerpTo,  (now - m_slerpStartTime) / (m_slerpFinishTime - m_slerpStartTime) );
+        m_rotation = XMQuaternionSlerp(m_slerpFrom, m_slerpTo, (float)  (now - m_slerpStartTime) / (m_slerpFinishTime - m_slerpStartTime) );
     }
 
     m_animationTick = now+1; // XXX garbage for testing
