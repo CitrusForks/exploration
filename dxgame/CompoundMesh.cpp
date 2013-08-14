@@ -104,7 +104,7 @@ bool CompoundMesh::load(ID3D11Device* device, ID3D11DeviceContext *devCtx, Textu
         return false;
     }
 
-    double maxTick = 0;
+    //double maxTick = 0;
 
     if (m_aiScene->HasAnimations())
     {
@@ -240,7 +240,15 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
     assert(sizeof(XMFLOAT4X4) == sizeof(aiMatrix4x4));
 
     XMMATRIX localTransform = XMMatrixTranspose(XMLoadFloat4x4((XMFLOAT4X4*) &(nd->mTransformation)));
-    localTransform = XMMatrixMultiply(localTransform, parentTransform);
+    XMMATRIX globalTransform = XMMatrixMultiply(localTransform, parentTransform);
+
+    XMStoreFloat4x4(&node.localTransform, localTransform);
+    XMStoreFloat4x4(&node.globalTransform, globalTransform);
+
+    node.name = nd->mName.C_Str();
+    node.boneIndex = m_animation.getBoneNum(nd->mName.C_Str());
+    if (node.name.size()) m_nodeByName[node.name] = &node;
+
 
     // update transform
 
@@ -355,7 +363,8 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
                 v.tangent = reinterpret_cast<XMFLOAT3*>(mesh->mTangents)[i];
             }
 
-#if 1
+#if 0
+            // this bakes in the bind pose but that's somewhat inconvenient right now
             XMVECTOR vec = XMLoadFloat3(&v.pos);
             vec = XMVector3TransformCoord(vec, localTransform);
             XMStoreFloat3(&v.pos, vec);
@@ -363,9 +372,6 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
             XMStoreFloat3(&v.normal, XMVector3TransformNormal(XMLoadFloat3(&v.normal), localTransform));
             XMStoreFloat3(&v.tangent, XMVector3TransformNormal(XMLoadFloat3(&v.tangent), localTransform));
 #endif
-            XMStoreFloat4x4(&node.transform, localTransform);
-            node.name = nd->mName.C_Str();
-
             v.texArray = 0;
 
             vertices.push_back(v);
@@ -401,27 +407,20 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
 
         if (mesh->HasBones())
         {
+            interleavedMesh.m_OffsetMatrix.resize(MAX_BONES);
+
             cout << "Bone census: ";
             for (unsigned i = 0; i < mesh->mNumBones; ++i)
             {
                 cout << mesh->mBones[i]->mNumWeights << endl;
                 mesh->mBones[i]->mOffsetMatrix; // TODO
 
-                XMMATRIX offsetMatrix = XMLoadFloat4x4((XMFLOAT4X4*)&mesh->mBones[i]->mOffsetMatrix);
-                XMFLOAT4X4 om;
-                XMStoreFloat4x4(&om, offsetMatrix);
-                interleavedMesh.m_OffsetMatrix.push_back(om);
+                int boneNum = m_animation.getBoneNum(mesh->mBones[i]->mName.C_Str());
+                if (boneNum == -1) continue; // shouldn't actually happen, I think?
 
-                int boneNum;
-                try 
-                {
-                    boneNum = m_animation.getBoneNum(mesh->mBones[i]->mName.C_Str());
-                } catch (exception e)
-                {
-                    cerr << "Missing bone name " << mesh->mBones[i]->mName.C_Str();
-                    boneNum = -1;
-                    continue;
-                }
+                XMMATRIX offsetMatrix = XMLoadFloat4x4((XMFLOAT4X4*)&mesh->mBones[i]->mOffsetMatrix);
+
+                XMStoreFloat4x4(&interleavedMesh.m_OffsetMatrix[boneNum], XMMatrixTranspose(offsetMatrix));
 
                 for (unsigned j = 0; j < mesh->mBones[i]->mNumWeights; ++j)
                 {
@@ -487,6 +486,8 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 {
     if (!node)
     {
+        updateNodeTransforms(animationTick);
+
         node = &m_root;
 
         // clip to view frustum
@@ -563,34 +564,11 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
         // tell the vertex shader about the wonderful animation buffer we have for it:
         if (m_animation.loaded())
         {
-            m_animation.updateResource(deviceContext, animationTick);
+            m_animation.updateCurrentBoneKeys(deviceContext, animationTick);
         }
     }
 
 
-    XMMATRIX sceneGraphMatrix;
-    int nodeNum = -1;
-
-
-    if (node->name.size() == 0)
-    {
-        sceneGraphMatrix = parentNodeTransform;
-    } else
-    {
-        if (m_animation.loaded())
-        {
-            // node animation for scene graph
-            m_animation.getNodeTransform(&node->transform, node->name, animationTick); 
-            nodeNum = m_animation.getBoneNum(node->name.c_str());
-        }
-
-        sceneGraphMatrix = XMLoadFloat4x4(&node->transform);
-
-        if (m_animation.loaded()) 
-        {
-            sceneGraphMatrix = XMMatrixMultiply(parentNodeTransform, sceneGraphMatrix);
-        }
-    }
 
     for (auto mesh = node->meshes.begin(), end = node->meshes.end(); mesh != end; ++mesh)
     {
@@ -613,13 +591,21 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 
         XMFLOAT4X4 *offsetMatrix = nullptr;
 
-        if (nodeNum > -1 && nodeNum < mesh->m_OffsetMatrix.size())
+        if (m_animation.loaded())
         {
-            //XMLoadFloat4x4(&mesh->m_OffsetMatrix[nodeNum]);
-            offsetMatrix = &mesh->m_OffsetMatrix[nodeNum];
+            m_animation.updateBoneTransforms(deviceContext, animationTick, mesh->m_OffsetMatrix, mesh->m_name, 
+                [&](std::string nodeName) 
+                    { 
+                        auto i = m_nodeByName.find(nodeName);
+                        if (i != m_nodeByName.end())
+                            return XMLoadFloat4x4(&i->second->globalTransform); 
+                        else
+                            return XMMatrixIdentity();
+                    } 
+            );
         }
 
-        if (!shader->Render(deviceContext, mesh->getIndexCount(), XMMatrixMultiply(sceneGraphMatrix, worldMatrix), viewMatrix, projectionMatrix, mesh->m_material.normalMap.getTexture(), mesh->m_material.specularMap.getTexture(), &lights, mesh->m_material.diffuseTexture.getTexture(), 1, true, animationTick, offsetMatrix))
+        if (!shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, mesh->m_material.normalMap.getTexture(), mesh->m_material.specularMap.getTexture(), &lights, mesh->m_material.diffuseTexture.getTexture(), 1, true, m_animation.loaded() ? animationTick : -1, offsetMatrix))
         {
             return false;
         }
@@ -627,7 +613,7 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 
     for (auto i = node->children.begin(); i != node->children.end(); ++i)
     {
-        if (!render(deviceContext, shader, worldMatrix, viewMatrix, projectionMatrix, lights, orthoProjection, animationTick, &(*i), sceneGraphMatrix)) return false;
+        if (!render(deviceContext, shader, worldMatrix, viewMatrix, projectionMatrix, lights, orthoProjection, animationTick, &(*i), XMMatrixIdentity())) return false;
     }
 
     return true;
@@ -667,4 +653,31 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 
     return rc;
 }
+
+
 #endif
+
+void CompoundMesh::updateNodeTransforms( double animationTick, CompoundMeshNode *node /*= nullptr*/, CXMMATRIX parentTransform /*= DirectX::XMMatrixIdentity()*/ )
+{
+    if (!node) node = &m_root;
+
+    XMMATRIX M;
+
+    if (node->boneIndex != -1)
+    {
+        m_animation.getBoneTransform(&node->localTransform, node->boneIndex, animationTick, false);
+        M = XMLoadFloat4x4(&node->localTransform);
+    } else
+    {
+        M = XMMatrixIdentity();
+    }
+
+    M = XMMatrixMultiply(M, parentTransform);
+
+    XMStoreFloat4x4(&node->globalTransform, M);
+
+    for (auto &i : node->children)
+    {
+        updateNodeTransforms(animationTick, &i, M);
+    }
+}

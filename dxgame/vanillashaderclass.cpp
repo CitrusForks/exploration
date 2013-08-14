@@ -193,7 +193,7 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
     polygonLayout[5].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
     polygonLayout[5].InstanceDataStepRate = 0;
 
-    polygonLayout[6].SemanticName = "BONEWEIGHTS";
+    polygonLayout[6].SemanticName = "BONEINDICES";
     polygonLayout[6].SemanticIndex = 0;
     polygonLayout[6].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
     polygonLayout[6].InputSlot = 0;
@@ -201,13 +201,14 @@ bool VanillaShaderClass::InitializeShader( ID3D11Device* device, HWND hwnd, wcha
     polygonLayout[6].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
     polygonLayout[6].InstanceDataStepRate = 0;
 
-    polygonLayout[7].SemanticName = "BONEINDICES";
+    polygonLayout[7].SemanticName = "BONEWEIGHTS";
     polygonLayout[7].SemanticIndex = 0;
-    polygonLayout[7].Format = DXGI_FORMAT_R32G32B32A32_UINT;
+    polygonLayout[7].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
     polygonLayout[7].InputSlot = 0;
     polygonLayout[7].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
     polygonLayout[7].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
     polygonLayout[7].InstanceDataStepRate = 0;
+
 
 
     // Get a count of the elements in the layout.

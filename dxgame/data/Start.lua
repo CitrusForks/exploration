@@ -39,7 +39,21 @@ end
 --   a:setRollPitchYaw(roll, pitch, yaw)
 --   TODO: more methods :|
 
--- the house is our token 3DS model
+-- Ensign Chekov is too tall
+-- chekov = Actor(scene:getModel("Chekov.obj"), 1, 0, 0, 0, 0.55)
+-- a zero-degree rotation is an identity or whatever
+-- scene:enters(chekov)
+-- chekov:moveTo(0, 0, 7)
+
+-- dwarf = Actor(scene:getModel("dwarf2.b3d"), 1, 0, 0, 0, 0.0333)
+-- scene:enters(dwarf)
+-- dwarf:moveTo(0, 0, 7)
+
+cat = Actor(scene:getModel("cat.b3d"), 1, 0, 0, 0, 0.0333)
+scene:enters(cat)
+cat:moveTo(0, 2, 7)
+
+
 -- rotations are in radians, btw
 -- house = Actor(scene:getModel("LPBuildX13r_3ds.3ds"), 1.0, 0.0, 0.0, math.pi/2, 0.15, 0, 4.5001, 0)
 house = Actor(scene:getModel("LPBuildX13r_3ds.3ds"), 1.0, 0.0, 0.0, 0.0, 0.15, 0, 0.001, 0)
@@ -97,15 +111,6 @@ floor = Actor(scene:getModel("floor.obj"))
 -- scene:enters(floor)
 floor:moveTo(0, 0, 10)
 
--- Ensign Chekov is too tall
--- chekov = Actor(scene:getModel("Chekov.obj"), 1, 0, 0, 0, 0.55)
--- a zero-degree rotation is an identity or whatever
--- scene:enters(chekov)
--- chekov:moveTo(0, 0, 7)
-
-dwarf = Actor(scene:getModel("dwarf2.b3d"), 1, 0, 0, 0, 0.0333)
-scene:enters(dwarf)
-dwarf:moveTo(0, 0, 7)
 
 -- the C++ code will normalize this vector for you:
 function directionalLight()

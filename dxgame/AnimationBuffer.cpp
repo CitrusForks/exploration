@@ -57,6 +57,8 @@ void AnimationBuffer::load( const aiScene *scene, ID3D11Device *dev )
     assert(sizeof(XMFLOAT4) == sizeof(aiQuaternion));
     assert(sizeof(XMFLOAT3) == sizeof(aiVector3D));
 
+    cout << "maxTick == " << maxTick << endl;
+
     CD3D11_BUFFER_DESC bufDesc(MAX_BONES * sizeof(XMFLOAT4X4) + sizeof(XMFLOAT4X4), D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
     dev->CreateBuffer(&bufDesc, NULL, &m_bones);
 }
@@ -71,32 +73,49 @@ void AnimationBuffer::release()
 
 
 
-void AnimationBuffer::updateResource( ID3D11DeviceContext *ctx, double animationTick )
+void AnimationBuffer::updateCurrentBoneKeys( ID3D11DeviceContext *ctx, double animationTick )
 {
+}
+
+
+void AnimationBuffer::updateBoneTransforms( ID3D11DeviceContext *ctx, double animationTick, std::vector<DirectX::XMFLOAT4X4> &offsets, std::string currentNode, std::function<DirectX::XMMATRIX (std::string)> f )
+{
+    XMFLOAT4X4 *data = mapSubresource(ctx);
+
     // TODO: interpolation. Get the basics working first!
+
+    //animationTick *= m_aiScene->mAnimations[0]->mTicksPerSecond; // assume the parameter is actually seconds
 
     if (animationTick < 0 || animationTick > maxTick) return;
 
-    D3D11_MAPPED_SUBRESOURCE sub;
-
-    HRESULT hr = ctx->Map(m_bones, 0, D3D11_MAP_WRITE_DISCARD, 0, &sub);
-    if (FAILED(hr)) throw("seriously? can't map subresource?");
-     
-    XMFLOAT4X4 *data = (XMFLOAT4X4*)sub.pData;
+    XMMATRIX globalInverseTransform = XMMatrixInverse(nullptr, f(currentNode));
 
     // update bones here!
     for (unsigned b = 0; b < m_aiScene->mAnimations[0]->mNumChannels; ++b)
     {
-        getBoneTransform(&data[b], b, animationTick, true);
+        //getBoneTransform(&data[b], b, animationTick, false);
+        //XMMATRIX global = XMLoadFloat4x4(&data[b])
+        //XMStoreFloat4x4(&data[b], XMMatrixTranspose(XMMatrixMultiply(XMLoadFloat4x4(&offsets[b]), XMLoadFloat4x4(&data[b]))));
+
+        XMMATRIX off = XMLoadFloat4x4(&offsets[b]); 
+        
+        XMMATRIX global = f(m_aiScene->mAnimations[0]->mChannels[b]->mNodeName.C_Str());
+
+        XMMATRIX M = XMMatrixMultiply(XMMatrixMultiply(off, global), globalInverseTransform);
+
+        XMStoreFloat4x4(&data[b], XMMatrixTranspose(M));
     }
 
     ctx->Unmap(m_bones, 0);
 
-    ctx->VSSetConstantBuffers(0xB, 1, &m_bones); // B is for bones!
+    ctx->VSSetConstantBuffers(0xB, 1, &m_bones); // B is for bones! NOTE possibly redundant? eliminate?
 }
 
 
-void AnimationBuffer::getNodeTransform( DirectX::XMFLOAT4X4 *dest, std::string bone, double animationTick )
+
+
+/*
+void AnimationBuffer::getNodeTransformByName( DirectX::XMFLOAT4X4 *dest, std::string bone, double animationTick )
 {
     auto iter = m_animationNodes.find(bone);
 
@@ -107,6 +126,7 @@ void AnimationBuffer::getNodeTransform( DirectX::XMFLOAT4X4 *dest, std::string b
     XMFLOAT4 quat, tran, scal;
     getBoneTransform(dest, i, animationTick);
 }
+*/
 
 
 void AnimationBuffer::getBoneTransform( DirectX::XMFLOAT4X4 *transform, int bone, double animationTick, bool transpose /*= false*/ )
@@ -128,7 +148,7 @@ void AnimationBuffer::getBoneTransform( DirectX::XMFLOAT4X4 *transform, int bone
 
     for (k = 0; k < anim->mNumPositionKeys - 1; ++k)
     {
-        if (anim->mPositionKeys->mTime <= animationTick && anim->mRotationKeys[k+1].mTime > animationTick) break;
+        if (anim->mPositionKeys[k].mTime <= animationTick && anim->mPositionKeys[k+1].mTime > animationTick) break;
     }
     translation.x = anim->mPositionKeys[k].mValue.x;
     translation.y = anim->mPositionKeys[k].mValue.y;
@@ -136,7 +156,7 @@ void AnimationBuffer::getBoneTransform( DirectX::XMFLOAT4X4 *transform, int bone
 
     for (k = 0; k < anim->mNumScalingKeys - 1; ++k)
     {
-        if (anim->mScalingKeys->mTime <= animationTick && anim->mScalingKeys[k+1].mTime > animationTick) break;
+        if (anim->mScalingKeys[k].mTime <= animationTick && anim->mScalingKeys[k+1].mTime > animationTick) break;
     }
     scaling.x = anim->mScalingKeys[k].mValue.x;
     scaling.y = anim->mScalingKeys[k].mValue.y;
@@ -144,20 +164,36 @@ void AnimationBuffer::getBoneTransform( DirectX::XMFLOAT4X4 *transform, int bone
 
 
 
-    XMMATRIX M = XMMatrixMultiply(XMMatrixRotationQuaternion(XMLoadFloat4(&rotation)), XMMatrixScaling(scaling.x, scaling.y, scaling.z));
+    XMMATRIX M = XMMatrixRotationQuaternion(XMLoadFloat4(&rotation));
 
-    //XMStoreFloat4x4(transform, XMMatrixMultiply(XMLoadFloat4x4(transform), XMMatrixScaling(scaling.x, scaling.y, scaling.z)));
+    assert(scaling.x == 1.0f && scaling.y == 1.0f && scaling.z == 1.0f);
 
+    //M = XMMatrixMultiply(M, XMMatrixScaling(scaling.x, scaling.y, scaling.z));
+
+    M = XMMatrixMultiply(M, XMMatrixTranslationFromVector(XMLoadFloat3(&translation)));
+
+/*
     M.r[3].m128_f32[0] = translation.x;
     M.r[3].m128_f32[1] = translation.y;
     M.r[3].m128_f32[2] = translation.z;
-
-/*
-    transform->_41 = translation.x;
-    transform->_42 = translation.y;
-    transform->_43 = translation.z;
 */
+
     if (transpose) M = XMMatrixTranspose(M);
 
     XMStoreFloat4x4(transform, M);
+
 }
+
+XMFLOAT4X4 * AnimationBuffer::mapSubresource( ID3D11DeviceContext * ctx )
+{
+    D3D11_MAPPED_SUBRESOURCE sub;
+
+    HRESULT hr = ctx->Map(m_bones, 0, D3D11_MAP_WRITE_DISCARD, 0, &sub);
+    if (FAILED(hr)) throw("seriously? can't map subresource?");
+
+    XMFLOAT4X4 *data = (XMFLOAT4X4*)sub.pData;
+
+    return data;
+}
+
+

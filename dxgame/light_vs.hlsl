@@ -30,6 +30,7 @@ cbuffer CameraBuffer
 cbuffer Bones : register(b11)
 {
     matrix boneTransform[MAX_BONES];
+    matrix extraUnusedThing;
 };
 
 //
@@ -75,25 +76,30 @@ void sampleOneWeightedBone(uint index, out matrix transform)
 }
 
 
-void sampleBones(VertexInputType input, out matrix transform)
+void sampleBones(VertexInputType input, out float4 position, out float3 normal, out float3 tangent)
 {
     uint i, n;
 
     float weight;
     uint index;
     matrix M;
+    float4 offset;
 
     weight = input.boneWeights.x;
     index = input.boneIndex.x;
     sampleOneWeightedBone(index, M);
-    transform = M * weight;
+    position = weight * mul(input.position, M);
+    normal = weight * mul(input.normal, (float3x3)M);
+    tangent = weight * mul(input.tangent, (float3x3)M);
 
     weight = input.boneWeights.y;
     if (weight != 0.0f)
     {
         index = input.boneIndex.y;
         sampleOneWeightedBone(index, M);
-        transform += M * weight;
+        position += weight * mul(input.position, M);
+        normal += weight * mul(input.normal, (float3x3)M);
+        tangent += weight * mul(input.tangent, (float3x3)M);
     }
 
     weight = input.boneWeights.z;
@@ -101,7 +107,9 @@ void sampleBones(VertexInputType input, out matrix transform)
     {
         index = input.boneIndex.z;
         sampleOneWeightedBone(index, M);
-        transform += M * weight;
+        position += weight * mul(input.position, M);
+        normal += weight * mul(input.normal, (float3x3)M);
+        tangent += weight * mul(input.tangent, (float3x3)M);
     }
 
     weight = input.boneWeights.w;
@@ -109,7 +117,9 @@ void sampleBones(VertexInputType input, out matrix transform)
     {
         index = input.boneIndex.w;
         sampleOneWeightedBone(index, M);
-        transform += M * weight;
+        position += weight * mul(input.position, M);
+        normal += weight * mul(input.normal, (float3x3)M);
+        tangent += weight * mul(input.tangent, (float3x3)M);
     }
 }
 
@@ -131,6 +141,14 @@ PixelInputType LightVertexShader(VertexInputType input)
     float3 normal = input.normal;
     float3 tangent = input.tangent;
 
+#if 1
+    if (animationTick >= 0.0f && input.boneIndex.x != -1)
+    {
+        matrix M;
+        sampleBones(input, localPosition, normal, tangent);
+    }
+#endif
+
     if (effect == 1)
     { // twist the object
 	    matrix twist = rotateAboutY(3.14159 * sin(camTime + localPosition.y/2));
@@ -139,17 +157,7 @@ PixelInputType LightVertexShader(VertexInputType input)
 	    tangent = mul(tangent, (float3x3)twist);
     }
 
-#if 1
-    if (animationTick >= 0.0f && input.boneIndex.x != -1)
-    {
-        matrix M;
-        sampleBones(input, M);
 
-        normal = mul(normal, (float3x3)M);
-        tangent = mul(tangent, (float3x3)M);
-        localPosition = mul(mul(localPosition, bindToBoneSpace), M);
-    }
-#endif
     // Calculate the position of the vertex in world, view, and screen coordinates
     // by using the appropriate matrices
     output.worldPos = worldPosition = output.position = mul(localPosition, worldMatrix);

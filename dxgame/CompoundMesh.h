@@ -30,9 +30,14 @@ private:
 
         std::vector<CompoundMeshNode> children;
 
-        DirectX::XMFLOAT4X4 transform; // for scene graph, replaced by node animations when applicable?
+        DirectX::XMFLOAT4X4 localTransform; 
+        DirectX::XMFLOAT4X4 globalTransform; // for scene graph, replaced by node animations when applicable?
+
         std::string name; // to look up a transform to replace the above
+        int boneIndex; // to look up a transform even faster than by name :P
     } m_root;
+
+    unordered_map <std::string, CompoundMeshNode *> m_nodeByName;
 
     DirectX::BoundingOrientedBox m_bBox;
     DirectX::BoundingSphere m_bSphere;
@@ -51,6 +56,8 @@ private:
     bool recursive_interleave( ID3D11Device* device, ID3D11DeviceContext *devCtx, const struct aiNode *nd, CompoundMeshNode &node, DirectX::CXMMATRIX parentTransform );
     void apply_material(SimpleMesh::Material *to, aiMaterial *mtl);
     
+    void updateNodeTransforms(double animationTick, CompoundMeshNode *node = nullptr, DirectX::CXMMATRIX parentTransform = DirectX::XMMatrixIdentity());
+
 public:
     bool load(ID3D11Device* device, ID3D11DeviceContext *devCtx, TextureManager *texman, char *modelFileName);
     bool render( ID3D11DeviceContext *deviceContext, VanillaShaderClass *shader, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, std::vector<Light> &lights, bool orthoProjection = false, double animationTick = 1.0, CompoundMeshNode *node = nullptr, DirectX::CXMMATRIX parentNodeTransform = DirectX::XMMatrixIdentity());

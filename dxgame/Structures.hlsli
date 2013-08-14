@@ -9,8 +9,8 @@ struct VertexInputType
     uint texNum : TEXINDEX;
     float3 normal : NORMAL;
     float3 tangent : TANGENT;
+    float4 boneIndex : BONEINDICES; 
     float4 boneWeights : BONEWEIGHTS;
-    uint4 boneIndex : BONEINDICES; 
 };
 
 struct PixelInputType

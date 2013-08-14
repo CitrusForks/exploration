@@ -77,7 +77,7 @@ bool Actor::update(double now, double timeSinceLastUpdate)
     }
 
     m_animationTick = now+1; // XXX garbage for testing
-    while (m_animationTick > 200.0) m_animationTick -= 200;
+    while (m_animationTick > 20.0) m_animationTick -= 20;
 
     return true;
 }
