@@ -63,7 +63,7 @@ void CompoundMesh::WalkNodes( std::shared_ptr<CompoundMesh::CompoundMeshNode> no
 
 CompoundMesh::CompoundMesh(void) : m_aiScene(nullptr)
 {
-    m_root = make_shared<CompoundMeshNode>();
+    m_root = nullptr;
 }
 
 
@@ -104,6 +104,8 @@ bool CompoundMesh::load(ID3D11Device* device, ID3D11DeviceContext *devCtx, Textu
         Errors::Cry("Could not load model ", modelFileName);
         return false;
     }
+
+    m_root = make_shared<CompoundMeshNode>();
 
     //double maxTick = 0;
 
@@ -410,6 +412,7 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
         if (mesh->HasBones())
         {
             interleavedMesh.m_OffsetMatrix.resize(MAX_BONES);
+            ZeroMemory(interleavedMesh.m_OffsetMatrix.data(), MAX_BONES * sizeof(XMFLOAT4X4));
 
             cout << "Bone census: ";
             for (unsigned i = 0; i < mesh->mNumBones; ++i)

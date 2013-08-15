@@ -99,7 +99,7 @@ void AnimationBuffer::updateBoneTransforms( ID3D11DeviceContext *ctx, double ani
     XMMATRIX globalInverseTransform = XMMatrixInverse(nullptr, f(currentNode));
 
     // update bones here!
-    for (unsigned b = 0; b < m_aiScene->mAnimations[0]->mNumChannels; ++b)
+    for (unsigned b = 0; b < m_aiScene->mAnimations[0]->mNumChannels && b < offsets.size(); ++b)
     {
         //getBoneTransform(&data[b], b, animationTick, false);
         //XMMATRIX global = XMLoadFloat4x4(&data[b])

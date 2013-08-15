@@ -77,9 +77,11 @@ bool TextureManager::getTexture( wstring path, ID3D11Device * device, ID3D11Devi
 wstring TextureManager::utf8ToWstring( char * c_path, int c_len )
 {
     int length = MultiByteToWideChar(CP_UTF8, 0, c_path, c_len + 1, 0, 0);  // get length of wchar_t result
-    unique_ptr<wchar_t>wPath(new wchar_t[length]);  // allocate buffer
-    MultiByteToWideChar(CP_UTF8, 0, c_path, c_len + 1, wPath.get(), length); // get the path in wchar_t
-    wstring path(wPath.get());  // and wstring
+    wchar_t *wPath = new wchar_t[length];  // allocate buffer
+    MultiByteToWideChar(CP_UTF8, 0, c_path, c_len + 1, wPath, length); // get the path in wchar_t
+    wstring path(wPath);  // and wstring
+
+    delete[](wPath);
 
     return path;
 }

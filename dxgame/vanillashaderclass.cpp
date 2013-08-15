@@ -406,7 +406,7 @@ bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext
 
     // Get a pointer to the data in the constant buffer.
     dataPtr = (MatrixBufferType*)mappedResource.pData;
-
+    ZeroMemory(dataPtr, sizeof(MatrixBufferType));
     // Copy the matrices into the constant buffer.
     XMStoreFloat4x4(&dataPtr->world, XMMatrixTranspose(worldMatrix));
     XMStoreFloat4x4(&dataPtr->view, XMMatrixTranspose(viewMatrix));
@@ -414,7 +414,7 @@ bool VanillaShaderClass::SetShaderParameters( ID3D11DeviceContext* deviceContext
 
     dataPtr->animationTick = animationTick; // animation!
 
-    ZeroMemory(dataPtr->lightViewProjection, sizeof(dataPtr->lightViewProjection));
+    //ZeroMemory(dataPtr->lightViewProjection, sizeof(dataPtr->lightViewProjection));
 
     if (lights)
     {
@@ -470,7 +470,7 @@ bool VanillaShaderClass::SetPSMaterial( ID3D11DeviceContext *deviceContext, Dire
     }
 
     dataPtr = (MaterialBufferType*)mappedResource.pData;
-
+    ZeroMemory(dataPtr, sizeof(MaterialBufferType));
     dataPtr->ambientColor = ambientColor;
     dataPtr->diffuseColor = diffuseColor;
     dataPtr->specularColor = specularColor;

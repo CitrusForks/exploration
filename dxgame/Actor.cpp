@@ -28,6 +28,7 @@ void Actor::init(int modelRefNum, DirectX::CXMMATRIX correction /* = DirectX::XM
     m_correction = correction;
     m_position = XMVectorSet(0, 0, 0, 0);
     m_rotation = XMQuaternionIdentity();
+    m_slerpFinishTime = m_slerpStartTime = -1;
     updateWorldMatrix();
 }
 
