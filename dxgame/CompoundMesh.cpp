@@ -624,7 +624,7 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 
         CXMMATRIX finalWorldMatrix = m_animation.loaded() ? worldMatrix : XMMatrixMultiply(XMLoadFloat4x4(&node->globalTransform), worldMatrix);
 
-        if (!shader->Render(deviceContext, mesh->getIndexCount(), finalWorldMatrix, viewMatrix, projectionMatrix, mesh->m_material.normalMap.getTexture(), mesh->m_material.specularMap.getTexture(), &lights, mesh->m_material.diffuseTexture.getTexture(), 1, true, m_animation.loaded() ? animationTick : -1, offsetMatrix))
+        if (!shader->Render(deviceContext, mesh->getIndexCount(), finalWorldMatrix, viewMatrix, projectionMatrix, mesh->m_material.normalMap.getTexture(), mesh->m_material.specularMap.getTexture(), &lights, mesh->m_material.diffuseTexture.getTexture(), 1, true, m_animation.loaded() ? animationTick : -1))
         {
             return false;
         }

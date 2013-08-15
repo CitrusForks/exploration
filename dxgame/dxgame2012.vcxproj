@@ -230,13 +230,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Actor.cpp" />
-    <ClCompile Include="AnimationBuffer.cpp">
-      <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Precise</FloatingPointModel>
-    </ClCompile>
+    <ClCompile Include="AnimationBuffer.cpp" />
     <ClCompile Include="Chronometer.cpp" />
-    <ClCompile Include="CompoundMesh.cpp">
-      <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Precise</FloatingPointModel>
-    </ClCompile>
+    <ClCompile Include="CompoundMesh.cpp" />
     <ClCompile Include="d3dclass.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="dSFMT.c">

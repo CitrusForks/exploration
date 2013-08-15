@@ -58,12 +58,12 @@ void VanillaShaderClass::Shutdown()
 // @numViews        the number of textures sent; defaults to 1, probably best to leave it that way
 // @setSampler      leave true for normal rendering; it's set false when rendering off-screen buffer to screen,
 //                  since the intermediate target class sets its own (simpler) sampler
-bool VanillaShaderClass::Render( ID3D11DeviceContext *deviceContext, int indexCount, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, ID3D11ShaderResourceView** normalMap, ID3D11ShaderResourceView** specularMap,std::vector<Light> *lights, ID3D11ShaderResourceView** texture, unsigned resourceViewCount /*= 1*/, bool setSampler /*= true*/, float animationTick /*= 1.0f*/, DirectX::XMFLOAT4X4 *bindToBoneSpace /*= nullptr*/)
+bool VanillaShaderClass::Render( ID3D11DeviceContext *deviceContext, int indexCount, DirectX::CXMMATRIX worldMatrix, DirectX::CXMMATRIX viewMatrix, DirectX::CXMMATRIX projectionMatrix, ID3D11ShaderResourceView** normalMap, ID3D11ShaderResourceView** specularMap,std::vector<Light> *lights, ID3D11ShaderResourceView** texture, unsigned resourceViewCount /*= 1*/, bool setSampler /*= true*/, double animationTick /*= 1.0*/ )
 {
 	bool result;
 
 	// Set the shader parameters that it will use for rendering.
-	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, normalMap, specularMap, lights, texture, animationTick, resourceViewCount);
+	result = SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, normalMap, specularMap, lights, texture, (float)animationTick, resourceViewCount);
 	if(!result)
 	{
 		return false;

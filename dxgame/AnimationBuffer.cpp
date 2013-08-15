@@ -161,7 +161,7 @@ void AnimationBuffer::getBoneTransform( DirectX::XMFLOAT4X4 *transform, int bone
         XMFLOAT4 rot2;
         loadAiQ(rot2, k2->mValue);
 
-        XMVECTOR q = XMQuaternionSlerp(XMLoadFloat4(&rotation), XMLoadFloat4(&rot2), (animationTick - k1->mTime) / (k2->mTime - k1->mTime));
+        XMVECTOR q = XMQuaternionSlerp(XMLoadFloat4(&rotation), XMLoadFloat4(&rot2), static_cast<float>((animationTick - k1->mTime) / (k2->mTime - k1->mTime)));
         q = XMQuaternionNormalize(q);
         XMStoreFloat4(&rotation, q);
     }
@@ -180,7 +180,7 @@ void AnimationBuffer::getBoneTransform( DirectX::XMFLOAT4X4 *transform, int bone
     {
         aiVectorKey *k1 = &anim->mPositionKeys[k], *k2 = &anim->mPositionKeys[k+1];
 
-        XMVECTOR t = XMVectorLerp(XMLoadFloat3(&translation), XMLoadFloat3((XMFLOAT3*)&k2->mValue), (animationTick - k1->mTime) / (k2->mTime - k1->mTime));
+        XMVECTOR t = XMVectorLerp(XMLoadFloat3(&translation), XMLoadFloat3((XMFLOAT3*)&k2->mValue), static_cast<float>((animationTick - k1->mTime) / (k2->mTime - k1->mTime)));
         XMStoreFloat3(&translation, t);
     }
 
