@@ -29,7 +29,7 @@ private:
     // perhaps something like this, not final:
     int m_animation; // which animation we're performing
     double m_animationStartTime; // ???
-    double m_animationTick;
+    double m_animationTime;
     double m_ticksPerSecond; 
 
     // for internal use, updates world matrix:

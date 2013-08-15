@@ -137,18 +137,23 @@ PixelInputType LightVertexShader(VertexInputType input)
     // Change the position vector to homogeneous coordinates for proper matrix calculations.
     input.position.w = 1.0f;
 
-    float4 localPosition = input.position;
-    float3 normal = input.normal;
-    float3 tangent = input.tangent;
+    float4 localPosition/* = input.position*/;
+    float3 normal /*= input.normal*/;
+    float3 tangent /*= input.tangent*/;
 
 #if 1
-    if (animationTick >= 0.0f && input.boneIndex.x != -1)
+    if (animationTick >= 0.0f && input.boneIndex.x >= 0)
     {
-        matrix M;
         sampleBones(input, localPosition, normal, tangent);
+    } else
+    {
+        localPosition = input.position;
+        normal = input.normal;
+        tangent = input.tangent;
     }
 #endif
 
+#if 0
     if (effect == 1)
     { // twist the object
 	    matrix twist = rotateAboutY(3.14159 * sin(camTime + localPosition.y/2));
@@ -156,7 +161,7 @@ PixelInputType LightVertexShader(VertexInputType input)
 	    normal = mul(normal, (float3x3)twist);
 	    tangent = mul(tangent, (float3x3)twist);
     }
-
+#endif
 
     // Calculate the position of the vertex in world, view, and screen coordinates
     // by using the appropriate matrices

@@ -82,6 +82,14 @@ void AnimationBuffer::updateBoneTransforms( ID3D11DeviceContext *ctx, double ani
 {
     XMFLOAT4X4 *data = mapSubresource(ctx);
 
+    if (offsets.size() == 0)
+    {
+#if 0
+        assert(false);
+#endif
+        return;
+    }
+
     // TODO: interpolation. Get the basics working first!
 
     //animationTick *= m_aiScene->mAnimations[0]->mTicksPerSecond; // assume the parameter is actually seconds
@@ -146,6 +154,19 @@ void AnimationBuffer::getBoneTransform( DirectX::XMFLOAT4X4 *transform, int bone
     }
     loadAiQ(rotation, anim->mRotationKeys[k].mValue);
 
+    // interpolate! (slerp? or not?)
+    if (k < anim->mNumRotationKeys - 1)
+    {
+        aiQuatKey *k1 = &anim->mRotationKeys[k], *k2 = &anim->mRotationKeys[k+1];
+        XMFLOAT4 rot2;
+        loadAiQ(rot2, k2->mValue);
+
+        XMVECTOR q = XMQuaternionSlerp(XMLoadFloat4(&rotation), XMLoadFloat4(&rot2), (animationTick - k1->mTime) / (k2->mTime - k1->mTime));
+        q = XMQuaternionNormalize(q);
+        XMStoreFloat4(&rotation, q);
+    }
+
+
     for (k = 0; k < anim->mNumPositionKeys - 1; ++k)
     {
         if (anim->mPositionKeys[k].mTime <= animationTick && anim->mPositionKeys[k+1].mTime > animationTick) break;
@@ -153,6 +174,15 @@ void AnimationBuffer::getBoneTransform( DirectX::XMFLOAT4X4 *transform, int bone
     translation.x = anim->mPositionKeys[k].mValue.x;
     translation.y = anim->mPositionKeys[k].mValue.y;
     translation.z = anim->mPositionKeys[k].mValue.z;
+
+    // interpolate!
+    if (k < anim->mNumPositionKeys - 1)
+    {
+        aiVectorKey *k1 = &anim->mPositionKeys[k], *k2 = &anim->mPositionKeys[k+1];
+
+        XMVECTOR t = XMVectorLerp(XMLoadFloat3(&translation), XMLoadFloat3((XMFLOAT3*)&k2->mValue), (animationTick - k1->mTime) / (k2->mTime - k1->mTime));
+        XMStoreFloat3(&translation, t);
+    }
 
     for (k = 0; k < anim->mNumScalingKeys - 1; ++k)
     {
@@ -166,9 +196,9 @@ void AnimationBuffer::getBoneTransform( DirectX::XMFLOAT4X4 *transform, int bone
 
     XMMATRIX M = XMMatrixRotationQuaternion(XMLoadFloat4(&rotation));
 
-    assert(scaling.x == 1.0f && scaling.y == 1.0f && scaling.z == 1.0f);
+    //assert(scaling.x == 1.0f && scaling.y == 1.0f && scaling.z == 1.0f);
 
-    //M = XMMatrixMultiply(M, XMMatrixScaling(scaling.x, scaling.y, scaling.z));
+    M = XMMatrixMultiply(M, XMMatrixScaling(scaling.x, scaling.y, scaling.z));
 
     M = XMMatrixMultiply(M, XMMatrixTranslationFromVector(XMLoadFloat3(&translation)));
 

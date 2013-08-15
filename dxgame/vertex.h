@@ -47,7 +47,7 @@ struct Vertex
             if (min >= weight) return; // just keep the most significant bone weights if too many are specified
 
             boneWeights[j] = weight;
-            boneNum[j] = boneIndex;
+            boneNum[j] = (float)boneIndex;
         }
 };
 

@@ -12,10 +12,10 @@ class AnimationBuffer
 public:
     enum dataT { rotation = 0, translation = 1, scaling = 2}; // type of transformation
 
+    double maxTick;
+
 private:
     ID3D11Buffer *m_bones;
-
-    double maxTick;
 
     std::unordered_map<std::string, int> m_animationNodes; // maps bone name to its index in aiScene
 

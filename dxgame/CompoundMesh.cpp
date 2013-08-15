@@ -487,13 +487,22 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 {
     if (!node)
     {
+        // top-level invocation; do some initialization and culling
+        node = m_root.get();
+
         if (m_animation.loaded())
         {
-            //animationTick *= 20;
+            double ticksPerSec = m_aiScene->mAnimations[0]->mTicksPerSecond;
+
+            if (ticksPerSec <= 0) ticksPerSec = 24;
+
+            animationTick *= ticksPerSec;
+            animationTick += 1; // time starts at 0 but ticks, alas, at 1?
+
+            while (animationTick > m_animation.maxTick) animationTick -= m_animation.maxTick;
+
             updateNodeTransforms(animationTick);
         }
-
-        node = m_root.get();
 
         // clip to view frustum
 
@@ -612,7 +621,7 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 
         CXMMATRIX finalWorldMatrix = m_animation.loaded() ? worldMatrix : XMMatrixMultiply(XMLoadFloat4x4(&node->globalTransform), worldMatrix);
 
-        if (!shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, mesh->m_material.normalMap.getTexture(), mesh->m_material.specularMap.getTexture(), &lights, mesh->m_material.diffuseTexture.getTexture(), 1, true, m_animation.loaded() ? animationTick : -1, offsetMatrix))
+        if (!shader->Render(deviceContext, mesh->getIndexCount(), finalWorldMatrix, viewMatrix, projectionMatrix, mesh->m_material.normalMap.getTexture(), mesh->m_material.specularMap.getTexture(), &lights, mesh->m_material.diffuseTexture.getTexture(), 1, true, m_animation.loaded() ? animationTick : -1, offsetMatrix))
         {
             return false;
         }

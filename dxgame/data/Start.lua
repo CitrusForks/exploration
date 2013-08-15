@@ -45,13 +45,13 @@ end
 -- scene:enters(chekov)
 -- chekov:moveTo(0, 0, 7)
 
--- dwarf = Actor(scene:getModel("dwarf2.b3d"), 1, 0, 0, 0, 0.0333)
--- scene:enters(dwarf)
--- dwarf:moveTo(0, 0, 7)
+dwarf = Actor(scene:getModel("dwarf2.b3d"), 1, 0, 0, 0, 0.0333)
+scene:enters(dwarf)
+dwarf:moveTo(6, 0, 7)
 
 cat = Actor(scene:getModel("cat.b3d"), 1, 0, 0, 0, 0.0333)
 scene:enters(cat)
-cat:moveTo(0, 2, 7)
+cat:moveTo(2, 0, 7)
 
 
 -- rotations are in radians, btw
@@ -108,7 +108,7 @@ scene:enters(tree)
 tree:moveTo(-7, 0, 6)
 
 floor = Actor(scene:getModel("floor.obj"))
--- scene:enters(floor)
+scene:enters(floor)
 floor:moveTo(0, 0, 10)
 
 
