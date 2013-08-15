@@ -19,6 +19,7 @@
 
 #include <DirectXMath.h>
 #include <DirectXCollision.h>
+#include <memory>
 
 class CompoundMesh
 {
@@ -28,16 +29,18 @@ private:
     {
         std::vector<SimpleMesh> meshes;
 
-        std::vector<CompoundMeshNode> children;
+        std::vector<std::shared_ptr<CompoundMeshNode>> children;
 
         DirectX::XMFLOAT4X4 localTransform; 
         DirectX::XMFLOAT4X4 globalTransform; // for scene graph, replaced by node animations when applicable?
 
         std::string name; // to look up a transform to replace the above
         int boneIndex; // to look up a transform even faster than by name :P
-    } m_root;
+    };
 
-    unordered_map <std::string, CompoundMeshNode *> m_nodeByName;
+    shared_ptr<CompoundMeshNode> m_root;
+
+    unordered_map <std::string, std::shared_ptr<CompoundMeshNode>> m_nodeByName;
 
     DirectX::BoundingOrientedBox m_bBox;
     DirectX::BoundingSphere m_bSphere;
@@ -48,7 +51,7 @@ private:
 
     AnimationBuffer m_animation;
 
-    void WalkNodes(CompoundMesh::CompoundMeshNode &node, std::function<void (CompoundMesh::CompoundMeshNode &)> f);
+    void WalkNodes(std::shared_ptr<CompoundMesh::CompoundMeshNode> node, std::function<void (CompoundMesh::CompoundMeshNode &)> f);
 
     void get_bounding_box_for_node (const aiNode* nd, aiVector3D* min, aiVector3D* max, aiMatrix4x4* trafo);
     void get_bounding_box (aiVector3D* min, aiVector3D* max);
@@ -57,6 +60,8 @@ private:
     void apply_material(SimpleMesh::Material *to, aiMaterial *mtl);
     
     void updateNodeTransforms(double animationTick, CompoundMeshNode *node = nullptr, DirectX::CXMMATRIX parentTransform = DirectX::XMMatrixIdentity());
+    void reindexNodes(std::shared_ptr<CompoundMeshNode> start);
+
 
 public:
     bool load(ID3D11Device* device, ID3D11DeviceContext *devCtx, TextureManager *texman, char *modelFileName);

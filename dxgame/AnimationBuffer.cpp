@@ -181,7 +181,6 @@ void AnimationBuffer::getBoneTransform( DirectX::XMFLOAT4X4 *transform, int bone
     if (transpose) M = XMMatrixTranspose(M);
 
     XMStoreFloat4x4(transform, M);
-
 }
 
 XMFLOAT4X4 * AnimationBuffer::mapSubresource( ID3D11DeviceContext * ctx )

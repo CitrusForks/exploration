@@ -52,10 +52,10 @@ BOOL FileExistsW(wchar_t *path)
 // this demonstrates the use of for_each(), lambda, and function<> ... but doesn't justify it
 // the lambda is the part that looks like: [capturedvars] (params) { statements; }
 // maybe don't write this:
-void CompoundMesh::WalkNodes(CompoundMeshNode &node, function<void (CompoundMeshNode &)> f)
+void CompoundMesh::WalkNodes( std::shared_ptr<CompoundMesh::CompoundMeshNode> node, std::function<void (CompoundMesh::CompoundMeshNode &)> f )
 {
-    f(node); // apply f() to node
-    for_each(node.children.begin(), node.children.end(), [this, f] (CompoundMeshNode &n) { WalkNodes(n, f); } ); // recurse for all children
+    f(*node); // apply f() to node
+    for_each(node->children.begin(), node->children.end(), [&] (shared_ptr<CompoundMeshNode> n) { WalkNodes(n, f); } ); // recurse for all children
 }
 // but it was fun to write so there's that at least
 
@@ -63,6 +63,7 @@ void CompoundMesh::WalkNodes(CompoundMeshNode &node, function<void (CompoundMesh
 
 CompoundMesh::CompoundMesh(void) : m_aiScene(nullptr)
 {
+    m_root = make_shared<CompoundMeshNode>();
 }
 
 
@@ -113,14 +114,16 @@ bool CompoundMesh::load(ID3D11Device* device, ID3D11DeviceContext *devCtx, Textu
     }
 
     // populate vertices and indices with data from m_aiScene
-    recursive_interleave(device, devCtx, m_aiScene->mRootNode, m_root, XMMatrixIdentity());
+    recursive_interleave(device, devCtx, m_aiScene->mRootNode, *m_root, XMMatrixIdentity());
 
     int indexCount = 0;
 
-    WalkNodes(m_root, [&indexCount] (CompoundMeshNode &l_node)
+    WalkNodes(m_root, [&] (CompoundMeshNode &l_node)
     {
         for (auto &i: l_node.meshes) indexCount += i.getIndexCount();
     });
+
+    reindexNodes(m_root);
 
     cout << modelFileName << " loaded with " << indexCount << " total indices." << endl;
 
@@ -247,7 +250,6 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
 
     node.name = nd->mName.C_Str();
     node.boneIndex = m_animation.getBoneNum(nd->mName.C_Str());
-    if (node.name.size()) m_nodeByName[node.name] = &node;
 
 
     // update transform
@@ -471,9 +473,8 @@ bool CompoundMesh::recursive_interleave( ID3D11Device* device, ID3D11DeviceConte
     // process all child nodes
     for (unsigned n = 0; n < nd->mNumChildren; ++n) 
     {
-        CompoundMeshNode child;
-        if (!recursive_interleave(device, devCtx, nd->mChildren[n], child, localTransform)) return false;
-        node.children.push_back(child);
+        node.children.push_back(make_shared<CompoundMeshNode>());
+        if (!recursive_interleave(device, devCtx, nd->mChildren[n], *(node.children[node.children.size()-1]), localTransform)) return false;
     }
 
     return true;
@@ -486,9 +487,13 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 {
     if (!node)
     {
-        updateNodeTransforms(animationTick);
+        if (m_animation.loaded())
+        {
+            //animationTick *= 20;
+            updateNodeTransforms(animationTick);
+        }
 
-        node = &m_root;
+        node = m_root.get();
 
         // clip to view frustum
 
@@ -605,15 +610,17 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
             );
         }
 
+        CXMMATRIX finalWorldMatrix = m_animation.loaded() ? worldMatrix : XMMatrixMultiply(XMLoadFloat4x4(&node->globalTransform), worldMatrix);
+
         if (!shader->Render(deviceContext, mesh->getIndexCount(), worldMatrix, viewMatrix, projectionMatrix, mesh->m_material.normalMap.getTexture(), mesh->m_material.specularMap.getTexture(), &lights, mesh->m_material.diffuseTexture.getTexture(), 1, true, m_animation.loaded() ? animationTick : -1, offsetMatrix))
         {
             return false;
         }
     }
 
-    for (auto i = node->children.begin(); i != node->children.end(); ++i)
+    for (auto i : node->children)
     {
-        if (!render(deviceContext, shader, worldMatrix, viewMatrix, projectionMatrix, lights, orthoProjection, animationTick, &(*i), XMMatrixIdentity())) return false;
+        if (!render(deviceContext, shader, worldMatrix, viewMatrix, projectionMatrix, lights, orthoProjection, animationTick, i.get(), XMMatrixIdentity())) return false;
     }
 
     return true;
@@ -659,7 +666,9 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
 
 void CompoundMesh::updateNodeTransforms( double animationTick, CompoundMeshNode *node /*= nullptr*/, CXMMATRIX parentTransform /*= DirectX::XMMatrixIdentity()*/ )
 {
-    if (!node) node = &m_root;
+    if (!m_animation.loaded()) return;
+
+    if (!node) node = m_root.get();
 
     XMMATRIX M;
 
@@ -676,8 +685,18 @@ void CompoundMesh::updateNodeTransforms( double animationTick, CompoundMeshNode 
 
     XMStoreFloat4x4(&node->globalTransform, M);
 
-    for (auto &i : node->children)
+    for (auto i : node->children)
     {
-        updateNodeTransforms(animationTick, &i, M);
+        updateNodeTransforms(animationTick, i.get(), M);
+    }
+}
+
+void CompoundMesh::reindexNodes( std::shared_ptr<CompoundMeshNode> start )
+{
+    if (start->name.size()) m_nodeByName[start->name] = start;
+
+    for (auto i : start->children)
+    {
+        reindexNodes(i);
     }
 }
