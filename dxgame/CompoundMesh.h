@@ -62,6 +62,8 @@ private:
     void updateNodeTransforms(double animationTick, CompoundMeshNode *node = nullptr, DirectX::CXMMATRIX parentTransform = DirectX::XMMatrixIdentity());
     void reindexNodes(std::shared_ptr<CompoundMeshNode> start);
 
+    DirectX::XMMATRIX getNodeGlobalTransform(std::string nodename);
+
 
 public:
     bool load(ID3D11Device* device, ID3D11DeviceContext *devCtx, TextureManager *texman, char *modelFileName);

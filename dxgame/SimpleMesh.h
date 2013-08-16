@@ -34,7 +34,7 @@ struct SimpleMesh
     unsigned int m_indexCount;
 
     std::string m_name;
-    std::vector<DirectX::XMFLOAT4X4> m_OffsetMatrix; // bind->bone matrixes, already transposed for GPU-correct column major layout
+    std::vector<DirectX::XMFLOAT4X4> m_OffsetMatrix; // bind->bone matrixes
 
     void setBuffers(ID3D11DeviceContext *deviceContext);
     bool load(wchar_t *objFileName, ID3D11Device* device, DirectX::XMFLOAT2 texture_scaler = DirectX::XMFLOAT2(1.0f, 1.0f));

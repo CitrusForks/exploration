@@ -613,16 +613,20 @@ bool CompoundMesh::render( ID3D11DeviceContext *deviceContext, VanillaShaderClas
             m_animation.updateBoneTransforms(deviceContext, animationTick, mesh->m_OffsetMatrix, mesh->m_name, 
                 [&](std::string nodeName) 
                     { 
-                        auto i = m_nodeByName.find(nodeName);
-                        if (i != m_nodeByName.end())
-                            return XMLoadFloat4x4(&i->second->globalTransform); 
-                        else
-                            return XMMatrixIdentity();
+                        return getNodeGlobalTransform(nodeName);
                     } 
             );
         }
 
-        CXMMATRIX finalWorldMatrix = m_animation.loaded() ? worldMatrix : XMMatrixMultiply(XMLoadFloat4x4(&node->globalTransform), worldMatrix);
+        
+        XMMATRIX finalWorldMatrix;
+        if (!m_animation.loaded() && node->name.size() == 0)
+        {
+            finalWorldMatrix = worldMatrix; 
+        } else
+        {
+            finalWorldMatrix = XMMatrixMultiply(getNodeGlobalTransform(node->name), worldMatrix);
+        }
 
         if (!shader->Render(deviceContext, mesh->getIndexCount(), finalWorldMatrix, viewMatrix, projectionMatrix, mesh->m_material.normalMap.getTexture(), mesh->m_material.specularMap.getTexture(), &lights, mesh->m_material.diffuseTexture.getTexture(), 1, true, m_animation.loaded() ? animationTick : -1))
         {
@@ -711,4 +715,13 @@ void CompoundMesh::reindexNodes( std::shared_ptr<CompoundMeshNode> start )
     {
         reindexNodes(i);
     }
+}
+
+DirectX::XMMATRIX CompoundMesh::getNodeGlobalTransform( std::string nodeName )
+{
+    auto i = m_nodeByName.find(nodeName);
+    if (i != m_nodeByName.end())
+        return XMLoadFloat4x4(&i->second->globalTransform); 
+    else
+        return XMMatrixIdentity();
 }

@@ -122,22 +122,21 @@ void AnimationBuffer::updateBoneTransforms( ID3D11DeviceContext *ctx, double ani
 
 
 
-/*
-void AnimationBuffer::getNodeTransformByName( DirectX::XMFLOAT4X4 *dest, std::string bone, double animationTick )
+
+DirectX::XMMATRIX AnimationBuffer::getNodeTransformByName( std::string bone, double animationTick )
 {
     auto iter = m_animationNodes.find(bone);
 
-    if (iter == m_animationNodes.end()) return;
+    if (iter == m_animationNodes.end()) return XMMatrixIdentity();
 
     int i = iter->second;
 
-    XMFLOAT4 quat, tran, scal;
-    getBoneTransform(dest, i, animationTick);
+    return getBoneTransform(nullptr, i, animationTick);
 }
-*/
 
 
-void AnimationBuffer::getBoneTransform( DirectX::XMFLOAT4X4 *transform, int bone, double animationTick, bool transpose /*= false*/ )
+
+DirectX::XMMATRIX AnimationBuffer::getBoneTransform( DirectX::XMFLOAT4X4 *transform, int bone, double animationTick, bool transpose /*= false*/ )
 {
     XMFLOAT4 rotation;
     XMFLOAT3 translation, scaling;
@@ -210,7 +209,9 @@ void AnimationBuffer::getBoneTransform( DirectX::XMFLOAT4X4 *transform, int bone
 
     if (transpose) M = XMMatrixTranspose(M);
 
-    XMStoreFloat4x4(transform, M);
+    if (transform) XMStoreFloat4x4(transform, M);
+
+    return M;
 }
 
 XMFLOAT4X4 * AnimationBuffer::mapSubresource( ID3D11DeviceContext * ctx )

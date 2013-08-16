@@ -43,8 +43,8 @@ public:
     }
     bool loaded() { return m_bones != nullptr; }
 
-    void getBoneTransform(DirectX::XMFLOAT4X4 *transform, int bone, double animationTick, bool transpose = false);
-    void getNodeTransformByName(DirectX::XMFLOAT4X4 *dest, std::string bone, double animationTick);
+    DirectX::XMMATRIX getBoneTransform(DirectX::XMFLOAT4X4 *transform, int bone, double animationTick, bool transpose = false);
+    DirectX::XMMATRIX getNodeTransformByName(std::string bone, double animationTick);
 
     AnimationBuffer(void);
     ~AnimationBuffer(void);
