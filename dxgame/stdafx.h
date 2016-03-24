@@ -56,7 +56,7 @@
 // external lib deps:
 #include <lua.hpp>
 #include "LunaShare.hpp"
-#include <fmod.hpp>
+//#include <fmod.hpp>
 #include "dSFMT.h"
 
 #include <assimp/types.h>
@@ -94,7 +94,7 @@
 #include "ScriptedScene.h"
 #include "SimpleMesh.h"
 #include "SimpleText.h"
-#include "Sound.h"
+//#include "Sound.h"
 #include "TextureManager.h"
 #include "d3dclass.h"
 #include "vanillashaderclass.h"

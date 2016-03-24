@@ -75,8 +75,8 @@ duck2:moveTo(3, 0, 3)
 -- 121 ducks
 -- if you remove the stepping value of 2, it's 506 ducks
 ducks = {}
-xnum = 23
-ynum = 22
+xnum = 6
+ynum = 6
 
 function duckLoop(work)
 	for x = 1, xnum, 2 do

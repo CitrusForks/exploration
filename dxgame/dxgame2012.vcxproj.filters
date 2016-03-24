@@ -183,9 +183,6 @@
     <ClCompile Include="Chronometer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Sound.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="FirstPerson.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

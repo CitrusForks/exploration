@@ -25,7 +25,7 @@
 #include "SimpleMesh.h"
 //#include "ComplexMesh.h"
 #include "CompoundMesh.h"
-#include "Sound.h"
+//#include "Sound.h"
 #include "Input.h"
 #include "FirstPerson.h"
 #include "SimpleText.h"
@@ -178,10 +178,10 @@ int _tmain(int argc, _TCHAR* argv[])
 
 
     // Sound wraps FMOD for now and needs some work
-    Sound soundSystem;
+    //Sound soundSystem;
 
     // this is how sounds are loaded:
-    int beepverb = soundSystem.loadSound("beepverb.wav");
+    //int beepverb = soundSystem.loadSound("beepverb.wav");
 
     // Graphics contains most of the implementation details of the 3D stuff
     Graphics gEngine(width, height, window, progInstance);
@@ -286,7 +286,7 @@ int _tmain(int argc, _TCHAR* argv[])
         gEngine.getCamera()->perFrameUpdate(timer->sincePrev(), input); // move the camera 
         // XXX should the above update be somewhere specific?
 
-        soundSystem.perFrameUpdate();
+        //soundSystem.perFrameUpdate();
 
         scene->update((float)timer->sinceInit(), (float)timer->sincePrev());  // in case you actually want to implement a game, the gameplay would happen in this update() call
 
@@ -297,7 +297,7 @@ int _tmain(int argc, _TCHAR* argv[])
         static double last_honked = 0.0;
         if (input.IsPressed(DIK_E) && timer->sinceInit() - last_honked > 0.5)
         {
-            soundSystem.play(beepverb); // just a test of the sound system
+            //soundSystem.play(beepverb); // just a test of the sound system
             last_honked = timer->sinceInit();
         }
 
